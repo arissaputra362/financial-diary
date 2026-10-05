@@ -1,0 +1,356 @@
+// Financial Planner — Prisma schema (T-003)
+// Single source of truth for column names/types: docs/erd/erd-database-schema.md §3.
+// Constraints marked `*` in the ERD (partial unique indexes, CHECKs) are added as
+// raw SQL in the migration — see prisma/migrations/00000000000000_init/migration.sql.
+// Money: Int minor units, IDR scale 0 (1 minor unit = 1 rupiah) — never Decimal/Float.
+// All timestamps are explicit @db.Timestamptz (UTC). All FKs are RESTRICT (no cascade).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum MembershipRole {
+  OWNER
+  MEMBER
+}
+
+enum MembershipStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  REVOKED
+}
+
+enum MembershipEventType {
+  REQUESTED
+  APPROVED
+  DECLINED
+  REVOKED
+}
+
+enum TransactionType {
+  MONEY_IN
+  MONEY_OUT
+  TRANSFER
+}
+
+enum TransactionSource {
+  MANUAL
+  OCR
+}
+
+enum OcrJobStatus {
+  PROCESSING
+  SUCCEEDED
+  FAILED
+}
+
+// ─── Auth & household ─────────────────────────────────────────────────────────
+
+/// ERD §3.1
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar
+  passwordHash String   @map("password_hash") @db.VarChar
+  displayName  String   @map("display_name") @db.VarChar
+  createdAt    DateTime @map("created_at") @db.Timestamptz @default(now())
+  updatedAt    DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+
+  householdsOwned     Household[]        @relation("HouseholdOwner")
+  membershipsInvited  Membership[]       @relation("MembershipInvitedBy")
+  membershipsApproved Membership[]       @relation("MembershipApprovedBy")
+  membershipsDeclined Membership[]       @relation("MembershipDeclinedBy")
+  membershipsRevoked  Membership[]       @relation("MembershipRevokedBy")
+  memberships         Membership[]
+  invitesCreated      Invite[]           @relation("InviteCreatedBy")
+  invitesRedeemed     Invite[]           @relation("InviteRedeemedBy")
+  membershipEvents    MembershipEvent[]
+  sessions            Session[]
+  transactionsCreated Transaction[]      @relation("TransactionCreatedBy")
+  transactionsDeleted Transaction[]      @relation("TransactionDeletedBy")
+  goalsCreated        SavingsGoal[]      @relation("GoalCreatedBy")
+  goalsDeleted        SavingsGoal[]      @relation("GoalDeletedBy")
+  receiptsUploaded    Receipt[]          @relation("ReceiptUploadedBy")
+  insightsRequested   AdvisorInsight[]
+  budgetsCreated      HouseholdBudget[]
+  idempotencyKeys     IdempotencyKey[]
+
+  @@index([email])
+  @@map("user")
+}
+
+/// ERD §3.2
+model Household {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar
+  ownerUserId String   @map("owner_user_id") @db.Uuid
+  createdAt   DateTime @map("created_at") @db.Timestamptz @default(now())
+  updatedAt   DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+
+  owner            User         @relation("HouseholdOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  memberships      Membership[]
+  invites          Invite[]
+  membershipEvents MembershipEvent[]
+  transactions     Transaction[]
+  savingsGoals     SavingsGoal[]
+  receipts         Receipt[]
+  advisorInsights  AdvisorInsight[]
+  budgets          HouseholdBudget[]
+
+  @@index([ownerUserId])
+  @@map("household")
+}
+
+/// ERD §3.3 — UNIQUE(user_id, household_id) + partial unique active membership
+/// (raw SQL appendix). One row per user-household pair; DECLINED/REVOKED rows can
+/// flip status later without violating the audit trail.
+model Membership {
+  id               String           @id @default(uuid()) @db.Uuid
+  householdId      String           @map("household_id") @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  role             MembershipRole
+  status           MembershipStatus
+  invitedByUserId  String?          @map("invited_by_user_id") @db.Uuid
+  inviteId         String?          @db.Uuid
+  requestedAt      DateTime?        @map("requested_at") @db.Timestamptz
+  approvedAt       DateTime?        @map("approved_at") @db.Timestamptz
+  approvedByUserId String?          @map("approved_by_user_id") @db.Uuid
+  declinedAt       DateTime?        @map("declined_at") @db.Timestamptz
+  declinedByUserId String?          @map("declined_by_user_id") @db.Uuid
+  revokedAt        DateTime?        @map("revoked_at") @db.Timestamptz
+  revokedByUserId  String?          @map("revoked_by_user_id") @db.Uuid
+  decisionReason   String?          @map("decision_reason") @db.VarChar
+  createdAt        DateTime         @map("created_at") @db.Timestamptz @default(now())
+  updatedAt        DateTime         @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+
+  household  Household         @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  invitedBy  User?             @relation("MembershipInvitedBy", fields: [invitedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  approvedBy User?             @relation("MembershipApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  declinedBy User?             @relation("MembershipDeclinedBy", fields: [declinedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revokedBy  User?             @relation("MembershipRevokedBy", fields: [revokedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  invite     Invite?           @relation(fields: [inviteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  events     MembershipEvent[]
+
+  @@unique([userId, householdId])
+  @@index([householdId, status])
+  @@map("membership")
+}
+
+/// ERD §3.4 — code_hash unique (sha256); plaintext code never stored.
+model Invite {
+  id               String    @id @default(uuid()) @db.Uuid
+  householdId      String    @map("household_id") @db.Uuid
+  codeHash         String    @unique @map("code_hash") @db.VarChar
+  createdByUserId  String    @map("created_by_user_id") @db.Uuid
+  expiresAt        DateTime  @map("expires_at") @db.Timestamptz
+  redeemedAt       DateTime? @map("redeemed_at") @db.Timestamptz
+  redeemedByUserId String?   @map("redeemed_by_user_id") @db.Uuid
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt        DateTime  @map("created_at") @db.Timestamptz @default(now())
+
+  household   Household    @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy   User         @relation("InviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  redeemedBy  User?        @relation("InviteRedeemedBy", fields: [redeemedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  memberships Membership[]
+
+  @@index([householdId, createdAt(sort: Desc)])
+  @@map("invite")
+}
+
+/// ERD §3.5 — append-only audit log; immutable (no updated_at).
+model MembershipEvent {
+  id             String              @id @default(uuid()) @db.Uuid
+  membershipId   String              @map("membership_id") @db.Uuid
+  householdId    String              @map("household_id") @db.Uuid
+  actorUserId    String              @map("actor_user_id") @db.Uuid
+  eventType      MembershipEventType @map("event_type")
+  previousStatus MembershipStatus?   @map("previous_status")
+  nextStatus     MembershipStatus?   @map("next_status")
+  reason         String?             @db.VarChar
+  createdAt      DateTime            @map("created_at") @db.Timestamptz @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  household  Household  @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor      User       @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([membershipId])
+  @@index([householdId, createdAt(sort: Desc)])
+  @@map("membership_event")
+}
+
+/// ERD §3.6 — NO household_id (D-4): derivable from membership per request.
+/// `id` equals the JWT `sid` claim.
+model Session {
+  id           String    @id @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  tokenVersion String    @map("token_version") @db.VarChar
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt    DateTime  @map("created_at") @db.Timestamptz @default(now())
+  lastSeenAt   DateTime  @map("last_seen_at") @db.Timestamptz @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("session")
+}
+
+// ─── Ledger ───────────────────────────────────────────────────────────────────
+
+/// ERD §3.7 — soft delete; transfer_group_id has NO FK (D-1).
+model Transaction {
+  id              String            @id @default(uuid()) @db.Uuid
+  householdId     String            @map("household_id") @db.Uuid
+  createdByUserId String            @map("created_by_user_id") @db.Uuid
+  type            TransactionType
+  amountMinor     Int               @map("amount_minor")
+  currencyCode    String            @default("IDR") @map("currency_code") @db.Char(3)
+  category        String?           @db.VarChar
+  merchant        String?           @db.VarChar
+  note            String?
+  occurredAt      DateTime          @map("occurred_at") @db.Timestamptz
+  source          TransactionSource
+  receiptId       String?           @map("receipt_id") @db.Uuid
+  transferGroupId String?           @map("transfer_group_id") @db.Uuid
+  deletedAt       DateTime?         @map("deleted_at") @db.Timestamptz
+  deletedByUserId String?           @map("deleted_by_user_id") @db.Uuid
+  createdAt       DateTime          @map("created_at") @db.Timestamptz @default(now())
+  updatedAt       DateTime          @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy User      @relation("TransactionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  receipt   Receipt?  @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  deletedBy User?     @relation("TransactionDeletedBy", fields: [deletedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([householdId, transferGroupId, type])
+  @@index([householdId, deletedAt, occurredAt(sort: Desc)])
+  @@map("transaction")
+}
+
+/// ERD §3.8 — soft delete; CHECK target > 0 and saved >= 0 (raw SQL appendix).
+model SavingsGoal {
+  id                String    @id @default(uuid()) @db.Uuid
+  householdId       String    @map("household_id") @db.Uuid
+  createdByUserId   String    @map("created_by_user_id") @db.Uuid
+  name              String    @db.VarChar
+  targetAmountMinor Int       @map("target_amount_minor")
+  savedAmountMinor  Int       @default(0) @map("saved_amount_minor")
+  currencyCode      String    @default("IDR") @map("currency_code") @db.Char(3)
+  deadline          DateTime? @db.Date
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz
+  deletedByUserId   String?   @map("deleted_by_user_id") @db.Uuid
+  createdAt         DateTime  @map("created_at") @db.Timestamptz @default(now())
+  updatedAt         DateTime  @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy User      @relation("GoalCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  deletedBy User?     @relation("GoalDeletedBy", fields: [deletedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([householdId, deletedAt, deadline])
+  @@map("savings_goal")
+}
+
+/// ERD §3.9 — UNIQUE(household_id, content_sha256) dedup per household.
+model Receipt {
+  id               String   @id @default(uuid()) @db.Uuid
+  householdId      String   @map("household_id") @db.Uuid
+  uploadedByUserId String   @map("uploaded_by_user_id") @db.Uuid
+  contentSha256    String   @map("content_sha256") @db.VarChar
+  mimeType         String   @map("mime_type") @db.VarChar
+  sizeBytes        Int      @map("size_bytes")
+  storageKey       String   @map("storage_key") @db.VarChar
+  createdAt        DateTime @map("created_at") @db.Timestamptz @default(now())
+
+  household    Household     @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  uploadedBy   User          @relation("ReceiptUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  transactions Transaction[]
+  ocrJobs      OcrJob[]
+
+  @@unique([householdId, contentSha256])
+  @@map("receipt")
+}
+
+/// ERD §3.10 — PROCESSING is transient within the upload request (D-8).
+model OcrJob {
+  id          String       @id @default(uuid()) @db.Uuid
+  receiptId   String       @map("receipt_id") @db.Uuid
+  status      OcrJobStatus
+  model       String?      @db.VarChar
+  resultJson  Json?        @map("result_json")
+  confidence  Float?
+  errorCode   String?      @map("error_code") @db.VarChar
+  createdAt   DateTime     @map("created_at") @db.Timestamptz @default(now())
+  completedAt DateTime?    @map("completed_at") @db.Timestamptz
+
+  receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([receiptId])
+  @@map("ocr_job")
+}
+
+/// ERD §3.11 — only successful insights are persisted (D-7).
+model AdvisorInsight {
+  id                String   @id @default(uuid()) @db.Uuid
+  householdId       String   @map("household_id") @db.Uuid
+  requestedByUserId String   @map("requested_by_user_id") @db.Uuid
+  sourcePeriodStart DateTime @map("source_period_start") @db.Date
+  sourcePeriodEnd   DateTime @map("source_period_end") @db.Date
+  model             String   @db.VarChar
+  headline          String   @db.VarChar
+  summary           String
+  actionsJson       Json     @map("actions_json")
+  limitations       String?
+  generatedAt       DateTime @map("generated_at") @db.Timestamptz @default(now())
+  expiresAt         DateTime @map("expires_at") @db.Timestamptz
+
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  requestedBy User      @relation(fields: [requestedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([householdId, generatedAt(sort: Desc)])
+  @@map("advisor_insight")
+}
+
+/// ERD §3.12 — UNIQUE(household_id, period_start); period_end is derived, not stored.
+model HouseholdBudget {
+  id              String   @id @default(uuid()) @db.Uuid
+  householdId     String   @map("household_id") @db.Uuid
+  periodStart     DateTime @map("period_start") @db.Date
+  amountMinor     Int      @map("amount_minor")
+  currencyCode    String   @default("IDR") @map("currency_code") @db.Char(3)
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @map("created_at") @db.Timestamptz @default(now())
+  updatedAt       DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy User      @relation(fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([householdId, periodStart])
+  @@map("household_budget")
+}
+
+/// ERD §3.13 — scope per USER, not per household (A-22 / D-2).
+model IdempotencyKey {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  key            String   @db.VarChar
+  requestHash    String   @map("request_hash") @db.VarChar
+  responseStatus Int?     @map("response_status")
+  responseBody   Json?    @map("response_body")
+  createdAt      DateTime @map("created_at") @db.Timestamptz @default(now())
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, key])
+  @@index([expiresAt])
+  @@map("idempotency_key")
+}
