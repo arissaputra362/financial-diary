@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Money - Budget Planner Prototype</title>
+  <!--
+    EVIDENCE-ONLY, SUPERSEDED REFERENCE — NOT CANONICAL, DO NOT IMPLEMENT FROM THIS FILE.
+    This standalone mockup predates the canonical design docs (01..05) and the A-27/A-30/A-31
+    decisions. It is retained only as historical evidence. Implement from docs/design/01..05.
+  -->
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+            mono: ['Inter', 'monospace'],
+          },
+          borderRadius: {
+            '3xl': '24px',
+            '4xl': '32px',
+          },
+          boxShadow: {
+            'bento': '0 10px 30px -5px rgba(15, 23, 42, 0.04), 0 0 1px 1px rgba(15, 23, 42, 0.03)',
+            'floating': '0 20px 40px -10px rgba(0, 0, 0, 0.3)',
+            'pill': '0 4px 12px rgba(0, 0, 0, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #f0eef9 0%, #f8f9fd 42%, #eef4f8 100%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    button, input {
+      min-height: 44px;
+    }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid rgba(124, 58, 237, 0.35);
+      outline-offset: 2px;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background-color: #CBD5E1;
+      border-radius: 9999px;
+    }
+    .mobile-nav {
+      display: none;
+    }
+    button.mobile-menu {
+      display: none;
+    }
+    .desktop-navigation {
+      display: flex;
+    }
+    .brand-name {
+      display: inline;
+    }
+    @media (max-width: 640px) {
+      body {
+        padding-bottom: 96px;
+      }
+      .mobile-nav {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+      }
+      main {
+        padding-bottom: 120px;
+        padding-top: 24px !important;
+      }
+      .desktop-navigation {
+        display: none !important;
+      }
+      .app-header {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased pb-24">
+
+  <!-- EVIDENCE-ONLY BANNER: superseded reference, not canonical -->
+  <div style="position:fixed;top:0;left:0;right:0;z-index:9999;background:#7c2d12;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:8px 16px;text-align:center;">
+    Evidence-only, superseded reference. Not canonical. Do not implement from this file. Use docs/design/01..05.
+  </div>
+
+  <!-- ================= TOP FLOATING CHARCOAL NAVBAR ================= -->
+  <header class="app-header fixed top-4 inset-x-0 z-50 flex justify-center px-4">
+    <nav class="w-full max-w-5xl bg-white/95 backdrop-blur-md text-slate-900 rounded-3xl px-4 sm:px-5 py-2.5 flex items-center justify-between shadow-bento border border-white transition-all">
+      <!-- Logo -->
+      <div class="flex items-center gap-2">
+        <button class="mobile-menu w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center" aria-label="Open menu" title="Open menu" onclick="showToast('Menu opened')">
+          <i data-lucide="menu" class="w-4 h-4"></i>
+        </button>
+        <div class="flex items-center gap-2 cursor-pointer" onclick="switchView('dashboard')">
+          <div class="w-8 h-8 rounded-full bg-slate-950 flex items-center justify-center text-white font-extrabold text-sm">
+          ✦
+        </div>
+          <span class="brand-name font-bold tracking-tight text-base hidden">Family money</span>
+        </div>
+      </div>
+
+      <!-- Navigation Pills -->
+      <div class="desktop-navigation flex items-center bg-slate-100 p-1 rounded-full text-xs sm:text-sm font-medium">
+        <button id="nav-dash" onclick="switchView('dashboard')" class="bg-slate-950 text-white px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          <span>Home</span>
+        </button>
+        <button id="nav-admin" onclick="switchView('admin')" class="text-slate-500 hover:text-slate-900 px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>Family</span>
+        </button>
+        <button id="nav-pending" onclick="switchView('pending')" class="text-slate-500 hover:text-slate-900 px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5">
+          <i data-lucide="clock" class="w-4 h-4"></i>
+          <span>My access</span>
+        </button>
+      </div>
+
+      <!-- User Avatar / Quick Profile -->
+      <div class="flex items-center gap-2">
+        <div class="relative cursor-pointer">
+          <div class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
+            AM
+          </div>
+          <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#15171C] rounded-full"></span>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main class="max-w-6xl mx-auto px-4 pt-24">
+
+    <!-- ================= VIEW 1: MAIN BENTO DASHBOARD ================= -->
+    <div id="view-dashboard" class="space-y-5">
+
+      <div class="flex items-end justify-between px-1 pt-2">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Wednesday, September 23</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight mt-1">Good morning, Sarah</h1>
+        </div>
+        <button onclick="showToast('Notifications are all caught up')" aria-label="View notifications" title="Notifications" class="w-11 h-11 rounded-full bg-white border border-slate-200 text-slate-700 flex items-center justify-center shadow-sm">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Bento Grid (Row 1) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- CARD 1: Hero Total Balance (Col 1-7) - Soft Pastel Peach / Warm Orange -->
+        <div class="lg:col-span-7 bg-white border border-slate-200 rounded-4xl p-7 shadow-bento flex flex-col justify-between relative overflow-hidden">
+          <!-- Background decorative orb -->
+          <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-gradient-to-br from-orange-200/40 to-pink-200/40 rounded-full blur-2xl pointer-events-none"></div>
+
+          <div>
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <i data-lucide="wallet" class="w-4 h-4 text-orange-600"></i>
+                Money available
+              </span>
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                The Miller family
+              </span>
+            </div>
+
+            <!-- Big Currency Figure -->
+            <div class="flex items-baseline gap-2 mb-2">
+              <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-950 tracking-tight">$14,250<span class="text-slate-500 text-3xl font-semibold">.80</span></h1>
+            </div>
+            <p class="text-sm text-slate-500 mb-5">Available across your family accounts</p>
+
+            <!-- Cashflow Pill Chips -->
+            <div class="flex flex-wrap items-center gap-3 mb-8">
+              <div class="flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/20 px-3.5 py-1.5 rounded-full text-emerald-800 text-sm font-semibold">
+                <div class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs">↑</div>
+                <span>+$4,850.00 money in</span>
+              </div>
+              <div class="flex items-center gap-2 bg-rose-500/10 border border-rose-500/20 px-3.5 py-1.5 rounded-full text-rose-800 text-sm font-semibold">
+                <div class="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs">↓</div>
+                <span>-$2,310.40 money out</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons (Pill) -->
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <button onclick="openModal('modal-add-transaction', 'manual')" class="bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-sm flex items-center gap-2 transition-all active:scale-95">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Add a transaction</span>
+            </button>
+            <button onclick="openModal('modal-add-transaction', 'ocr')" class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-sm flex items-center gap-2 transition-all active:scale-95">
+              <i data-lucide="scan-line" class="w-4 h-4"></i>
+              <span>Scan a receipt</span>
+            </button>
+            <button onclick="showToast('New savings goal opened')" class="bg-white/80 hover:bg-white text-slate-700 border border-slate-200 text-sm font-semibold px-4 py-2.5 rounded-full shadow-sm flex items-center gap-1.5 transition-all">
+              <i data-lucide="target" class="w-4 h-4 text-emerald-600"></i>
+              <span>New savings goal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- CARD 2: AI Financial Advisor Insight (Col 8-12) - Soft Pastel Lavender -->
+        <div class="lg:col-span-5 bg-slate-950 text-white border border-slate-900 rounded-4xl p-7 shadow-bento flex flex-col justify-between relative overflow-hidden">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-purple-700 text-white flex items-center justify-center text-sm font-bold shadow-md shadow-purple-500/30">
+                  <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white text-base">Budget check-in</h3>
+                  <p class="text-xs text-slate-300 font-medium">A simple suggestion for you</p>
+                </div>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/10 text-slate-200">
+                This week's tip
+              </span>
+            </div>
+
+            <!-- AI Message Bubble -->
+            <div class="bg-white/10 rounded-3xl p-4 border border-white/10 mb-4">
+              <p class="text-slate-100 text-sm leading-relaxed">
+                "Great news, Sarah & Alex! You spent <strong>18% less</strong> on takeout dining this week. You have <strong>$85</strong> extra breathing room you could roll into your <strong>Paris Summer Trip</strong>! 🏖️"
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <button onclick="showToast('Moved $85 toward your Paris goal')" class="w-full bg-white text-slate-950 hover:bg-slate-100 text-xs font-semibold py-2.5 px-4 rounded-full flex items-center justify-center gap-2 shadow-sm transition-all active:scale-98">
+                <span>Move $85 to Paris goal</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="showToast('Money questions opened')" class="w-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold py-2 px-4 rounded-full border border-white/20 flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="message-square" class="w-3.5 h-3.5 text-white"></i>
+              <span>Ask a money question</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <section id="monthly-budget" class="bg-white border border-slate-200 rounded-4xl p-6 shadow-bento" aria-labelledby="monthly-budget-title">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider text-slate-500">September budget</p>
+            <h2 id="monthly-budget-title" class="text-xl font-bold text-slate-950 mt-1">You have $889 left to spend</h2>
+          </div>
+          <button onclick="showToast('Budget details opened')" class="self-start sm:self-auto text-sm font-semibold text-slate-700 border border-slate-200 px-4 py-2 rounded-full hover:bg-slate-50">See budget details</button>
+        </div>
+        <div class="h-3 w-full rounded-full bg-slate-100 overflow-hidden" aria-label="72 percent of monthly budget used">
+          <div class="h-full rounded-full bg-violet-600" style="width: 72%;"></div>
+        </div>
+        <div class="flex items-center justify-between mt-3 text-sm">
+          <span class="font-semibold text-slate-700">$2,310 spent</span>
+          <span class="text-slate-500">of $3,200 planned</span>
+        </div>
+      </section>
+
+      <!-- Bento Grid (Row 2) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- CARD 3: Spending Breakdown (Col 1-7) - Rounded Bar Chart -->
+        <div class="lg:col-span-7 bg-white rounded-4xl p-7 border border-slate-100 shadow-bento">
+          <div class="mb-4">
+            <div>
+              <h3 class="font-bold text-slate-900 text-lg">Where money went</h3>
+              <p id="chart-period-summary" class="text-xs text-slate-500 font-medium mt-1">$195.40 spent in the last 7 days</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 mt-4" role="group" aria-label="Choose chart period">
+              <button id="chart-range-7" onclick="setChartRange('7', '$195.40 spent in the last 7 days')" class="bg-slate-950 text-white px-3.5 py-2 rounded-full text-xs font-semibold shadow-sm">Last 7 days</button>
+              <button id="chart-range-30" onclick="setChartRange('30', '$842.10 spent in the last 30 days')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3.5 py-2 rounded-full text-xs font-semibold">Last 30 days</button>
+              <button id="chart-range-90" onclick="setChartRange('90', '$2,480.60 spent in the last 3 months')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3.5 py-2 rounded-full text-xs font-semibold">Last 3 months</button>
+            </div>
+          </div>
+
+          <!-- Spending bars stay close to the period controls so the filter scope is obvious. -->
+          <div class="h-56 flex items-end justify-between gap-2 sm:gap-4 pt-8 px-2 border-b border-slate-100 bg-slate-50/60 rounded-3xl">
+            <!-- Mon -->
+            <div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="relative w-full flex justify-center">
+                <div class="w-8 sm:w-10 bg-orange-200 group-hover:bg-orange-300 rounded-t-2xl transition-all" style="height: 70px;"></div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 group-hover:text-slate-700">Mon</span>
+            </div>
+            <!-- Tue -->
+            <div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="relative w-full flex justify-center">
+                <div class="w-8 sm:w-10 bg-orange-200 group-hover:bg-orange-300 rounded-t-2xl transition-all" style="height: 40px;"></div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 group-hover:text-slate-700">Tue</span>
+            </div>
+            <!-- Wed -->
+            <div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="relative w-full flex justify-center">
+                <div class="w-8 sm:w-10 bg-orange-300 group-hover:bg-orange-400 rounded-t-2xl transition-all" style="height: 110px;"></div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 group-hover:text-slate-700">Wed</span>
+            </div>
+            <!-- Thu -->
+            <div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="relative w-full flex justify-center">
+                <div class="w-8 sm:w-10 bg-orange-200 group-hover:bg-orange-300 rounded-t-2xl transition-all" style="height: 55px;"></div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 group-hover:text-slate-700">Thu</span>
+            </div>
+            <!-- Fri -->
+            <div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="relative w-full flex justify-center">
+                <div class="w-8 sm:w-10 bg-purple-300 group-hover:bg-purple-400 rounded-t-2xl transition-all" style="height: 130px;"></div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 group-hover:text-slate-700">Fri</span>
+            </div>
+            <!-- Sat (Highest) -->
+            <div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="relative w-full flex justify-center">
+                <div class="w-8 sm:w-10 bg-gradient-to-t from-orange-400 to-rose-400 rounded-t-2xl transition-all shadow-sm" style="height: 155px;"></div>
+              </div>
+              <span class="text-xs font-bold text-slate-900">Sat</span>
+            </div>
+            <!-- Sun -->
+            <div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="relative w-full flex justify-center">
+                <div class="w-8 sm:w-10 bg-orange-200 group-hover:bg-orange-300 rounded-t-2xl transition-all" style="height: 60px;"></div>
+              </div>
+              <span class="text-xs font-semibold text-slate-400 group-hover:text-slate-700">Sun</span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-4 text-xs text-slate-500 font-medium">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-orange-300 inline-block"></span> Standard Daily Spend
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-orange-400 to-rose-400 inline-block"></span> Weekend Spike ($195.40)
+            </span>
+          </div>
+        </div>
+
+        <!-- CARD 4: Savings Targets (Col 8-12) - Soft Pastel Mint -->
+        <div class="lg:col-span-5 bg-gradient-to-br from-emerald-100/70 via-teal-50/60 to-green-50/50 border border-emerald-200/50 rounded-4xl p-7 shadow-bento flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h3 class="font-bold text-slate-900 text-lg">What we're saving for</h3>
+                <p class="text-xs text-emerald-800/80 font-medium">3 savings goals</p>
+              </div>
+              <button onclick="showToast('New savings goal opened')" aria-label="Create a savings goal" title="Create a savings goal" class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm hover:scale-105 transition-all">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Target Items -->
+            <div class="space-y-4">
+              <!-- Goal 1 -->
+              <div class="bg-white/80 backdrop-blur-sm p-4 rounded-3xl border border-emerald-200/60 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🏖️</span>
+                    <div>
+                      <h4 class="font-bold text-slate-900 text-sm">Paris Holiday</h4>
+                      <p class="text-[11px] text-slate-500">Goal date: Dec 2026</p>
+                    </div>
+                  </div>
+                  <span class="text-xs font-bold text-emerald-700">72%</span>
+                </div>
+                <!-- Rounded Pill Bar -->
+                <div class="w-full bg-emerald-100 h-2.5 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 72%;"></div>
+                </div>
+                <div class="flex justify-between items-center mt-2 text-xs font-semibold text-slate-600">
+                  <span>$2,160 saved</span>
+                  <span class="text-slate-400 font-normal">of $3,000</span>
+                </div>
+              </div>
+
+              <!-- Goal 2 -->
+              <div class="bg-white/80 backdrop-blur-sm p-4 rounded-3xl border border-emerald-200/60 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🛡️</span>
+                    <div>
+                      <h4 class="font-bold text-slate-900 text-sm">Emergency Cushion</h4>
+                      <p class="text-[11px] text-slate-500">Safe family reserve</p>
+                    </div>
+                  </div>
+                  <span class="text-xs font-bold text-emerald-700">90%</span>
+                </div>
+                <div class="w-full bg-emerald-100 h-2.5 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 90%;"></div>
+                </div>
+                <div class="flex justify-between items-center mt-2 text-xs font-semibold text-slate-600">
+                  <span>$9,000 saved</span>
+                  <span class="text-slate-400 font-normal">of $10,000</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4">
+            <span class="text-xs text-emerald-900/80 font-medium flex items-center gap-1.5">
+              <i data-lucide="sparkle" class="w-3.5 h-3.5 text-emerald-600"></i>
+              You're saving $140/week faster than last month!
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bento Grid (Row 3): Recent Transactions Ledger -->
+      <div id="recent-activity" class="bg-white rounded-4xl p-7 border border-slate-100 shadow-bento">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 class="font-bold text-slate-900 text-lg">Recent activity</h3>
+            <p class="text-xs text-slate-500 font-medium">Recent money changes from your family</p>
+          </div>
+          <!-- Filter Pills -->
+          <div class="activity-filter flex flex-wrap items-center gap-2 pb-1" role="group" aria-label="Filter recent activity">
+            <button id="activity-filter-all" onclick="setActivityFilter('all', this)" class="bg-slate-900 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm">Everything</button>
+            <button onclick="setActivityFilter('out', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-4 py-1.5 rounded-full transition-colors">Money out</button>
+            <button onclick="setActivityFilter('in', this)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-4 py-1.5 rounded-full transition-colors">Money in</button>
+            <button onclick="setActivityFilter('scanned', this)" class="bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-semibold px-4 py-1.5 rounded-full transition-colors flex items-center gap-1">
+              <span>Scanned receipts</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Transactions List -->
+        <div class="divide-y divide-slate-100" id="transactions-list">
+          
+          <!-- Item 1 -->
+          <div id="tx-1" data-activity-type="out scanned" class="py-3.5 flex items-center justify-between hover:bg-slate-50/60 px-2 rounded-2xl transition-all">
+            <div class="flex items-center gap-3.5">
+              <!-- Circular Icon with Pastel Background -->
+              <div class="w-11 h-11 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-lg font-bold">
+                🛒
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-bold text-slate-900 text-sm">Whole Foods Groceries</h4>
+                  <span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <i data-lucide="scan-line" class="w-2.5 h-2.5"></i>
+                    Scanned receipt
+                  </span>
+                </div>
+                <p class="text-xs text-slate-400 font-medium">Added by Sarah • Yesterday 4:15 PM</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="font-bold text-slate-900 text-sm">-$142.50</span>
+              <button onclick="triggerSoftDelete('tx-1', 'Whole Foods Groceries', '$142.50')" class="text-slate-400 hover:text-rose-500 p-2 rounded-full hover:bg-rose-50 transition-all" title="Move to trash" aria-label="Move Whole Foods Groceries to trash">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div id="tx-2" data-activity-type="in" class="py-3.5 flex items-center justify-between hover:bg-slate-50/60 px-2 rounded-2xl transition-all">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg font-bold">
+                💼
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">Design Work Retainer</h4>
+                <p class="text-xs text-slate-400 font-medium">Added by Alex • Sep 21</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="font-bold text-emerald-600 text-sm">+$3,800.00</span>
+              <button onclick="triggerSoftDelete('tx-2', 'Design Work Retainer', '+$3,800.00')" class="text-slate-400 hover:text-rose-500 p-2 rounded-full hover:bg-rose-50 transition-all" title="Move to trash" aria-label="Move Design Work Retainer to trash">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Item 3 -->
+          <div id="tx-3" data-activity-type="out scanned" class="py-3.5 flex items-center justify-between hover:bg-slate-50/60 px-2 rounded-2xl transition-all">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-lg font-bold">
+                ⚡
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-bold text-slate-900 text-sm">Electricity & Power Co</h4>
+                  <span class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <i data-lucide="scan-line" class="w-2.5 h-2.5"></i>
+                    Scanned receipt
+                  </span>
+                </div>
+                <p class="text-xs text-slate-400 font-medium">Auto-extracted from bill • Sep 19</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="font-bold text-slate-900 text-sm">-$84.20</span>
+              <button onclick="triggerSoftDelete('tx-3', 'Electricity & Power Co', '$84.20')" class="text-slate-400 hover:text-rose-500 p-2 rounded-full hover:bg-rose-50 transition-all" title="Move to trash" aria-label="Move Electricity and Power Co to trash">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Item 4 -->
+          <div id="tx-4" data-activity-type="out" class="py-3.5 flex items-center justify-between hover:bg-slate-50/60 px-2 rounded-2xl transition-all">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-lg font-bold">
+                ☕
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">Artisan Coffee & Bakery</h4>
+                <p class="text-xs text-slate-400 font-medium">Added by Sarah • Sep 18</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="font-bold text-slate-900 text-sm">-$9.50</span>
+              <button onclick="triggerSoftDelete('tx-4', 'Artisan Coffee & Bakery', '$9.50')" class="text-slate-400 hover:text-rose-500 p-2 rounded-full hover:bg-rose-50 transition-all" title="Move to trash" aria-label="Move Artisan Coffee and Bakery to trash">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ================= VIEW 2: SUPER ADMIN HOUSEHOLD VIEW ================= -->
+    <div id="view-admin" class="hidden space-y-6">
+      
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Family members</h2>
+          <p class="text-sm text-slate-500">Choose who can see and add to your family money</p>
+        </div>
+        <button onclick="showToast('Invite link copied to clipboard!')" class="bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full flex items-center gap-2 shadow-sm">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Invite someone</span>
+        </button>
+      </div>
+
+      <!-- PENDING REQUESTS CARD (Soft Amber Gradient) -->
+      <div class="bg-gradient-to-br from-amber-100/80 via-orange-50/60 to-amber-50/40 border border-amber-200/60 rounded-4xl p-7 shadow-bento">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-500 animate-ping"></span>
+            <h3 class="font-bold text-slate-900 text-base">1 person is waiting to join</h3>
+          </div>
+          <span class="text-xs font-bold px-3 py-1 rounded-full bg-amber-200/70 text-amber-900">
+            Please review
+          </span>
+        </div>
+
+        <div id="pending-member-row" class="bg-white/80 backdrop-blur-sm rounded-3xl p-5 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
+              SM
+            </div>
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm">Sarah Miller</h4>
+              <p class="text-xs text-slate-500">sarah.miller@example.com • Requested 15 mins ago</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="approveMember()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2 rounded-full shadow-sm flex items-center gap-1.5 transition-all">
+              <i data-lucide="check" class="w-4 h-4"></i>
+              <span>Let them join</span>
+            </button>
+            <button onclick="denyMember()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold px-4 py-2 rounded-full transition-all">
+              <span>Decline request</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVE MEMBERS LIST (White Card) -->
+      <div class="bg-white rounded-4xl p-7 border border-slate-100 shadow-bento">
+        <h3 class="font-bold text-slate-900 text-base mb-4">People who can access this</h3>
+        
+        <div class="divide-y divide-slate-100" id="active-members-list">
+          <div class="py-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-slate-900 text-white font-bold flex items-center justify-center text-xs">
+                AM
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">Alex Miller (You)</h4>
+                <p class="text-xs text-slate-400">alex@millerfamily.com</p>
+              </div>
+            </div>
+            <span class="bg-slate-900 text-white text-xs font-semibold px-3 py-1 rounded-full">
+              Owner
+            </span>
+          </div>
+
+          <div class="py-3.5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-blue-500 text-white font-bold flex items-center justify-center text-xs">
+                EM
+              </div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">Emma Miller</h4>
+                <p class="text-xs text-slate-400">emma@millerfamily.com</p>
+              </div>
+            </div>
+            <span class="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full">
+              Member
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ================= VIEW 3: PENDING APPROVAL WAITING ROOM ================= -->
+    <div id="view-pending" class="hidden flex justify-center py-10">
+      <div class="w-full max-w-md bg-gradient-to-br from-orange-50 via-purple-50 to-white rounded-4xl p-8 border border-purple-100 shadow-bento text-center">
+        <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 mx-auto flex items-center justify-center text-2xl shadow-sm mb-4 animate-bounce">
+          ⏳
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-900 mb-2">Your access is waiting</h2>
+        <p class="text-sm text-slate-600 mb-6 leading-relaxed">
+          Your request to join <strong>"The Miller Household"</strong> was sent. Alex needs to say yes before you can see or add family money.
+        </p>
+
+        <div class="inline-flex items-center gap-2 bg-amber-100/80 text-amber-800 text-xs font-semibold px-4 py-2 rounded-full mb-8">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+          <span>Waiting for Alex to approve</span>
+        </div>
+
+        <div class="space-y-3">
+          <button onclick="showToast('Checking your access... 🔄')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-3 px-5 rounded-full shadow-sm transition-all">
+            Check again
+          </button>
+          <button onclick="switchView('dashboard')" class="w-full bg-white text-slate-600 hover:text-slate-900 font-semibold text-xs py-2 px-5 rounded-full border border-slate-200 transition-all">
+            Sign out or switch account
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <nav class="mobile-nav fixed bottom-4 left-4 right-4 z-40 rounded-3xl bg-slate-950 text-white p-2 shadow-floating" aria-label="Main mobile navigation">
+    <button onclick="scrollToSection('dashboard')" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-semibold text-white" aria-label="Go to home">
+      <i data-lucide="house" class="w-4 h-4"></i>
+      <span>Home</span>
+    </button>
+    <button onclick="scrollToSection('monthly-budget')" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-semibold text-slate-300" aria-label="View budget">
+      <i data-lucide="chart-no-axes-combined" class="w-4 h-4"></i>
+      <span>Budget</span>
+    </button>
+    <button onclick="openModal('modal-add-transaction', 'manual')" class="-mt-6 flex flex-col items-center justify-center gap-1 rounded-full bg-violet-600 text-[10px] font-semibold text-white shadow-lg" aria-label="Add a transaction">
+      <i data-lucide="plus" class="w-5 h-5"></i>
+      <span>Add</span>
+    </button>
+    <button onclick="scrollToSection('recent-activity')" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-semibold text-slate-300" aria-label="View recent activity">
+      <i data-lucide="receipt-text" class="w-4 h-4"></i>
+      <span>Activity</span>
+    </button>
+    <button onclick="switchView('admin')" class="flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-semibold text-slate-300" aria-label="Open family members">
+      <i data-lucide="users" class="w-4 h-4"></i>
+      <span>Family</span>
+    </button>
+  </nav>
+
+
+  <!-- ================= MODAL: ADD TRANSACTION & OCR ================= -->
+  <div id="modal-add-transaction" class="fixed inset-0 z-50 hidden bg-slate-950/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-4xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 relative transition-all">
+      
+      <!-- Close button -->
+      <button onclick="closeModal('modal-add-transaction')" aria-label="Close add transaction" title="Close" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-all">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <h3 class="text-xl font-bold text-slate-900 mb-1">Add a transaction</h3>
+      <p class="text-sm text-slate-500 mb-4">Add money in or money out to your family list.</p>
+
+      <!-- Segmented Pill Tabs: Manual vs OCR -->
+      <div class="bg-slate-100 p-1.5 rounded-full flex items-center gap-1 mb-6 text-xs sm:text-sm font-semibold">
+        <button id="tab-btn-manual" onclick="setEntryTab('manual')" class="flex-1 bg-white text-slate-900 py-2 rounded-full shadow-sm flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="pencil" class="w-4 h-4"></i>
+          <span>Type it in</span>
+        </button>
+        <button id="tab-btn-ocr" onclick="setEntryTab('ocr')" class="flex-1 text-slate-500 hover:text-slate-900 py-2 rounded-full flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="sparkles" class="w-4 h-4 text-purple-600"></i>
+          <span>Scan a receipt</span>
+        </button>
+      </div>
+
+      <!-- TAB CONTENT: MANUAL ENTRY -->
+      <div id="tab-content-manual" class="space-y-4">
+        <!-- Transaction Type Pills -->
+        <div class="flex items-center gap-2">
+          <button onclick="selectEntryOption(this, 'Money out selected')" class="bg-rose-100 text-rose-700 text-xs font-bold px-4 py-1.5 rounded-full border border-rose-200">
+            - Money out
+          </button>
+          <button onclick="selectEntryOption(this, 'Money in selected')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium px-4 py-1.5 rounded-full">
+            + Money in
+          </button>
+        </div>
+
+        <!-- Amount input -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">How much?</label>
+          <div class="relative">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-slate-400">$</span>
+            <input type="text" placeholder="0.00" class="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-2xl font-bold text-slate-900 focus:outline-none focus:border-purple-500 focus:bg-white transition-all">
+          </div>
+        </div>
+
+        <!-- Category circular chips -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">What was it?</label>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="selectEntryOption(this, 'Groceries selected')" class="flex items-center gap-1.5 bg-orange-50 border-2 border-orange-400 text-orange-800 text-xs font-semibold px-3 py-1.5 rounded-full">
+              <span>🛒</span> Groceries
+            </button>
+            <button onclick="selectEntryOption(this, 'Dining selected')" class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100">
+              <span>🍔</span> Dining
+            </button>
+            <button onclick="selectEntryOption(this, 'Utility selected')" class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100">
+              <span>⚡</span> Utility
+            </button>
+            <button onclick="selectEntryOption(this, 'Transport selected')" class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100">
+              <span>🚗</span> Transport
+            </button>
+            <button onclick="selectEntryOption(this, 'Fun selected')" class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-slate-100">
+              <span>🎬</span> Fun
+            </button>
+          </div>
+        </div>
+
+        <!-- Note / Merchant -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Where did the money go?</label>
+          <input type="text" placeholder="e.g. Weekly groceries" class="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-purple-500 focus:bg-white">
+        </div>
+
+        <button onclick="saveManualTransaction()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-3.5 rounded-full shadow-sm transition-all mt-2">
+          Save to family money
+        </button>
+      </div>
+
+      <!-- TAB CONTENT: OCR SCAN ENTRY -->
+      <div id="tab-content-ocr" class="hidden space-y-4">
+        
+        <!-- Step 1: Dropzone -->
+        <div id="ocr-dropzone" role="button" tabindex="0" aria-label="Take or upload a receipt" class="border-2 border-dashed border-purple-200 bg-purple-50/40 rounded-3xl p-6 text-center hover:bg-purple-50/70 transition-all cursor-pointer" onclick="simulateOCRScan()" onkeydown="if (event.key === 'Enter' || event.key === ' ') simulateOCRScan()">
+          <div class="w-12 h-12 rounded-full bg-purple-100 text-purple-600 mx-auto flex items-center justify-center text-xl mb-2">
+            📷
+          </div>
+          <h4 class="font-bold text-slate-900 text-sm">Take or upload a receipt</h4>
+          <p class="text-xs text-slate-500 mt-1">The app will read the shop, amount, and date for you</p>
+          <span class="inline-block mt-3 bg-purple-600 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm">
+            ✨ Ready to read it
+          </span>
+        </div>
+
+        <!-- Step 2: Scanning State (Hidden by default) -->
+        <div id="ocr-scanning" class="hidden py-8 text-center space-y-3">
+          <div class="w-12 h-12 rounded-full border-4 border-purple-600 border-t-transparent animate-spin mx-auto"></div>
+          <h4 class="font-bold text-slate-900 text-sm">Reading your receipt... ✨</h4>
+          <p class="text-xs text-slate-500">Finding the shop, amount, and date...</p>
+        </div>
+
+        <!-- Step 3: OCR Review Form (Hidden by default) -->
+        <div id="ocr-review" class="hidden space-y-3">
+          <div class="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 flex items-center justify-between text-xs text-purple-900 font-semibold">
+            <span>We found these details</span>
+            <span class="bg-purple-200 px-2 py-0.5 rounded-full text-[10px]">98% Confidence</span>
+          </div>
+
+          <div class="space-y-2 text-xs">
+            <div>
+              <label class="font-semibold text-slate-500">Shop or person:</label>
+              <input type="text" value="Trader Joe's Supermarket" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-900">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="font-semibold text-slate-500">How much:</label>
+                <input type="text" value="$54.30" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-900">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-500">When:</label>
+                <input type="text" value="Today (Sep 23)" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-900">
+              </div>
+            </div>
+          </div>
+
+          <button onclick="saveOCRTransaction()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 text-white font-semibold text-sm py-3.5 rounded-full shadow-md shadow-purple-500/20 transition-all">
+            Check details and save
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= FLOATING UNDO TOAST (SOFT DELETE UX) ================= -->
+  <div id="toast-undo" class="fixed bottom-6 inset-x-0 mx-auto max-w-sm w-[90%] z-50 hidden bg-[#15171C]/95 backdrop-blur-md text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center justify-between border border-white/10 transition-all">
+    <div class="flex items-center gap-2.5 text-xs sm:text-sm">
+      <span class="text-rose-400">🗑️</span>
+      <span id="toast-text" class="font-medium">Moved to trash</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="undoSoftDelete()" class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-1.5 rounded-full transition-all">
+        ↩️ Undo (5s)
+      </button>
+          <button onclick="hideToastNow()" aria-label="Dismiss message" title="Dismiss" class="text-white/60 hover:text-white p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- Simple Client-side JavaScript for Interactive Demo -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // View Switching Logic
+    function switchView(viewName) {
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-admin').classList.add('hidden');
+      document.getElementById('view-pending').classList.add('hidden');
+
+      document.getElementById('nav-dash').className = "text-slate-500 hover:text-slate-900 px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5";
+      document.getElementById('nav-admin').className = "text-slate-500 hover:text-slate-900 px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5";
+      document.getElementById('nav-pending').className = "text-slate-500 hover:text-slate-900 px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5";
+
+      if (viewName === 'dashboard') {
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('nav-dash').className = "bg-slate-950 text-white px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5";
+      } else if (viewName === 'admin') {
+        document.getElementById('view-admin').classList.remove('hidden');
+        document.getElementById('nav-admin').className = "bg-slate-950 text-white px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5";
+      } else if (viewName === 'pending') {
+        document.getElementById('view-pending').classList.remove('hidden');
+        document.getElementById('nav-pending').className = "bg-slate-950 text-white px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5";
+      }
+      lucide.createIcons();
+    }
+
+    function scrollToSection(sectionId) {
+      const section = document.getElementById(sectionId);
+      if (sectionId === 'dashboard') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Modal helpers
+    function openModal(id, tab) {
+      document.getElementById(id).classList.remove('hidden');
+      if (tab) setEntryTab(tab);
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      // Reset OCR state
+      document.getElementById('ocr-dropzone').classList.remove('hidden');
+      document.getElementById('ocr-scanning').classList.add('hidden');
+      document.getElementById('ocr-review').classList.add('hidden');
+    }
+
+    function setEntryTab(tab) {
+      const manualBtn = document.getElementById('tab-btn-manual');
+      const ocrBtn = document.getElementById('tab-btn-ocr');
+      const manualContent = document.getElementById('tab-content-manual');
+      const ocrContent = document.getElementById('tab-content-ocr');
+
+      if (tab === 'manual') {
+        manualBtn.className = "flex-1 bg-white text-slate-900 py-2 rounded-full shadow-sm flex items-center justify-center gap-1.5 transition-all";
+        ocrBtn.className = "flex-1 text-slate-500 hover:text-slate-900 py-2 rounded-full flex items-center justify-center gap-1.5 transition-all";
+        manualContent.classList.remove('hidden');
+        ocrContent.classList.add('hidden');
+      } else {
+        ocrBtn.className = "flex-1 bg-white text-purple-900 py-2 rounded-full shadow-sm flex items-center justify-center gap-1.5 transition-all";
+        manualBtn.className = "flex-1 text-slate-500 hover:text-slate-900 py-2 rounded-full flex items-center justify-center gap-1.5 transition-all";
+        ocrContent.classList.remove('hidden');
+        manualContent.classList.add('hidden');
+      }
+    }
+
+    function setChartRange(range, summary) {
+      const buttons = {
+        '7': document.getElementById('chart-range-7'),
+        '30': document.getElementById('chart-range-30'),
+        '90': document.getElementById('chart-range-90')
+      };
+      const activeClasses = 'bg-slate-950 text-white px-3.5 py-2 rounded-full text-xs font-semibold shadow-sm';
+      const inactiveClasses = 'bg-slate-100 text-slate-600 hover:bg-slate-200 px-3.5 py-2 rounded-full text-xs font-semibold';
+
+      Object.entries(buttons).forEach(([key, button]) => {
+        button.className = key === range ? activeClasses : inactiveClasses;
+      });
+      document.getElementById('chart-period-summary').textContent = summary;
+    }
+
+    function setActivityFilter(filter, selectedButton) {
+      const activeClasses = 'bg-slate-900 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-sm';
+      const inactiveClasses = 'bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold px-4 py-1.5 rounded-full transition-colors';
+      const scannedClasses = 'bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-semibold px-4 py-1.5 rounded-full transition-colors flex items-center gap-1';
+
+      document.querySelectorAll('.activity-filter button').forEach((button) => {
+        button.className = button.textContent.includes('Scanned') ? scannedClasses : inactiveClasses;
+      });
+      selectedButton.className = activeClasses;
+
+      document.querySelectorAll('#transactions-list > [data-activity-type]').forEach((transaction) => {
+        const matches = filter === 'all' || transaction.dataset.activityType.includes(filter);
+        transaction.classList.toggle('hidden', !matches);
+      });
+    }
+
+    // OCR Scan simulation
+    function simulateOCRScan() {
+      document.getElementById('ocr-dropzone').classList.add('hidden');
+      document.getElementById('ocr-scanning').classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('ocr-scanning').classList.add('hidden');
+        document.getElementById('ocr-review').classList.remove('hidden');
+      }, 1500);
+    }
+
+    function saveManualTransaction() {
+      closeModal('modal-add-transaction');
+      showToast('Saved to your family money list! 🎉');
+    }
+
+    function selectEntryOption(button, message) {
+      const group = button.parentElement;
+      group.querySelectorAll('button').forEach((option) => {
+        option.classList.remove('ring-2', 'ring-purple-400', 'ring-offset-1');
+      });
+      button.classList.add('ring-2', 'ring-purple-400', 'ring-offset-1');
+      showToast(message);
+    }
+
+    function saveOCRTransaction() {
+      closeModal('modal-add-transaction');
+      showToast('Trader Joe\'s ($54.30) saved from your receipt! ✨');
+    }
+
+    // Soft Delete & Undo Toast simulation
+    let lastDeletedElement = null;
+    let toastTimeout = null;
+
+    function triggerSoftDelete(elementId, name, amount) {
+      const el = document.getElementById(elementId);
+      lastDeletedElement = el;
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(20px)';
+      setTimeout(() => {
+        el.classList.add('hidden');
+      }, 250);
+
+      const toast = document.getElementById('toast-undo');
+      document.getElementById('toast-text').innerText = `"${name}" (${amount}) moved to Trash`;
+      toast.classList.remove('hidden');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 5000);
+    }
+
+    function undoSoftDelete() {
+      if (lastDeletedElement) {
+        lastDeletedElement.classList.remove('hidden');
+        setTimeout(() => {
+          lastDeletedElement.style.opacity = '1';
+          lastDeletedElement.style.transform = 'translateX(0)';
+        }, 50);
+      }
+      hideToastNow();
+      showToast('Restored successfully! ✨');
+    }
+
+    function hideToastNow() {
+      document.getElementById('toast-undo').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-undo');
+      document.getElementById('toast-text').innerText = msg;
+      toast.classList.remove('hidden');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 3500);
+    }
+
+    // Super Admin Member Approval Simulation
+    function approveMember() {
+      document.getElementById('pending-member-row').innerHTML = `
+        <div class="py-2 text-emerald-700 font-bold flex items-center gap-2">
+          <span>✅ Sarah Miller can now see and add family money.</span>
+        </div>
+      `;
+      showToast('Sarah Miller can now join your family money list!');
+      setTimeout(() => {
+        const list = document.getElementById('active-members-list');
+        const newRow = document.createElement('div');
+        newRow.className = "py-3.5 flex items-center justify-between";
+        newRow.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-xs">SM</div>
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm">Sarah Miller</h4>
+              <p class="text-xs text-slate-400">sarah.miller@example.com</p>
+            </div>
+          </div>
+          <span class="bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1 rounded-full">New Member</span>
+        `;
+        list.appendChild(newRow);
+      }, 800);
+    }
+
+    function denyMember() {
+      document.getElementById('pending-member-row').remove();
+      showToast('The join request was declined.');
+    }
+  </script>
+</body>
+</html>
+
