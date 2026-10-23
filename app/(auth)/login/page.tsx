@@ -19,6 +19,11 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [inviteCode, setInviteCode] = useState(() => searchParams.get("invite")?.trim().toUpperCase() ?? "");
+  const [authenticatedUser, setAuthenticatedUser] = useState<{
+    displayName: string;
+    email: string;
+  } | null>(null);
+  const [checkingSession, setCheckingSession] = useState(Boolean(initialSignup && inviteCode));
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,6 +38,52 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [initialSignup]);
+
+  useEffect(() => {
+    if (!initialSignup || !inviteCode) return;
+
+    let active = true;
+    fetch("/api/auth/me")
+      .then(async (response) => {
+        if (!active) return;
+        if (!response.ok) {
+          setCheckingSession(false);
+          return;
+        }
+        const data = await response.json();
+        if (data.user?.email && data.user?.displayName) {
+          setAuthenticatedUser({
+            email: data.user.email,
+            displayName: data.user.displayName,
+          });
+        }
+        setCheckingSession(false);
+      })
+      .catch(() => {
+        if (active) setCheckingSession(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [initialSignup, inviteCode]);
+
+  const handleUseInvite = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok && response.status !== 401) {
+        setError("Sesi belum berhasil dikeluarkan. Coba lagi.");
+        return;
+      }
+      setAuthenticatedUser(null);
+    } catch {
+      setError("Terjadi kesalahan jaringan. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +151,42 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
             <p className="mt-1 text-[#46597A]">Keuangan keluarga jadi lebih mudah.</p>
           </div>
 
+          {initialSignup && inviteCode && checkingSession && (
+            <div className="mb-6 rounded-2xl border border-[#D8E2EE] bg-[#EFF4FA] p-4 text-sm text-[#46597A]">
+              Memeriksa sesi akun...
+            </div>
+          )}
+
+          {initialSignup && inviteCode && !checkingSession && authenticatedUser && (
+            <div className="mb-6 rounded-2xl border border-[#B8DCC0] bg-[#F0F9F1] p-4">
+              <p className="font-semibold text-[#17304F]">Anda masih login</p>
+              <p className="mt-1 text-sm text-[#46597A]">
+                Saat ini masuk sebagai {authenticatedUser.displayName} ({authenticatedUser.email}).
+                Link undangan ini digunakan untuk membuat akun anggota baru dan tidak akan mengubah akun yang sedang aktif.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => router.push("/transactions")}
+                  className="min-h-11 rounded-full bg-[#166534] px-4 py-2 text-sm font-semibold text-white hover:bg-[#155C30]"
+                  disabled={loading}
+                >
+                  Kembali ke aplikasi
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUseInvite}
+                  className="min-h-11 rounded-full border border-[#B8DCC0] bg-white px-4 py-2 text-sm font-semibold text-[#166534] hover:bg-[#E8F3EB]"
+                  disabled={loading}
+                >
+                  {loading ? "Keluar..." : "Keluar dan gunakan undangan"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(!initialSignup || !inviteCode || (!checkingSession && !authenticatedUser)) && (
+          <>
           <div
             className="mb-6 flex rounded-full bg-[#EFF4FA] p-1"
             role="group"
@@ -267,6 +354,8 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
               {isSignup ? "Masuk" : "Buat akun"}
             </button>
           </p>
+          </>
+          )}
         </div>
       </div>
     </div>

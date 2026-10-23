@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { ChevronDown, RefreshCw, SlidersHorizontal } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { formatDateLabel } from "@/lib/dates";
 import { formatIDR, formatSignedIDR } from "@/lib/format";
@@ -41,6 +41,8 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
   const [reloadToken, setReloadToken] = useState(0);
 
   const filtersActive = kind !== "all" || Boolean(from) || Boolean(to);
+  const dateFiltersActive = Boolean(from) || Boolean(to);
+  const [showDateFilters, setShowDateFilters] = useState(dateFiltersActive);
   const dateInvalid = Boolean(from && to && from > to);
   const rows = filtersActive ? fetchedRows : initialRows;
   const shownError = dateInvalid ? "Tanggal 'dari' harus sebelum 'sampai'." : error;
@@ -108,6 +110,7 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
     setKind("all");
     setFrom("");
     setTo("");
+    setShowDateFilters(false);
   };
 
   const retry = () => {
@@ -119,7 +122,7 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
   return (
     <section
       aria-labelledby="activity-title"
-      className="rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento"
+      className="rounded-3xl border border-[#D8E2EE] bg-white p-4 shadow-bento sm:p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="activity-title" className="text-lg font-semibold text-[#17304F]">
@@ -133,57 +136,104 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
         </Link>
       </div>
 
-      <div className="mt-4 space-y-3">
-        <div
-          className="flex flex-wrap gap-1 rounded-2xl bg-[#EFF4FA] p-1"
-          role="group"
-          aria-label="Filter aktivitas"
-        >
-          {FILTERS.map((filter) => (
-            <button
-              key={filter.kind}
-              type="button"
-              aria-pressed={kind === filter.kind}
-              onClick={() => selectKind(filter.kind)}
-              className={cn(
-                "min-h-11 rounded-full px-4 text-xs font-semibold transition-colors",
-                kind === filter.kind
-                  ? "bg-white text-[#17304F] shadow-sm"
-                  : "text-[#46597A] hover:text-[#17304F]",
-              )}
-            >
-              {filter.label}
-            </button>
-          ))}
+      <div className="mt-4 rounded-2xl border border-[#D8E2EE] bg-[#F8FAFC] p-3 sm:p-4">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
+          <p className="text-sm font-semibold text-[#17304F]">Filter aktivitas</p>
+          {filtersActive ? (
+            <span className="rounded-full bg-[#DCEBFA] px-2.5 py-1 text-[11px] font-semibold text-[#1D4F87]">
+              Aktif
+            </span>
+          ) : null}
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-xs font-semibold text-[#46597A]">
-            Dari
-            <input
-              type="date"
-              value={from}
-              onChange={(event) => changeFrom(event.target.value)}
-              className="min-h-11 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold text-[#46597A]">
-            Sampai
-            <input
-              type="date"
-              value={to}
-              onChange={(event) => changeTo(event.target.value)}
-              className="min-h-11 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
-            />
-          </label>
-          {filtersActive ? (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#5C7191]">
+            Jenis transaksi
+          </p>
+          <div
+            className="grid grid-cols-2 gap-1 rounded-2xl bg-[#EFF4FA] p-1 sm:flex"
+            role="group"
+            aria-label="Jenis transaksi"
+          >
+            {FILTERS.map((filter) => (
+              <button
+                key={filter.kind}
+                type="button"
+                aria-pressed={kind === filter.kind}
+                onClick={() => selectKind(filter.kind)}
+                className={cn(
+                  "min-h-11 rounded-full px-3 text-xs font-semibold transition-colors sm:px-4",
+                  kind === filter.kind
+                    ? "bg-white text-[#17304F] shadow-sm"
+                    : "text-[#46597A] hover:text-[#17304F]",
+                )}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 border-t border-[#D8E2EE] pt-3">
             <button
               type="button"
-              onClick={reset}
-              className="min-h-11 rounded-full px-3 text-xs font-semibold text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
+              aria-expanded={showDateFilters}
+              onClick={() => setShowDateFilters((visible) => !visible)}
+              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl text-left text-sm font-semibold text-[#17304F]"
             >
-              Reset filter
+              <span>
+                Rentang tanggal <span className="font-normal text-[#5C7191]">(opsional)</span>
+              </span>
+              <span className="flex items-center gap-2 text-xs font-medium text-[#5C7191]">
+                {dateFiltersActive ? "Dipilih" : "Pilih tanggal"}
+                <ChevronDown
+                  className={cn("h-4 w-4 transition-transform", showDateFilters && "rotate-180")}
+                  aria-hidden="true"
+                />
+              </span>
             </button>
+
+            {showDateFilters ? (
+              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-[#46597A]">
+                  Dari tanggal
+                  <input
+                    type="date"
+                    value={from}
+                    onChange={(event) => changeFrom(event.target.value)}
+                    className="min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                  />
+                </label>
+                <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-[#46597A]">
+                  Sampai tanggal
+                  <input
+                    type="date"
+                    value={to}
+                    onChange={(event) => changeTo(event.target.value)}
+                    className="min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+
+          {filtersActive ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#D8E2EE] pt-3">
+              <p className="text-xs text-[#5C7191]">
+                Menampilkan:{" "}
+                <span className="font-semibold text-[#46597A]">
+                  {FILTERS.find((filter) => filter.kind === kind)?.label}
+                </span>
+                {dateFiltersActive ? " dengan rentang tanggal" : ""}
+              </p>
+              <button
+                type="button"
+                onClick={reset}
+                className="min-h-11 rounded-full px-3 text-xs font-semibold text-[#1D4F87] underline underline-offset-2 hover:text-[#17304F]"
+              >
+                Hapus semua filter
+              </button>
+            </div>
           ) : null}
         </div>
       </div>
