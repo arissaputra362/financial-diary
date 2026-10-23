@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
+  const REMEMBERED_EMAIL_KEY = "financial_planner_remembered_email";
   const router = useRouter();
   const searchParams = useSearchParams();
   /*
@@ -14,12 +15,24 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
   const redirectTo = searchParams.get("redirect") || "/transactions";
   const [isSignup, setIsSignup] = useState(initialSignup);
   const [email, setEmail] = useState("");
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialSignup) return;
+    const timer = window.setTimeout(() => {
+      const rememberedEmail = window.localStorage.getItem(REMEMBERED_EMAIL_KEY);
+      if (!rememberedEmail) return;
+      setEmail(rememberedEmail);
+      setRememberEmail(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [initialSignup]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +41,13 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
 
     try {
       const endpoint = isSignup ? "/api/auth/signup" : "/api/auth/login";
+      if (!isSignup) {
+        if (rememberEmail) {
+          window.localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+        } else {
+          window.localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+        }
+      }
       const body = isSignup
         ? { email, displayName, password, inviteCode: inviteCode || undefined }
         : { email, password };
@@ -195,6 +215,18 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
                 </button>
               </div>
             </div>
+
+            {!isSignup && (
+              <label className="flex items-center gap-2 text-sm text-[#46597A]">
+                <input
+                  type="checkbox"
+                  checked={rememberEmail}
+                  onChange={(e) => setRememberEmail(e.target.checked)}
+                  className="h-4 w-4 rounded border-[#C9D6E4] text-[#166534] focus:ring-[#166534]/25"
+                />
+                Ingat email saya di perangkat ini
+              </label>
+            )}
 
             {isSignup && (
               <div>

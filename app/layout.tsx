@@ -12,6 +12,17 @@ export const metadata: Metadata = {
   title: "Catatan Keuangan Keluarga",
   description:
     "Catat pemasukan, pengeluaran, dan tujuan menabung keluarga dalam satu tempat.",
+  applicationName: "Catatan Keuangan Keluarga",
+  icons: {
+    icon: "/logo.svg",
+    apple: "/icon-192.png",
+  },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Keuangan Keluarga",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

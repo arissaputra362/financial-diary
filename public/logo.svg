@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Catatan Keuangan Keluarga</title>
+  <rect width="512" height="512" rx="112" fill="#17304F"/>
+  <path d="M112 238C112 215.909 129.909 198 152 198H338C372.242 198 400 225.758 400 260V350C400 385.346 371.346 414 336 414H152C129.909 414 112 396.091 112 374V238Z" fill="#F6F9FC"/>
+  <path d="M112 252H352C378.51 252 400 273.49 400 300V351C400 385.794 371.794 414 337 414H152C129.909 414 112 396.091 112 374V252Z" fill="#E8F3EB"/>
+  <path d="M112 252V238C112 215.909 129.909 198 152 198H338C372.242 198 400 225.758 400 260V276H136C122.745 276 112 265.255 112 252Z" fill="#D3E7D8"/>
+  <path d="M178 198V178C178 155.909 195.909 138 218 138H294C316.091 138 334 155.909 334 178V198" stroke="#F6F9FC" stroke-width="24" stroke-linecap="round"/>
+  <path d="M304 276H400V360H316C293.909 360 276 342.091 276 320C276 297.909 293.909 280 316 280C329.255 280 340 290.745 340 304" stroke="#166534" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="316" cy="320" r="12" fill="#166534"/>
+  <path d="M160 326C182 337 204 337 226 326" stroke="#166534" stroke-width="16" stroke-linecap="round"/>
+  <path d="M160 358C182 369 204 369 226 358" stroke="#8BB996" stroke-width="16" stroke-linecap="round"/>
+</svg>
