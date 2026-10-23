@@ -52,6 +52,18 @@ describe("loginSchema", () => {
     expect(result.email).toBe("budi@example.com");
   });
 
+  describe("signupSchema displayName", () => {
+    it("preserves spaces between words while trimming outer whitespace", () => {
+      expect(
+        signupSchema.parse({
+          email: "budi@example.com",
+          displayName: "  Budi Santoso  ",
+          password: "sandirahasia",
+        }).displayName,
+      ).toBe("Budi Santoso");
+    });
+  });
+
   it("rejects a payload without password", () => {
     const result = loginSchema.safeParse({ email: "budi@example.com" });
     expect(result.success).toBe(false);
