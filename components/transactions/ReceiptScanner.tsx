@@ -517,9 +517,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
       ref={fileRef}
       type="file"
       accept="image/jpeg,image/png,image/webp"
-      capture="environment"
       className="sr-only"
-      aria-label="Pilih foto struk"
+      aria-label="Pilih foto struk dari kamera atau galeri"
       onChange={(event) => handleFile(event.target.files?.[0])}
     />
   );
@@ -930,7 +929,9 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]">
           <Camera className="h-6 w-6" aria-hidden="true" />
         </span>
-        <span className="mt-3 block text-[15px] font-semibold text-[#17304F]">Foto strukmu atau tarik gambarnya ke sini</span>
+        <span className="mt-3 block text-[15px] font-semibold text-[#17304F]">
+          Pilih foto struk dari kamera atau galeri
+        </span>
         <span className="mt-1 block text-xs text-[#46597A]">JPG, PNG, atau WebP. Maksimal 4 MB.</span>
       </button>
       <p className="flex items-center justify-center gap-1.5 text-xs text-[#5C7191]">
