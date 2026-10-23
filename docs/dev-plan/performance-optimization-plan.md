@@ -162,7 +162,7 @@ feature_resolved_alarms:
 ## Execution Log
 
 ```yaml
-last_execution_at: 2026-10-23T11:18:05+07:00
+last_execution_at: 2026-10-23T14:20:00+07:00
 current_phase: M2-initial-loading
 current_task: PERF-003
 current_status: needs_review
@@ -175,7 +175,7 @@ completed:
   - command: bun run lint
     result: passed_with_existing_warnings
     evidence: >
-      0 errors and 13 existing unused-variable warnings outside this
+      0 errors and 14 existing unused-variable warnings outside this
       performance initiative.
   - command: bun run test
     result: passed
@@ -237,6 +237,52 @@ completed:
     result: passed
     evidence: >
       Production build passed with /home classified as a dynamic server route.
+  - implementation: budget and transaction initial server load
+    result: completed_pending_review
+    evidence: >
+      /budget now authenticates once and loads shared/personal budget DTOs in
+      parallel on the server. /transactions now loads the initial active or
+      trash list on the server and skips the duplicate client fetch on first
+      render. Existing client fetches remain for reload, month/view changes,
+      pagination, and mutations.
+  - command: bun run test
+    result: passed
+    evidence: 47 test files and 481 tests passed after the initial-load changes.
+  - command: bun run build
+    result: passed
+    evidence: >
+      Production build passed with an increased Node heap after one transient
+      worker out-of-memory during a parallel validation run.
+  - artifact: authenticated production latency evidence
+    result: captured
+    evidence: >
+      Fresh browser navigations observed authenticated request durations of
+      approximately 1.6-3.1 seconds for auth/API calls and approximately
+      4.2 seconds for the /home document response. These measurements are
+      pre-deployment evidence for the current local changes, not post-change
+      proof.
+  - implementation: family server-side initial load
+    result: completed_pending_review
+    evidence: >
+      /family now authenticates and loads the member list in the server page.
+      The client view receives initial session/member DTOs and no longer starts
+      with sequential /api/auth/me followed by /api/family/members requests.
+      Mutation refresh behavior remains API-backed.
+  - implementation: combined dashboard spending query
+    result: completed_pending_review
+    evidence: >
+      Added an optional dashboard spending repository method. Production wiring
+      reads shared and caller-owned personal MONEY_OUT rows in one transaction
+      query, while test doubles retain a safe fallback to the existing scoped
+      reads. Transfer and deleted rows remain excluded.
+  - command: bun run test
+    result: passed
+    evidence: 47 test files and 481 tests passed after Family and dashboard query changes.
+  - command: bun run build
+    result: passed
+    evidence: >
+      Production build and TypeScript validation passed; /family is now a
+      dynamic server-rendered route.
 not_completed:
   - authenticated production performance capture
   - post-change production bandwidth capture

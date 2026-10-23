@@ -43,8 +43,7 @@ export class DashboardService {
       balances,
       monthlyBudget,
       personalMonthlyBudget,
-      dailyRows,
-      personalDailyRows,
+      spendingRows,
       goalRows,
       activity,
     ] = await Promise.all([
@@ -52,16 +51,26 @@ export class DashboardService {
       this.repos.wallet.balances(actor.householdId),
       this.budget.get(actor.householdId, now),
       this.budget.getPersonal(actor, now),
-      this.repos.transaction.listByDay(
-        actor.householdId,
-        { from: spendingPeriod.start, to: spendingPeriod.end },
-        { walletScope: "SHARING" },
-      ),
-      this.repos.transaction.listByDay(
-        actor.householdId,
-        { from: spendingPeriod.start, to: spendingPeriod.end },
-        { walletScope: "PERSONAL", walletOwnerUserId: actor.userId },
-      ),
+      this.repos.transaction.listDashboardSpending
+        ? this.repos.transaction.listDashboardSpending(actor, {
+            from: spendingPeriod.start,
+            to: spendingPeriod.end,
+          })
+        : Promise.all([
+            this.repos.transaction.listByDay(
+              actor.householdId,
+              { from: spendingPeriod.start, to: spendingPeriod.end },
+              { walletScope: "SHARING" },
+            ),
+            this.repos.transaction.listByDay(
+              actor.householdId,
+              { from: spendingPeriod.start, to: spendingPeriod.end },
+              { walletScope: "PERSONAL", walletOwnerUserId: actor.userId },
+            ),
+          ]).then(([shared, personal]) => [
+            ...shared.map((row) => ({ ...row, scope: "SHARING" as const })),
+            ...personal.map((row) => ({ ...row, scope: "PERSONAL" as const })),
+          ]),
       this.goals.listActive(actor.householdId),
       this.repos.transaction.listActive(actor, { limit: RECENT_ACTIVITY_LIMIT }),
     ]);
@@ -97,6 +106,8 @@ export class DashboardService {
       }
     }
 
+    const dailyRows = spendingRows.filter((row) => row.scope === "SHARING");
+    const personalDailyRows = spendingRows.filter((row) => row.scope === "PERSONAL");
     const byDay = bucketByJakartaDay(spendingPeriod.buckets, dailyRows);
     const totalOutMinor = byDay.reduce((total, day) => total + day.amountMinor, 0);
     const personalByDay = bucketByJakartaDay(spendingPeriod.buckets, personalDailyRows);

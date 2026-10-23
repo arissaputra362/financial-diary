@@ -30,6 +30,7 @@ export interface ActivityViewProps {
   initialMonth?: string;
   /** `?add=1` from the nav/dashboard "Tambah" action opens the add sheet (A-27). */
   initialAdd?: boolean;
+  initialData?: TransactionListDTO;
 }
 
 type ListFilter = "all" | "MONEY_IN" | "MONEY_OUT" | "transfer";
@@ -66,15 +67,15 @@ function buildListUrl(view: "active" | "trash", cursor: string | null, month: st
  * The page passes a key for view + month, so URL-driven view/month changes
  * restart with fresh state; the Add intent is handled separately (AC-F3-14).
  */
-export function ActivityView({ initialView, initialMonth, initialAdd = false }: ActivityViewProps) {
+export function ActivityView({ initialView, initialMonth, initialAdd = false, initialData }: ActivityViewProps) {
   const router = useRouter();
   const [view, setView] = useState<"active" | "trash">(initialView);
-  const [rows, setRows] = useState<TransactionDTO[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [rows, setRows] = useState<TransactionDTO[]>(initialData?.rows ?? []);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
   const [listFilter, setListFilter] = useState<ListFilter>("all");
   /* Active view is fetched month by month; the month lives in `?month=YYYY-MM`. */
   const [activeMonth, setActiveMonth] = useState<string>(() => resolveMonthKey(initialMonth));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
@@ -135,7 +136,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false }: 
       window.removeEventListener(TRANSACTION_ADD_EVENT, handleAddIntent);
       setTransactionAddListenerAttached(false);
     };
-  }, [writeUrl, view, activeMonth]);
+  }, [activeMonth, writeUrl, view]);
 
   const showNotice = useCallback((message: string) => {
     setNotice(message);
@@ -150,6 +151,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false }: 
   }, []);
 
   useEffect(() => {
+    if (initialData && reloadToken === 0) return;
     let active = true;
     apiRequest<TransactionListDTO>(buildListUrl(view, null, activeMonth))
       .then((response) => {
@@ -180,7 +182,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false }: 
     return () => {
       active = false;
     };
-  }, [view, activeMonth, reloadToken, router]);
+  }, [activeMonth, initialData, reloadToken, router, view]);
 
   const reload = () => {
     setLoading(true);

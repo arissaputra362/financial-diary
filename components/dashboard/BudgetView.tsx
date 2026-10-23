@@ -13,7 +13,7 @@ import { GoalsSection } from "@/components/goals/GoalsSection";
 import { formatIDR } from "@/lib/format";
 import type { MonthlyBudgetDTO } from "@/types/api";
 
-type Me = {
+export type Me = {
   role: string;
   status: string;
   household: { id: string; name: string } | null;
@@ -35,13 +35,21 @@ const SCOPE_OPTIONS: ReadonlyArray<{ value: BudgetScope; label: string }> = [
  * Both scopes are fetched in parallel and kept apart. The server is the source
  * of truth: a save replaces only the saved scope from the returned DTO.
  */
-export function BudgetView({ initialScope = "SHARED" }: { initialScope?: BudgetScope }) {
+export function BudgetView({
+  initialScope = "SHARED",
+  initialData,
+}: {
+  initialScope?: BudgetScope;
+  initialData?: { me: Me; budgets: BudgetMap };
+}) {
   const router = useRouter();
-  const [me, setMe] = useState<Me | null>(null);
+  const [me, setMe] = useState<Me | null>(initialData?.me ?? null);
   const [scope, setScope] = useState<BudgetScope>(initialScope);
-  const [budgets, setBudgets] = useState<BudgetMap>({ SHARED: null, PERSONAL: null });
+  const [budgets, setBudgets] = useState<BudgetMap>(
+    initialData?.budgets ?? { SHARED: null, PERSONAL: null },
+  );
   const [amountInputs, setAmountInputs] = useState<AmountMap>({ SHARED: "", PERSONAL: "" });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialData);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -49,6 +57,7 @@ export function BudgetView({ initialScope = "SHARED" }: { initialScope?: BudgetS
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
+    if (initialData && reloadToken === 0) return;
     let active = true;
     async function load() {
       try {
@@ -98,7 +107,7 @@ export function BudgetView({ initialScope = "SHARED" }: { initialScope?: BudgetS
     return () => {
       active = false;
     };
-  }, [reloadToken, router]);
+  }, [initialData, reloadToken, router]);
 
   const isOwner = me?.role === "OWNER";
   const activeBudget = budgets[scope];

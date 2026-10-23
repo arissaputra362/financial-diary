@@ -184,6 +184,15 @@ export interface TransactionRepository {
   listTrash(actor: WalletActor, cursor?: string | null, limit?: number): Promise<Paged<TransactionRecord>>;
   sumByType(householdId: string, range: { type: "MONEY_IN" | "MONEY_OUT"; from: Date; to: Date }, scope?: AggregateScope): Promise<number>;
   listByDay(householdId: string, range: { from: Date; to: Date }, scope?: AggregateScope): Promise<Array<{ date: Date; amountMinor: number }>>;
+  /**
+   * Dashboard-only combined spending read. It returns both wallet scopes in one
+   * transaction query so the chart does not issue separate shared/personal
+   * groupBy calls.
+   */
+  listDashboardSpending?(
+    actor: WalletActor,
+    range: { from: Date; to: Date },
+  ): Promise<Array<{ date: Date; amountMinor: number; scope: WalletScopeValue }>>;
 }
 
 export interface WalletRepository {
@@ -516,6 +525,35 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         _sum: { amountMinor: true },
       });
       return rows.map((row) => ({ date: row.occurredAt, amountMinor: row._sum.amountMinor ?? 0 }));
+    },
+    async listDashboardSpending(actor, range) {
+      const rows = await db.transaction.findMany({
+        where: {
+          householdId: actor.householdId,
+          ...ACTIVE,
+          type: "MONEY_OUT",
+          transferGroupId: null,
+          occurredAt: { gte: range.from, lte: range.to },
+          wallet: {
+            is: {
+              OR: [
+                { scope: "SHARING" },
+                { scope: "PERSONAL", createdByUserId: actor.userId },
+              ],
+            },
+          },
+        },
+        select: {
+          occurredAt: true,
+          amountMinor: true,
+          wallet: { select: { scope: true } },
+        },
+      });
+      return rows.map((row) => ({
+        date: row.occurredAt,
+        amountMinor: row.amountMinor,
+        scope: row.wallet.scope,
+      }));
     },
   };
 }
