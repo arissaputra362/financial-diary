@@ -168,7 +168,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
                   type="text"
                   autoComplete="name"
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value.trim())}
+                  onChange={(e) => setDisplayName(e.target.value)}
                   required
                   maxLength={60}
                   className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
