@@ -37,10 +37,10 @@ interface FormState {
  * creation/editing/archiving happens in sheets here; every figure is rendered
  * exactly as the server computed it.
  */
-export function DashboardView() {
+export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
   const router = useRouter();
-  const [data, setData] = useState<DashboardDTO | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<DashboardDTO | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<DashboardPeriodKey>("7D");
@@ -52,6 +52,7 @@ export function DashboardView() {
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialData && period === "7D" && reloadToken === 0) return;
     let active = true;
     apiRequest<DashboardDTO>(`/api/dashboard?period=${period}`)
       .then((response) => {
@@ -79,7 +80,7 @@ export function DashboardView() {
     return () => {
       active = false;
     };
-  }, [period, reloadToken, router]);
+  }, [initialData, period, reloadToken, router]);
 
   const retry = useCallback(() => {
     setLoading(true);

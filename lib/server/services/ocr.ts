@@ -90,6 +90,17 @@ export class OcrService {
     return { status: 200, body: { job: toOcrJobDTO(job, sharedWithHousehold), draft: storedDraft(job) } };
   }
 
+  async getLatestJobForReceipt(actor: OcrActor, receiptId: string): Promise<ServiceResult> {
+    const receipt = await this.repos.receipt.findById(actor.householdId, receiptId);
+    if (!receipt || receipt.uploadedByUserId !== actor.userId) {
+      throw notFound("Struk tidak ditemukan.");
+    }
+    const job = await this.repos.ocrJob.findByReceiptId(actor.householdId, receiptId);
+    if (!job) throw notFound("Struk tidak ditemukan.");
+    const sharedWithHousehold = await this.repos.receipt.isSharedWithHousehold(job.receiptId);
+    return { status: 200, body: { job: toOcrJobDTO(job, sharedWithHousehold), draft: storedDraft(job) } };
+  }
+
   /**
    * T-012 retry (AC-F3-10..13): re-read the private stored bytes and create one
    * new attempt for the latest FAILED job of the original uploader.

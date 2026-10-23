@@ -1,12 +1,20 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { PenLine, Sparkles, X } from "lucide-react";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
 import { ManualEntryForm } from "./ManualEntryForm";
-import { ReceiptScanner } from "./ReceiptScanner";
+
+const ReceiptScanner = dynamic(
+  () => import("./ReceiptScanner").then((module) => module.ReceiptScanner),
+  {
+    ssr: false,
+    loading: () => <p className="py-8 text-center text-sm text-[#5C7191]">Menyiapkan pemindai struk...</p>,
+  },
+);
 
 export interface AddTransactionSheetProps {
   open: boolean;

@@ -333,4 +333,19 @@ describe("OcrService", () => {
     const missing = ctx.service.getJob(actor, "99999999-9999-4999-8999-999999999999");
     await expect(missing).rejects.toMatchObject({ statusCode: 404 });
   });
+
+  it("gets the latest job by receipt without widening uploader access", async () => {
+    const result = await ctx.service.upload(actor, file());
+    const body = result.body as { job: { receiptId: string; id: string } };
+
+    const latest = await ctx.service.getLatestJobForReceipt(actor, body.job.receiptId);
+    expect((latest.body as { job: { id: string } }).job.id).toBe(body.job.id);
+
+    await expect(
+      ctx.service.getLatestJobForReceipt({
+        userId: "44444444-4444-4444-8444-444444444444",
+        householdId: HOUSEHOLD,
+      }, body.job.receiptId),
+    ).rejects.toMatchObject({ statusCode: 404 });
+  });
 });

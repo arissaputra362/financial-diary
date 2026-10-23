@@ -71,16 +71,12 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const previewRef = useRef<string | null>(null);
   const retryStatusRef = useRef<HTMLDivElement>(null);
   /* Synchronous guard so a double tap cannot send two retry requests. */
   const retryingRef = useRef(false);
-  /*
-    The original upload is retained so a retry conflict can ask the existing
-    dedup path for the receipt's latest job. The GET endpoint is job-id only.
-  */
-  const receiptFileRef = useRef<File | null>(null);
   const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recoveryTokenRef = useRef(0);
 
@@ -113,8 +109,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     still fires `change`. `Pindai ulang` is a picker entry point, never an
     immediate retry (design 03 §3.5.1, 2026-10-23).
   */
-  const openFilePicker = () => {
-    const input = fileRef.current;
+  const openPicker = (picker: "camera" | "gallery") => {
+    const input = picker === "camera" ? cameraRef.current : galleryRef.current;
     if (!input) return;
     input.value = "";
     input.click();
@@ -268,7 +264,6 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
       fail(null, "Ukuran foto maksimal 4 MB.");
       return;
     }
-    receiptFileRef.current = file;
     showPreview(file);
     void upload(file);
   };
@@ -348,34 +343,19 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     }
   };
 
-  /*
-    Resolve the receipt's latest job after a retry conflict.
-
-    `GET /api/ocr/jobs/{id}` is job-id-only, so the stale target would keep
-    returning its own FAILED row. The existing receipt dedup path (same bytes,
-    same uploader) returns the latest attempt for that receipt instead, without
-    a provider call. Poll only while that latest attempt is PROCESSING.
-  */
+  /* Resolve the latest authorized attempt without re-uploading receipt bytes. */
   const fetchLatestJobForReceipt = async (): Promise<
     | { kind: "job"; job: OcrJobDTO; draft: OcrDraftDTO | null }
     | { kind: "unauthorized" }
     | { kind: "unavailable" }
   > => {
-    const file = receiptFileRef.current;
-    if (!file) return { kind: "unavailable" };
-    const form = new FormData();
-    form.append("file", file);
+    const receiptId = job?.receiptId ?? failedJob?.receiptId;
+    if (!receiptId) return { kind: "unavailable" };
     const response = await apiRequest<{ job?: OcrJobDTO; draft?: OcrDraftDTO | null }>(
-      "/api/ocr/receipts",
-      { method: "POST", body: form },
+      `/api/ocr/receipts/${encodeURIComponent(receiptId)}/job`,
     );
     if (response.status === 401) return { kind: "unauthorized" };
-    if (response.status === 409) {
-      if (response.data?.job) {
-        return { kind: "job", job: response.data.job, draft: response.data.draft ?? null };
-      }
-      return { kind: "unavailable" };
-    }
+    if (response.status === 404) return { kind: "unavailable" };
     if (response.ok && response.data?.job) {
       return { kind: "job", job: response.data.job, draft: response.data.draft ?? null };
     }
@@ -439,7 +419,6 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
   /* `Pilih struk lain` returns to Step A: a normal new upload, never a retry. */
   const chooseAnotherReceipt = () => {
     stopRecoveryPolling();
-    receiptFileRef.current = null;
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     previewRef.current = null;
     setPreviewUrl(null);
@@ -512,15 +491,26 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     }
   };
 
-  const fileInput = (
-    <input
-      ref={fileRef}
-      type="file"
-      accept="image/jpeg,image/png,image/webp"
-      className="sr-only"
-      aria-label="Pilih foto struk dari kamera atau galeri"
-      onChange={(event) => handleFile(event.target.files?.[0])}
-    />
+  const fileInputs = (
+    <>
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        className="sr-only"
+        aria-label="Ambil foto struk dengan kamera"
+        onChange={(event) => handleFile(event.target.files?.[0])}
+      />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        aria-label="Pilih foto struk dari galeri"
+        onChange={(event) => handleFile(event.target.files?.[0])}
+      />
+    </>
   );
 
   if (step === "loading") {
@@ -640,27 +630,27 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row-reverse">
-          {retryable ? (
-            <Button
-              type="button"
-              onClick={openFilePicker}
-              isLoading={retrying}
-              loadingLabel="Memindai ulang"
-              disabled={retrying}
-              className="sm:flex-1"
-            >
-              Pindai ulang
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              onClick={openFilePicker}
-              disabled={retrying}
-              className="sm:flex-1"
-            >
-              Pilih foto struk
-            </Button>
-          )}
+          <Button
+            type="button"
+            onClick={() => openPicker("camera")}
+            isLoading={retrying}
+            loadingLabel={retryable ? "Memindai ulang" : "Membuka kamera"}
+            disabled={retrying}
+            className="sm:flex-1"
+          >
+            <Camera className="h-4 w-4" aria-hidden="true" />
+            {retryable ? "Pindai ulang dengan kamera" : "Ambil foto dengan kamera"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => openPicker("gallery")}
+            disabled={retrying}
+            className="sm:flex-1"
+          >
+            <ImageIcon className="h-4 w-4" aria-hidden="true" />
+            Pilih dari galeri
+          </Button>
           <Button type="button" variant="secondary" onClick={onSwitchToManual}>
             Isi manual
           </Button>
@@ -672,7 +662,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         >
           Batal
         </button>
-        {fileInput}
+        {fileInputs}
       </div>
     );
   }
@@ -876,10 +866,16 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           <Button type="button" size="lg" onClick={save} isLoading={saving} loadingLabel="Menyimpan" className="sm:flex-1">
             Sudah benar, simpan transaksi
           </Button>
-          <Button type="button" variant="secondary" size="lg" onClick={openFilePicker} disabled={saving}>
-            <Camera className="h-4 w-4" aria-hidden="true" />
-            Foto ulang
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-1">
+            <Button type="button" variant="secondary" size="lg" onClick={() => openPicker("camera")} disabled={saving}>
+              <Camera className="h-4 w-4" aria-hidden="true" />
+              Ambil foto ulang
+            </Button>
+            <Button type="button" variant="secondary" size="lg" onClick={() => openPicker("gallery")} disabled={saving}>
+              <ImageIcon className="h-4 w-4" aria-hidden="true" />
+              Pilih dari galeri
+            </Button>
+          </div>
         </div>
         <button type="button" onClick={onCancel} disabled={saving} className="mx-auto block text-sm font-medium text-[#46597A] underline">
           Batal
@@ -914,26 +910,30 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             setFormOpen(false);
           }}
         />
-        {fileInput}
+        {fileInputs}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        onClick={openFilePicker}
-        className="w-full rounded-3xl border-2 border-dashed border-[#BFD3E8] bg-[#EFF4FA]/60 p-8 text-center transition-colors hover:bg-[#EFF4FA]"
-      >
+      <div className="rounded-3xl border-2 border-dashed border-[#BFD3E8] bg-[#EFF4FA]/60 p-6 text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]">
           <Camera className="h-6 w-6" aria-hidden="true" />
         </span>
-        <span className="mt-3 block text-[15px] font-semibold text-[#17304F]">
-          Pilih foto struk dari kamera atau galeri
-        </span>
+        <span className="mt-3 block text-[15px] font-semibold text-[#17304F]">Tambahkan foto struk</span>
         <span className="mt-1 block text-xs text-[#46597A]">JPG, PNG, atau WebP. Maksimal 4 MB.</span>
-      </button>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <Button type="button" onClick={() => openPicker("camera")} className="w-full">
+            <Camera className="h-4 w-4" aria-hidden="true" />
+            Ambil foto dengan kamera
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => openPicker("gallery")} className="w-full">
+            <ImageIcon className="h-4 w-4" aria-hidden="true" />
+            Pilih dari galeri
+          </Button>
+        </div>
+      </div>
       <p className="flex items-center justify-center gap-1.5 text-xs text-[#5C7191]">
         <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
         Ingin ketik sendiri?{" "}
@@ -944,7 +944,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
       <button type="button" onClick={onCancel} className="mx-auto block text-sm font-medium text-[#46597A] underline">
         Batal
       </button>
-      {fileInput}
+      {fileInputs}
     </div>
   );
 }

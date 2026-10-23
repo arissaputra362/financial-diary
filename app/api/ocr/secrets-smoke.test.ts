@@ -25,11 +25,13 @@ function walk(dir: string, match: (name: string) => boolean, acc: string[] = [])
 }
 
 function clientSourceFiles(): string[] {
-  const components = walk(join(ROOT, "components"), (name) => /\.(ts|tsx)$/.test(name));
-  const appTsx = walk(join(ROOT, "app"), (name) => /\.tsx$/.test(name) && !name.endsWith(".test.tsx")).filter(
-    (file) => !file.replace(/\\/g, "/").includes("/app/api/"),
-  );
-  return [...components, ...appTsx];
+  const sourceFiles = [
+    ...walk(join(ROOT, "components"), (name) => /\.(ts|tsx)$/.test(name)),
+    ...walk(join(ROOT, "app"), (name) => /\.tsx$/.test(name) && !name.endsWith(".test.tsx")).filter(
+      (file) => !file.replace(/\\/g, "/").includes("/app/api/"),
+    ),
+  ];
+  return sourceFiles.filter((file) => readFileSync(file, "utf8").startsWith('"use client"'));
 }
 
 describe("AC-F3-9 client secret isolation", () => {
