@@ -1,0 +1,10 @@
+Root cause evidence (BUG-002) - reproduced 2026-10-06 against financial_planner_qa:
+
+second insert threw: P2002
+FALLBACK ERROR MESSAGE>>> "Database error. Code: `25P02`. Message: `transaksi saat ini
+dibatalkan, perintah diabaikan sampai akhir blok transaksi`"
+outer tx rollback: P2002
+
+Interpretation: the duplicate-key P2002 aborts the interactive Prisma transaction, so the
+fallback findUnique in claim() fails (25P02) -> 500. Script: idem-rootcause.ts (removed
+after QA; logic reproduced from lib/server/repositories/ledger.ts claim()).

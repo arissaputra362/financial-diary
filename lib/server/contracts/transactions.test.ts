@@ -11,6 +11,7 @@ const validBase = {
   amountMinor: 25_000,
   category: "food",
   occurredAt: "2026-10-01",
+  walletId: "66666666-6666-4666-8666-666666666666",
 };
 
 describe("createTransactionSchema", () => {

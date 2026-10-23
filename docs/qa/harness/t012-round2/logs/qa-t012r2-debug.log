@@ -1,0 +1,22 @@
+[WebServer] $ next dev -p "3033"
+
+Running 2 tests using 1 worker
+
+[DEBUG mobile-390 #0] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG mobile-390 #1] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG mobile-390 #2] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG mobile-390 #3] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG mobile-390 #4] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-debug.qa.spec.ts:13:5 › race debug (5.4s)
+[DEBUG desktop-1280 #0] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG desktop-1280 #1] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG desktop-1280 #2] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG desktop-1280 #3] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+[DEBUG desktop-1280 #4] openedIn=0ms intentDelta=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfter=/transactions?month=2025-03 dialogs=1
+  ✓  2 [desktop-1280] › docs\qa\harness\t012-round2\t012-debug.qa.spec.ts:13:5 › race debug (2.0s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3307166295'
+[WebServer] }
+
+  2 passed (35.9s)

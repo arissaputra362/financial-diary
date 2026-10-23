@@ -10,7 +10,7 @@ const HOUSEHOLD_A = "11111111-1111-4111-8111-111111111111";
 describe("IdempotencyRepository", () => {
   it("claims a key once per user (insert-as-claim)", async () => {
     const create = vi.fn(async () => ({}));
-    const db = { idempotencyKey: { create, findUnique: vi.fn(), update: vi.fn(), deleteMany: vi.fn() } } as unknown as Db;
+    const db = { $executeRawUnsafe: vi.fn(), idempotencyKey: { create, findUnique: vi.fn(), update: vi.fn(), deleteMany: vi.fn() } } as unknown as Db;
     const result = await createIdempotencyRepository(db).claim(USER, "key-1234-abcd", "hash", 24);
     expect(result.claimed).toBe(true);
     expect(create).toHaveBeenCalledWith({
@@ -20,10 +20,12 @@ describe("IdempotencyRepository", () => {
 
   it("returns the existing row on conflict and compares the request hash", async () => {
     const existing = { requestHash: "hash-a", responseStatus: 200, responseBody: { ok: true } };
+    const boom = Object.assign(new Error("unique constraint"), { code: "P2002" });
     const db = {
+      $executeRawUnsafe: vi.fn(),
       idempotencyKey: {
         create: vi.fn(async () => {
-          throw new Error("P2002");
+          throw boom;
         }),
         findUnique: vi.fn(async () => existing),
         update: vi.fn(),
@@ -35,9 +37,26 @@ describe("IdempotencyRepository", () => {
     expect(result.existing?.requestHash).toBe("hash-a");
   });
 
+  it("rethrows non-unique errors instead of masking them as a conflict", async () => {
+    const db = {
+      $executeRawUnsafe: vi.fn(),
+      idempotencyKey: {
+        create: vi.fn(async () => {
+          throw new Error("connection reset");
+        }),
+        findUnique: vi.fn(),
+        update: vi.fn(),
+        deleteMany: vi.fn(),
+      },
+    } as unknown as Db;
+    await expect(createIdempotencyRepository(db).claim(USER, "key-1234-abcd", "hash", 24)).rejects.toThrow(
+      "connection reset",
+    );
+  });
+
   it("scopes the claim per user, not per household (A-22)", async () => {
     const create = vi.fn(async () => ({}));
-    const db = { idempotencyKey: { create, findUnique: vi.fn(), update: vi.fn(), deleteMany: vi.fn() } } as unknown as Db;
+    const db = { $executeRawUnsafe: vi.fn(), idempotencyKey: { create, findUnique: vi.fn(), update: vi.fn(), deleteMany: vi.fn() } } as unknown as Db;
     await createIdempotencyRepository(db).claim(OTHER_USER, "key-1234-abcd", "hash", 24);
     expect(create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId: OTHER_USER }),

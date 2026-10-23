@@ -74,6 +74,7 @@ uang keluarga dalam hitungan detik tanpa jargon akuntansi.
 
 - [ ] AC-1: Dashboard menampilkan saldo tersedia (MONEY_IN − MONEY_OUT aktif) yang dihitung server.
 - [ ] AC-2: Dashboard menampilkan budget bulan berjalan: jumlah budget, terpakai, sisa.
+- [ ] AC-2b (T-015, PM-approved 2026-10-23): Kartu Budget dan grafik Rincian Pengeluaran punya filter dua mode `Pribadi`/`Bersama` yang independen, default `Bersama`. User dapat membuat budget pribadi per bulan; budget pribadi hanya dapat dibaca dan diubah pemiliknya, termasuk Owner tidak dapat mengakses budget pribadi anggota lain. Budget keluarga tetap hanya dapat diubah Owner. Tidak ada penjumlahan budget pribadi dan keluarga.
 - [ ] AC-3: Kaki TRANSFER tidak dihitung sebagai pengeluaran (spentMinor).
 - [ ] AC-4: Grafik pengeluaran per hari mengikuti tab periode 7D/30D/90D yang dipetakan ke tanggal server.
 - [ ] AC-5: Daftar aktivitas terbaru mendukung filter lokal type (money in/out), source (manual/OCR), rentang tanggal, dan pagination cursor.
@@ -93,6 +94,9 @@ uang keluarga dalam hitungan detik tanpa jargon akuntansi.
 
 **Spec:** `docs/spec/feat-transactions-ocr.md`
 **Status:** Draft
+**Status amandemen T-012:** PRD amendment PM-approved 2026-10-22; implementation
+pending. AC-9 sampai AC-13 menambah retry OCR dari gambar privat tersimpan dan
+perbaikan Add intent. Base Feature 3 status tetap Draft.
 
 **User Story**
 
@@ -110,6 +114,11 @@ AI sebelum tersimpan, agar data keuangan akurat dan saya tetap pegang kendali.
 - [ ] AC-6: OCR gagal/timeout/low-confidence menampilkan state yang jujur, bukan data karangan.
 - [ ] AC-7: POST mutation mendukung Idempotency-Key: key sama + payload sama = response asli; key sama + payload beda = 409.
 - [ ] AC-8: Kunci API (Gemini/DB) tidak pernah sampai ke client.
+- [ ] AC-9 (T-012 approved 2026-10-22, revised 2026-10-23; implemented, QA pending): Hanya job OCR `FAILED` terbaru milik uploader yang menampilkan aksi `Pindai ulang`. Aksi membuka pemilih file; user dapat memilih gambar yang sama atau foto lain. Byte berbeda masuk ke upload normal dan membuat receipt baru. Byte identik terkena dedup lalu menjalankan `POST /api/ocr/jobs/{id}/retry` dengan `Idempotency-Key` wajib tanpa request body, yang membuat attempt `OcrJob` baru, mempertahankan riwayat job/error lama, dan tidak pernah membuat transaksi. Job `SUCCEEDED`/`PROCESSING` tidak bisa di-retry dan tidak ada retry otomatis.
+- [ ] AC-10 (T-012 approved 2026-10-22, revised 2026-10-23; implemented, QA pending): Jalur retry byte identik memakai byte privat yang tersimpan server-side untuk receipt yang sama; tidak membuat `Receipt` baru, tidak mengganti byte/hash/storage key, dan respons tidak membocorkan storage key atau URL. Hanya uploader asli yang boleh retry; anggota household lain tetap menerima respons duplikat generik.
+- [ ] AC-11 (T-012 approved 2026-10-22, revised 2026-10-23; implemented, QA pending): Bila gambar tersimpan tidak tersedia atau tidak terbaca, tidak ada job baru dan tidak ada panggilan model; server mengembalikan `OCR_IMAGE_UNAVAILABLE`. UI menampilkan salinan jujur dengan `Pilih foto struk` (upload normal baru) dan `Isi manual`, tanpa klaim bahwa pemindaian lama bisa diulang. Tidak ada recovery multipart same-job.
+- [ ] AC-12 (T-012 PM-approved 2026-10-22, implementation pending): Retry diklaim di bawah row lock `Receipt`; setelah lock, server memeriksa ulang bahwa job target masih job terbaru `FAILED`, lalu mengalokasikan `OcrJob.attempt` berikutnya. Retry yang kalah klaim mendapat respons aman `OCR_RETRY_IN_PROGRESS`/`OCR_NOT_RETRYABLE` tanpa panggilan provider. `attempt` unik per receipt dan menjadi urutan percobaan, bukan `createdAt`.
+- [ ] AC-13 (T-012 PM-approved 2026-10-22, implementation pending): Menutup sheet Add lewat X, Batal, Escape, backdrop, atau setelah simpan menghapus intent `?add=1` dengan `router.replace` tanpa history entry baru. Penutupan tanpa simpan mempertahankan bulan/tab aktif; setelah simpan, perilaku view yang ada tetap dan hanya satu pembaruan URL yang berlaku. Aksi Tambah global dapat membuka sheet lagi dalam satu klik dengan fokus yang benar.
 
 **Batasan (Out of Scope)**
 
@@ -117,6 +126,7 @@ AI sebelum tersimpan, agar data keuangan akurat dan saya tetap pegang kendali.
 - Transaksi berulang (recurring).
 - OCR untuk selain gambar struk/bukti transfer.
 - Auto-save hasil OCR.
+- Recovery upload multipart same-job pada retry OCR; retry tidak menerima file dan tidak mengganti byte receipt.
 
 ---
 
@@ -180,9 +190,92 @@ tidak berarti kehilangan data permanen.
 
 ---
 
+### Fitur 6: Dompet Pribadi & Sharing
+
+**Spec:** `docs/spec/feat-wallets.md`
+**Desain:** `docs/design/06-wallets.md` (design-only; PM UX sign-off 2026-10-08)
+**Status:** Base wallet T-009 QA Passed. Extension katalog bank T-011 implementation complete, independently QA-validated `PASS WITH RISKS`, and PM-accepted as Done (2026-10-22). Release approval remains under T-008.
+
+**User Story**
+
+Sebagai anggota household, saya ingin mencatat uang pada dompet/rekening yang tepat,
+melihat saldo masing-masing wallet, dan memisahkan uang pribadi dari uang bersama, agar
+catatan keluarga tetap akurat tanpa membuka data pribadi saya.
+
+**Acceptance Criteria**
+
+- [ ] AC-F6-1: Anggota approved dapat membuat wallet Pribadi atau Sharing; saldo awal
+  opsional, kosong berarti Rp0; scope default Pribadi. Saldo awal dapat dikoreksi sebelum
+  transaksi pertama wallet, setelah itu tidak dapat diedit langsung.
+- [ ] AC-F6-2: Wallet Pribadi hanya terlihat/dapat digunakan pemiliknya; wallet Sharing
+  terlihat/dapat digunakan seluruh anggota household approved.
+- [ ] AC-F6-3: Semua anggota approved dapat mengubah detail Sharing; arsip/restore Sharing
+  hanya pembuat atau Owner; wallet Pribadi hanya pemiliknya; scope tidak dapat diubah
+  setelah dibuat; archive non-destruktif.
+- [ ] AC-F6-4: Transaksi uang masuk/keluar wajib memilih wallet yang dapat diakses user.
+- [ ] AC-F6-5: Transfer memilih wallet asal/tujuan, dapat lintas scope, atomik, dan tidak
+  memengaruhi gabungan saldo; trash/restore memproses kedua kaki bersama. Untuk transfer
+  lintas scope, hanya pembuat transfer atau Owner yang boleh menghapus/memulihkan pasangan.
+- [ ] AC-F6-6: Transfer lintas scope pada aktivitas Sharing tampil umum tanpa nama wallet,
+  catatan, atau riwayat wallet Pribadi.
+- [ ] AC-F6-7: Dashboard memisahkan total Sharing dan total wallet Pribadi user; carousel
+  kartu per-wallet berpenanda scope; saldo wallet terarsip tetap dalam total dan ringkasan
+  menjelaskan bahwa total mencakup wallet di Arsip.
+- [ ] AC-F6-8: Budget dan pengeluaran household hanya menghitung MONEY_OUT aktif pada
+  wallet Sharing (termasuk wallet Sharing yang diarsipkan); kaki transfer tidak dihitung.
+- [ ] AC-F6-9: Transaksi pre-wallet dimigrasikan ke satu wallet Sharing default per
+  household, saldo awal Rp0, tanpa kehilangan/duplikasi saldo.
+- [ ] AC-F6-10: OCR tidak memilih wallet; pengguna memilih wallet saat review. Receipt
+  gambar dapat dibuka dari detail transaksi dan mengikuti visibilitas seluruh transaksi
+  yang tertaut setelah disimpan, sedangkan job/draft OCR tetap uploader-only. Byte gambar
+  hanya tersedia melalui jalur server terautentikasi, bukan URL publik. Sebelum gambar
+  receipt dibagikan melalui wallet Sharing, UI memberi disclosure. Duplicate upload dari
+  anggota lain hanya menghasilkan respons generik tanpa job/draft/receipt lama.
+- [ ] AC-F6-11: Isolasi wallet ditegakkan server-side pada seluruh endpoint, agregat,
+  aktivitas, trash/restore, receipt, dan advisor; data wallet Pribadi tidak masuk ke
+  respons atau insight household anggota lain.
+- [ ] AC-F6-12: UX responsive dan accessible dengan loading, empty, error, submitting,
+  selected, dan success state.
+
+#### Extension F6: Label Bank/Penyedia dan Quick Add (T-011)
+
+Extension ini disetujui PM 2026-10-21. Cakupannya adalah label bank/penyedia pada wallet,
+katalog resmi yang di-seed, dan daftar institusi pribadi per user. Ini bukan integrasi bank.
+
+- [ ] AC-F6-13: Wallet dapat menyimpan satu label bank/penyedia opsional pada create dan
+  update. Manual berarti tanpa label. Label hanya metadata, tanpa nomor rekening, logo,
+  nomor kartu, saldo bank, verifikasi, atau koneksi bank. Scope wallet tetap immutable.
+- [ ] AC-F6-14: Katalog resmi berisi Bank Umum dan Bank Umum Syariah dari direktori OJK,
+  diisi seeder statis yang versioned dan diverifikasi saat implementasi. Katalog read-only
+  bagi user, memuat sumber dan periode sumber (`YYYY-MM`, tanpa hari yang dikarang),
+  dan tidak disinkronkan otomatis ke OJK.
+  Perubahan hanya lewat update seed/data terkontrol.
+- [ ] AC-F6-15: Quick Add menyimpan nama bank/penyedia ke daftar pribadi user, maksimal 80
+  karakter, dengan normalisasi trim, collapse whitespace, dan case-insensitive. Duplikat
+  resmi mengarah ke katalog; duplikat pribadi aktif memakai entri existing atau diblokir.
+  Entri tetap tersimpan bila pembuatan wallet dibatalkan. Entri diarsip tanpa hard delete
+  dan re-add nama yang sama mengaktifkan kembali entri arsip.
+- [ ] AC-F6-16: Label pada wallet Bersama terlihat oleh anggota APPROVED yang berhak
+  melihat wallet. Editor wallet Bersama dapat mempertahankan atau menghapus label, memilih
+  katalog resmi, atau memilih entri pribadinya sendiri. Editor tidak dapat melihat,
+  mengenumerasi, atau memakai daftar pribadi anggota lain.
+
+Catatan status: AC-F6-1 sampai AC-F6-12 adalah base T-009 yang sudah QA Passed. AC-F6-13
+sampai AC-F6-16 adalah extension T-011 yang selesai diimplementasikan, QA-validated `PASS WITH
+RISKS`, dan PM-accepted sebagai Done pada 2026-10-22. Ini bukan release approval. Lihat tiket
+T-011, Dev Plan, dan QA report untuk bukti dan risiko.
+
+**Batasan (Out of Scope)**
+
+- Sinkronisasi bank, impor otomatis, recurring transaction, dan multi-currency.
+- Menghubungkan tujuan wallet Tabungan otomatis ke SavingsGoal.
+- Reorder kartu wallet, edit transaksi historis, serta item navigasi utama Wallet.
+
+---
+
 ## Status Lifecycle Fitur
 
-`Draft → Spec Ready → Dev Plan Ready → In Progress → QA Review → QA Fail → Fixing → Release Approved`
+`Draft → Spec Ready → Dev Plan Ready → In Progress → QA Review → QA Passed → Release Approved`
 
 | Fitur | Status |
 |---|---|
@@ -191,6 +284,8 @@ tidak berarti kehilangan data permanen.
 | Transaksi Manual & OCR Review | Draft |
 | Savings Goals & AI Advisor | Draft |
 | Soft Delete, Trash & Restore | Draft |
+| Dompet Pribadi & Sharing (F6 base, T-009) | QA Passed |
+| Extension F6: Label bank/penyedia + Quick Add (T-011) | Done, QA PASS WITH RISKS and PM task accepted (2026-10-22); release approval remains T-008 |
 
 ## Ketergantungan Antar Fitur
 
@@ -201,9 +296,14 @@ flowchart LR
     F1 --> F5[Fitur 5: Trash/Restore]
     F3 --> F4[Fitur 4: Goals + Advisor]
     F3 --> F5
+    F1 --> F6[Fitur 6: Dompet]
+    F2 --> F6
+    F3 --> F6
+    F5 --> F6
     F2 --> QA[QA & Release]
     F4 --> QA
     F5 --> QA
+    F6 --> QA
 ```
 
 ## Non-Functional Requirements (lintas fitur)
@@ -229,3 +329,5 @@ flowchart LR
 | Tanggal | Perubahan | Oleh |
 |---|---|---|
 | 2026-09-30 | PRD pertama dibuat dari requirements.md (diarsipkan) + keputusan PM | PM/SA |
+| 2026-10-21 | Extension F6 dicatat: label bank/penyedia, katalog resmi OJK via seeder statis, dan Quick Add per user. T-009 base tetap QA Passed; T-011 belum diimplementasi. | PM |
+| 2026-10-22 | Fitur 3: keputusan teknis PM untuk retry OCR dan Add intent dicatat sebagai AC-9 sampai AC-13 versi Draft. Retry memakai `OcrJob.attempt` dengan klaim row lock `Receipt`; recovery multipart same-job dan `receiptImageAvailable`/`BlobStore.exists` dikeluarkan. **Belum disetujui, belum diimplementasikan, belum delivered.** | Developer (Draft untuk review PM) |

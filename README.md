@@ -20,7 +20,27 @@ bun run lint       # periksa gaya kode
 bun run build      # build produksi
 bun run test       # unit test (vitest)
 bun run test:e2e   # smoke test responsif (Playwright)
+bun run seed:institutions  # isi katalog bank resmi dari snapshot OJK
 ```
+
+## Katalog bank resmi
+
+Katalog bank resmi diisi oleh seeder statis versioned, bukan sinkronisasi
+otomatis. Sumber: daftar publik OJK "Daftar Alamat Kantor Pusat Bank Umum dan
+Syariah", file Juni 2026 (SHA-256
+`4e87b30794245952ecb982bb03cf9ccdb294ed1b08498ab3715621a313d63b50`).
+Snapshot berisi 105 baris bank unik; provenance disimpan pada level bulan
+(`source_period = "2026-06"`), bukan hari yang dikarang. Waktu import
+operasional memakai timestamp baris (`created_at`/`updated_at`).
+
+```bash
+bun run seed:institutions
+```
+
+Seed repeatable: rerun tidak membuat duplikat, menonaktifkan baris yang hilang,
+dan tidak pernah hard-delete. Tidak ada cron, job refresh, tombol sync, atau
+admin UI katalog. Detail kontrak ada di
+`docs/dev-plan/feat-bank-institutions.md`.
 
 ## Struktur
 

@@ -1,0 +1,59 @@
+[WebServer] $ next dev -p "3033"
+
+Running 8 tests using 1 worker
+
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-a11y.qa.spec.ts:108:5 › Add action and Add sheet: 44px targets, focus return, palette, no em dash (2.8s)
+  ✓  2 [mobile-390] › docs\qa\harness\t012-round2\t012-a11y.qa.spec.ts:130:5 › OCR retry state: targets, live region focus, palette, no em dash (1.0s)
+  ✓  3 [mobile-390] › docs\qa\harness\t012-round2\t012-a11y.qa.spec.ts:177:5 › OCR in-progress state: targets, live region, palette, no em dash (871ms)
+[WebServer] (node:7032) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
+  ✘  4 [mobile-390] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save (1.5s)
+  ✓  5 [desktop-1280] › docs\qa\harness\t012-round2\t012-a11y.qa.spec.ts:108:5 › Add action and Add sheet: 44px targets, focus return, palette, no em dash (1.2s)
+  ✓  6 [desktop-1280] › docs\qa\harness\t012-round2\t012-a11y.qa.spec.ts:130:5 › OCR retry state: targets, live region focus, palette, no em dash (839ms)
+  ✓  7 [desktop-1280] › docs\qa\harness\t012-round2\t012-a11y.qa.spec.ts:177:5 › OCR in-progress state: targets, live region, palette, no em dash (885ms)
+  ✘  8 [desktop-1280] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save (1.4s)
+
+
+  1) [mobile-390] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save 
+
+    Error: expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      83 |   expect(ledger.ok()).toBe(true);
+      84 |   const rows = (await ledger.json()).rows as Array<{ amountMinor: number }>;
+    > 85 |   expect(rows.filter((row) => row.amountMinor === 12500)).toHaveLength(1);
+         |                                                           ^
+      86 |
+      87 |   /* Third open after save: clean manual sheet, still one history entry. */
+      88 |   await trigger.click();
+        at E:\Project\financial_planner\financial-planner-project\docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:85:59
+
+    Error Context: test-results\t012-cycles.qa-two-close-r-163d7-hen-a-third-open-after-save-mobile-390\error-context.md
+
+  2) [desktop-1280] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save 
+
+    Error: save writes the URL exactly once
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 0
+
+      75 |     () => (window as unknown as { __replaceStateCalls?: number }).__replaceStateCalls ?? 0,
+      76 |   );
+    > 77 |   expect(writesAfter - writesBefore, "save writes the URL exactly once").toBe(1);
+         |                                                                          ^
+      78 |   await expect(page).not.toHaveURL(/add=1/);
+      79 |   await expect(page).toHaveURL(/month=2025-03/);
+      80 |   expect(await historyLength()).toBe(historyStart);
+        at E:\Project\financial_planner\financial-planner-project\docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:77:74
+
+    Error Context: test-results\t012-cycles.qa-two-close-r-163d7-hen-a-third-open-after-save-desktop-1280\error-context.md
+
+  2 failed
+    [mobile-390] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save 
+    [desktop-1280] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save 
+  6 passed (17.1s)

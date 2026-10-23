@@ -45,7 +45,11 @@ dan upload **server-proxied**.
   receipt/job existing diperbolehkan).
 - **Upload server-proxied:** byte gambar melewati route server (bukan direct client→Blob);
   `storage_key` disimpan di `receipt`, byte **tidak pernah** di DB dan **tidak pernah**
-  di response API.
+  di response API. **Diamandemen (Accepted 2026-10-09) oleh bagian "Amendment —
+  Authenticated image read path (T-009)" di bawah:** objek Blob tetap privat dan tidak
+  pernah publik (tanpa URL/token/`storage_key` ke client); yang berubah hanya bahwa byte
+  boleh di-stream melalui route server terautentikasi untuk anggota yang lolos predikat
+  union C-28/A-46, bukan oleh URL Blob publik/direct.
 - **Precedence idempotency (A-11):** claim key dieksekusi **dulu**, dedup receipt di
   dalamnya; retry dengan key sama me-replay response asli (termasuk replay 409
   `DUPLICATE_RECEIPT`).
@@ -54,8 +58,49 @@ dan upload **server-proxied**.
 - **OCR tidak pernah auto-save:** endpoint OCR hanya membuat receipt + job + draft;
   transaction hanya dibuat lewat `POST /api/transactions` dengan konfirmasi eksplisit user.
 
+## Amendment — Authenticated image read path (T-009) — Accepted by PM 2026-10-09
+
+**Status:** **Accepted** — PM, **2026-10-09** (ratified as part of `docs/architecture-decisions.md`
+"Amendment — Wallet F6 (T-009)" A-46/A-49). Developer (T-009).
+**Amends:** the "Upload server-proxied" implementation bullet above, which states the
+receipt bytes are never in an API response. Accepted and in force; supersedes that
+sentence only for the authenticated server-proxied read path described here; the
+private-object rule itself is unchanged.
+
+- This amendment distinguishes two things that must not be conflated:
+  1. **No public/direct Blob URL.** The stored object stays `access: "private"`. The
+     `storage_key` is never returned to any client, no route issues a public, signed,
+     or direct Blob URL, and the read/write token stays server-only. This prohibition is
+     absolute and applies to the new streaming route as well: direct/public Blob URLs
+     remain forbidden in every case.
+  2. **Authenticated server-proxied image streaming (new).** To satisfy C-28
+     (authorized members may view the receipt image via the Sharing link), a protected
+     server route may stream the private Blob bytes **through the server**, after
+     authorizing via the A-46 image-union predicate. This is a controlled read of the
+     same private object, not a public URL.
+- Amended contract for the streaming route:
+  - **Auth:** APPROVED session + the image-union predicate over ALL linked transactions
+    (**including soft-deleted/trashed links**), via `receipt → transaction → wallet` and
+    the A-38 wallet predicate. Unauthorized, foreign-household, or no-link → generic
+    **404** (no existence leak); mutation-style errors are not returned for a read.
+  - **Response:** bytes only, `Content-Type` = the stored allowlisted `mime_type`
+    (jpeg/png/webp, A-21), and `Cache-Control: private, no-store`; the response never
+    contains `storage_key`, a Blob URL/token, an OCR job/draft (`result_json`), or any
+    linked transaction row.
+  - **Server-side read seam:** `BlobStore` gains a read/stream operation in addition to
+    `put`, implemented with the installed `@vercel/blob@2.8.0`
+    `get(pathname, { access: "private", token })` API (returns `stream`, `headers`, and
+    `blob`). The route never issues a public/signed Blob URL, never exposes `storage_key`,
+    and never bypasses Blob `access: "private"`.
+- **Route (ratified):** `GET /api/ocr/receipts/{id}/image` — the final, PM-ratified route
+  (declared in `docs/architecture-decisions.md` A-49). The earlier alternative
+  `/api/receipts/{id}/image` is not used.
+- **OCR job/draft and share flag unchanged:** `GET /api/ocr/jobs/{id}` stays
+  uploader-only (C-29) and `receiptSharedWithHousehold` stays uploader-only. This
+  amendment widens **image-byte access only**, never job/draft/flag access.
+
 ## Referensi
 
 - `docs/spec/feat-transactions-ocr.md` — AC-4, AC-5, Edge Case
 - `docs/erd/erd-database-schema.md` §3.9 (receipt), §5.7
-- `docs/architecture-decisions.md` — A-02, A-11, A-21
+- `docs/architecture-decisions.md` — A-02, A-11, A-21, A-46, A-49; Amendment Wallet F6 A-36..A-50 (Accepted by PM 2026-10-09)

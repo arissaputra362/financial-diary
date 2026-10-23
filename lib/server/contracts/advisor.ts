@@ -8,7 +8,16 @@ import { ADVISOR_ERROR_CODES } from "./common";
 
 const dateOnlySchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak valid.");
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak valid.")
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return (
+      !Number.isNaN(date.getTime()) &&
+      date.getUTCFullYear() === Number(value.slice(0, 4)) &&
+      date.getUTCMonth() + 1 === Number(value.slice(5, 7)) &&
+      date.getUTCDate() === Number(value.slice(8, 10))
+    );
+  }, "Tanggal tidak valid.");
 
 const DAY_MS = 86_400_000;
 const MAX_SPAN_DAYS = 90;

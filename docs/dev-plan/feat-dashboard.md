@@ -8,25 +8,28 @@ keputusan teknis: schema, interface, validasi, testing, dan task breakdown.
 - Spec: `docs/spec/feat-dashboard.md`
 - PRD: `docs/PRD.md#fitur-2-dashboard-overview`
 - ADR terkait: ADR-001 (Prisma/Neon), ADR-006 (layer), ADR-007 (free tier)
-- ERD: `docs/erd/erd-database-schema.md` §3.7 (transaction), §3.8 (savings_goal), §3.12 (household_budget), §4 (D-3)
+- ERD: `docs/erd/erd-database-schema.md` §3.7 (transaction), §3.8 (savings_goal), §3.12 (household_budget/personal_budget), §4 (D-3)
 - Keputusan rapat: `agent-comms/2026-09-30-pm-spec-review-minutes.md` (D-7 timezone, D-23 agregasi)
 - Flow: `docs/erd/flowcharts.md` §9
 - AC (verification-matrix): AC-F2-1 … AC-F2-10
-- Engineer: Developer · Estimasi: 3 hari · Status: Draft
+- Engineer: Developer · Estimasi: 3 hari · Status: Implemented (including T-015 scope split)
 
 ## Ringkasan Teknis
 
 Satu endpoint agregasi `GET /api/dashboard` yang menghitung saldo, budget bulan berjalan,
 grafik per hari, ringkasan goals, dan aktivitas terbaru — server adalah sumber kebenaran,
-client tidak menghitung ulang. Layer terdampak: Route Handler (`app/api/dashboard`,
-`app/api/budget`, `app/api/transactions`) → Service (`DashboardService`, `BudgetService`,
-`TransactionService`) → Repository → Prisma. Semua period math memakai kalender
-**Asia/Jakarta** (A-13/D-7). Daftar aktivitas memakai endpoint terpisah
-`GET /api/transactions` dengan filter lokal + cursor keyset (A-14).
+client tidak menghitung ulang. Budget dan grafik tersedia dalam dua scope independen:
+`SHARING` (Bersama) dan `PERSONAL` milik user yang sedang login. Layer terdampak:
+Route Handler (`app/api/dashboard`, `app/api/budget`, `app/api/transactions`) →
+Service (`DashboardService`, `BudgetService`, `TransactionService`) → Repository →
+Prisma. Semua period math memakai kalender **Asia/Jakarta** (A-13/D-7). Daftar
+aktivitas memakai endpoint terpisah `GET /api/transactions` dengan filter lokal +
+cursor keyset (A-14).
 
 ## Schema Database
 
-> Disalin dari ERD §3.7, §3.8, §3.12. Tidak ada kolom baru.
+> Disalin dari ERD §3.7, §3.8, §3.12. T-015 menambahkan tabel `personal_budget`;
+> tabel `household_budget` tetap menjadi sumber budget Bersama.
 
 ### Tabel: `transaction` (dipakai untuk saldo, spent, byDay, aktivitas)
 
@@ -35,7 +38,7 @@ client tidak menghitung ulang. Layer terdampak: Route Handler (`app/api/dashboar
 | id | uuid | PK | |
 | household_id | uuid | FK → household, NOT NULL | scope isolasi |
 | created_by_user_id | uuid | FK → user, NOT NULL | |
-| type | enum | NOT NULL | `MONEY_IN \| MONEY_OUT \| TRANSFER` |
+| type | enum | NOT NULL | `MONEY_IN \| MONEY_OUT` (TRANSFER dihapus oleh migrasi `20261006120000_fix_transfer_enum`) |
 | amount_minor | int | NOT NULL, CHECK > 0 `*` | IDR scale 0 |
 | currency_code | char(3) | NOT NULL, default `IDR` | |
 | category | varchar | nullable | |
@@ -50,8 +53,9 @@ client tidak menghitung ulang. Layer terdampak: Route Handler (`app/api/dashboar
 | created_at / updated_at | timestamptz | NOT NULL | |
 
 Constraint: `idx(household_id, deleted_at, occurred_at desc)`;
-`UNIQUE(household_id, transfer_group_id, type)`;
-`CHECK ((type = 'TRANSFER') = (transfer_group_id IS NOT NULL))` `*`.
+`UNIQUE(household_id, transfer_group_id, type)`.
+CHECK lama `transaction_transfer_group_consistency` dihapus oleh migrasi
+`20261006120000_fix_transfer_enum` (BUG-001).
 
 ### Tabel: `household_budget`
 
@@ -67,6 +71,23 @@ Constraint: `idx(household_id, deleted_at, occurred_at desc)`;
 
 Constraint: `UNIQUE(household_id, period_start)` (sekaligus lookup index). `period_end`
 TIDAK disimpan (derived: period_start + 1 bulan).
+
+### Tabel: `personal_budget` (budget Pribadi — T-015)
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| id | uuid | PK | |
+| household_id | uuid | FK → household, NOT NULL | scope isolasi |
+| user_id | uuid | FK → user, NOT NULL | pemilik budget pribadi |
+| period_start | date | NOT NULL | awal bulan, timezone aplikasi |
+| amount_minor | int | NOT NULL, CHECK > 0 | |
+| currency_code | char(3) | NOT NULL, default `IDR` | |
+| created_by_user_id | uuid | FK → user, NOT NULL | selalu user session |
+| created_at / updated_at | timestamptz | NOT NULL | |
+
+Constraint: `UNIQUE(household_id, user_id, period_start)`. Akses budget pribadi
+selalu memakai `user_id` dari session; tidak ada parameter client untuk memilih
+user lain.
 
 ### Tabel: `savings_goal` (ringkasan goals di dashboard)
 
@@ -90,15 +111,22 @@ Index: `idx(household_id, deleted_at, deadline)`.
 
 ### Repository Interface (`lib/server/repositories/`)
 
-- `TransactionRepository.sumByType(householdId, { type, from, to }): number` — agregat aktif
+- `TransactionRepository.sumByType(householdId, { type, from, to }, scope?): number` — agregat aktif, **exclude transfer legs** (`transferGroupId IS NOT NULL` — AC-F2-4); `scope` membatasi `SHARING` atau `PERSONAL` milik user
 - `TransactionRepository.listActive(householdId, filters): { rows, nextCursor }` — keyset
-- `TransactionRepository.listByDay(householdId, { from, to }): { date, amountMinor }[]`
+- `TransactionRepository.listByDay(householdId, { from, to }, scope?): { date, amountMinor }[]` — **exclude transfer legs** (AC-F2-4); `scope` membatasi `SHARING` atau `PERSONAL` milik user
 - `BudgetRepository.findByPeriod(householdId, periodStart): HouseholdBudget | null`
 - `BudgetRepository.upsert(householdId, periodStart, amountMinor, userId): HouseholdBudget`
+- `PersonalBudgetRepository.findByPeriod(householdId, userId, periodStart): PersonalBudget | null`
+- `PersonalBudgetRepository.upsert(householdId, userId, periodStart, amountMinor, createdByUserId): PersonalBudget`
 - `GoalRepository.listActive(householdId): SavingsGoal[]`
 
 Semua method **wajib** menerima `householdId` scope dan default filter `deleted_at IS NULL`
 (ADR-006). Agregat memakai `bigint` Postgres (tanpa cast int32 di aplikasi — D-23).
+
+> **Catatan BUG-001 follow-up (T-006 QA):** Method `sumByType` dan `listByDay` saat ini
+> TIDAK exclude transfer legs. T-005 WAJIB menambahkan filter `transferGroupId: null`
+> pada kedua method. Integration test: "spentMinor = 0 when household only has transfers"
+> (AC-F2-4) — lihat `agent-comms/2026-10-06-qa-t006-retest-report.md` §Risiko #1.
 
 ### Service Interface (`lib/server/services/`)
 
@@ -114,11 +142,13 @@ Semua method **wajib** menerima `householdId` scope dan default filter `deleted_
 | Route | Method | Auth | Request | Response |
 |---|---|---|---|---|
 | `/api/dashboard` | GET | Approved | - | `DashboardDTO` |
-| `/api/budget` | GET | Approved | - | `MonthlyBudgetDTO` |
-| `/api/budget` | PUT | Owner | `{ amountMinor }` | `MonthlyBudgetDTO` |
+| `/api/budget` | GET | Approved | `scope=shared\|personal` (default `shared`) | `MonthlyBudgetDTO` |
+| `/api/budget` | PUT | Approved / Owner untuk shared | `{ amountMinor, scope? }` | `MonthlyBudgetDTO` |
 | `/api/transactions` | GET | Approved | query: `type, source, from, to, cursor, limit` | `{ rows, nextCursor }` |
 
-`DashboardDTO` = `{ balanceMinor, currencyCode, monthlyBudget: { periodStart, periodEnd, budgetMinor, spentMinor, remainingMinor }, spending: { periodStart, periodEnd, totalOutMinor, byDay: [{ date, amountMinor }] }, goals: GoalDTO[], recentActivity: TransactionDTO[] }`.
+`DashboardDTO` mempertahankan `monthlyBudget` dan `spending` sebagai scope Bersama,
+serta menambahkan `personalMonthlyBudget` dan `personalSpending` untuk scope Pribadi.
+Mode pada kartu budget dan grafik independen, keduanya default Bersama.
 `GoalDTO.progressPercent` = `min(100, saved/target×100)` (cap di DTO, bukan DB).
 
 ### Validasi Rules (Zod)
@@ -211,23 +241,103 @@ Tidak ada async. Agregasi dihitung sinkron dalam request. `byDay` dihitung di ap
 
 - [ ] Tidak ada.
 
+## Amendment T-015: Budget Pribadi dan scope Pribadi/Bersama
+
+**PM-approved 2026-10-23.** Spec: `docs/spec/feat-dashboard.md` AC-2c dan AC-4b.
+Design: doc 02 §5 Card 7/8 dan §5b. Ticket: `../tickets/18-T-015-personal-budget.md`.
+
+### Schema
+
+Tabel baru `personal_budget`:
+
+| Kolom | Tipe | Constraint |
+|---|---|---|
+| id | uuid | PK |
+| household_id | uuid | FK → household, NOT NULL |
+| user_id | uuid | FK → user, NOT NULL |
+| period_start | date | NOT NULL |
+| amount_minor | int | NOT NULL, CHECK > 0 |
+| currency_code | char(3) | NOT NULL, default `IDR` |
+| created_by_user_id | uuid | FK → user, NOT NULL |
+| created_at / updated_at | timestamptz | NOT NULL |
+
+`UNIQUE(household_id, user_id, period_start)` dan index `(user_id, period_start)`.
+Tidak ada soft delete.
+
+### Repository
+
+- `BudgetRepository` tetap untuk `household_budget`.
+- `PersonalBudgetRepository.findByPeriod(householdId, userId, periodStart)` dan
+  `upsert(householdId, userId, periodStart, amountMinor, createdByUserId)`.
+- `AggregateScope` ditambah `walletOwnerUserId?: string`. Filter wallet menjadi
+  `{ scope, createdByUserId }` bila diisi. Ini yang membatasi scope personal ke
+  wallet milik user, bukan semua wallet PERSONAL di household.
+
+### Service
+
+- `BudgetService.get(householdId)` tetap scope Bersama.
+- `BudgetService.getPersonal(actor)` memakai `actor.userId`, periode yang sama.
+- `BudgetService.upsert(actor, householdId, amountMinor, scope)`:
+  `shared` mempertahankan OWNER-only; `personal` menulis baris milik actor.
+  Tidak ada parameter `userId` dari request.
+- `DashboardService.get` menambah agregasi personal: budget pribadi dan
+  `listByDay` dengan scope `{ walletScope: "PERSONAL", walletOwnerUserId: actor.userId }`.
+  Field lama tidak berubah arti.
+
+### HTTP
+
+- `GET /api/budget?scope=shared|personal` (default `shared`).
+- `PUT /api/budget` body `{ amountMinor, scope? }` (default `shared`).
+- `GET /api/dashboard` menambah `personalMonthlyBudget` dan `personalSpending`
+  (additive, bukan breaking change).
+- Validasi scope memakai Zod enum; nilai lain 422.
+
+### Frontend
+
+- `BudgetCard`, `BudgetView`, dan `SpendingChart` memakai segmented control yang
+  sama, default `Bersama`, dan state scope terpisah per komponen.
+- BudgetView mengambil kedua scope (dua request paralel) dan mengirim scope saat
+  menyimpan.
+- Member melihat mode Bersama read-only dan dapat mengisi mode Pribadi.
+- Label dan helper mengikuti design 02 §5 Card 7/8.
+
+### Test
+
+- Unit: BudgetService shared vs personal, permission, cross-user isolation.
+- Integration: unique per user/periode, agregasi personal hanya wallet milik user,
+  wallet terarsip tetap dihitung, transfer dikecualikan.
+- Route: scope invalid, member PUT shared 403, member PUT personal 200.
+- E2E: toggle independen, default Bersama, persistence reload, read-only member,
+  390/768/1280 tanpa overflow.
+
 ## Progress Log
 
 | Tanggal | Task selesai | Catatan / deviasi dari plan |
 |---|---|---|
 | 2026-10-01 | T-003: schema Transaction/HouseholdBudget/SavingsGoal + repository (listActive, sumByType, listByDay, budget findByPeriod/upsert, goal listActive) | Persis ERD §3.7/3.8/3.12; agregat aktif selalu exclude deleted_at; UNIQUE(household_id, period_start); kontrak list query (cursor/limit A-14) di `lib/server/contracts/transactions.ts` |
+| 2026-10-06 | PM update: dev plan diselaraskan dengan BUG-001 fix T-006 — enum TRANSFER dihapus dari schema doc, CHECK lama dihapus, catatan transfer exclusion (AC-F2-4) ditambahkan ke Repository Interface | `sumByType` + `listByDay` WAJIB exclude `transferGroupId: null` saat T-005 implementasi. QA flag: `agent-comms/2026-10-06-qa-t006-retest-report.md` §Risiko #1 |
+| 2026-10-06 | T-005 selesai: (1) repository transfer exclusion `sumByType` + `listByDay` filter `transferGroupId: null` (AC-F2-4); (2) `lib/server/jakarta.ts` + `PeriodService` (kalender Asia/Jakarta); (3) `DashboardService`, `BudgetService`, `TransactionService.list`; (4) route `GET /api/dashboard`, `GET/PUT /api/budget`, `GET /api/transactions`; (5) halaman `/home` + `/budget`; (6) komponen `components/dashboard/*` (BalanceCard, BudgetCard, SpendingChart, GoalsSummaryCard, RecentActivityCard, DashboardView, BudgetView); (7) navigasi 1-per-breakpoint (`BottomNav`, `FloatingNavbar`, `AppShell`); (8) unit + feature + integration (`dashboard.integration.test.ts`) + E2E (`e2e/dashboard.spec.ts`) | Unit 213 lulus / 24 file, lint + tsc + build hijau. Deviasi tooling: E2E dev server pindah ke port 3010 (bukan 3000) karena WSL2 meneruskan nginx ke localhost:3000. Cursor list memakai UUID baris sebagai token opaque (Prisma `cursor: { id }` di bawah `orderBy [occurredAt desc, id desc]`), bukan composite base64; perilaku setara (opaque + id tie-break, AC-F2-6). Tidak ada deviasi perilaku dari spec. |
+| 2026-10-07 | Resume T-005: perbaikan environment E2E + verifikasi static-render | `playwright.config.ts`: port 3010, `reuseExistingServer: false`, `globalSetup` pre-warm route, expect timeout 15s => `bun run test:e2e` 39/39 lulus (2x). `bun run test:integration` 8/8 lulus (PostgreSQL lokal `financial_planner_t003` via `DATABASE_URL`). `/home` + `/budget` tetap static (○) dan aman: shell tanpa data household, angka di-fetch per-request lewat `/api/*` yang dijaga `proxy.ts`, plus redirect client saat 401. |
+| 2026-10-23 | T-015 backend/data layer: tabel `personal_budget` + migrasi, repository/service budget pribadi, scope `shared|personal` pada `GET/PUT /api/budget`, dan field additive `personalMonthlyBudget`/`personalSpending` pada `GET /api/dashboard`; unit, route, dan integration test | Frontend (`BudgetCard`, `BudgetView`, `SpendingChart`) belum dikerjakan di handoff ini; T-015 belum selesai. Catatan tooling: `bunx prisma migrate dev` sempat membuat migrasi korektif `20261023021854_personal_budget` (drop FK composite `transaction_household_id_wallet_id_fkey`) karena constraint raw SQL tidak ada di schema; migrasi korektif dihapus, FK composite dipulihkan, `prisma migrate status` up to date. |
 
 ## Keputusan Teknis
 
 | Tanggal | Keputusan | Alasan | Update Spec/ADR? |
 |---|---|---|---|
-| (diisi saat coding berjalan) | | | |
+| 2026-10-06 | Dashboard = satu endpoint agregasi `GET /api/dashboard?period=7D\|30D\|90D`; client merender angka verbatim tanpa recompute | Spec AC-F2-1/AC-F2-5/AC-F2-6: server sumber kebenaran; `period` hanya mengubah window grafik, tidak mengubah kartu saldo/budget/goals | Tidak (sesuai spec) |
+| 2026-10-06 | Transfer leg dikecualikan di repository: `sumByType` dan `listByDay` menambah filter `transferGroupId: null` | AC-F2-4: transfer bukan spending; saldo tetap net nol karena kedua kaki dikecualikan dari agregat. Follow-up BUG-001 (QA T-006 §Risiko #1) | Tidak |
+| 2026-10-06 | `PeriodService` menurunkan semua batas periode dari kalender Asia/Jakarta (offset tetap +07:00, tanpa DST): `start`/`end` = instant UTC inklusif untuk filter `occurred_at`, `budgetPeriodStart` = UTC-midnight untuk key `@db.Date`; bucketing `byDay` dilakukan di aplikasi, bukan DB | D-7/A-13: hindari timezone proses server (UTC) dan jam perangkat; hari tanpa pengeluaran tetap muncul bernilai 0 (AC-F2-5) | Tidak |
+| 2026-10-06 | Bentuk DTO: `DashboardDTO { balanceMinor, currencyCode, monthlyBudget{...}, spending{periodStart, periodEnd, totalOutMinor, byDay[]}, goals[], recentActivity[] }`; `MonthlyBudgetDTO.isSet=false` + `budgetMinor/remainingMinor=null` saat budget belum di-set; `GoalSummaryDTO.progressPercent` di-cap 100 di DTO | AC-F2-2: state "atur budget" (bukan Rp0 yang menyesatkan); AC-F2-9: progress bar tidak pernah >100%; satu kontrak agregasi dikonsumsi `/home` | Tidak |
+| 2026-10-06 | Cursor list = UUID baris sebagai token opaque; Prisma `cursor: { id }` dengan `orderBy [occurredAt desc, id desc]` dan `take: limit + 1` | AC-F2-6: stabil termasuk `occurredAt` yang sama (fallback tie-break `id`), tanpa duplikat/hilang. Plan menyebut "base64 composite", implementasi ini setara secara perilaku | Tidak (perilaku setara; kontrak eksternal tidak berubah) |
+| 2026-10-06 | `/home` dan `/budget` tetap static shell (○); komponen view `"use client"` fetch per-request lewat `lib/api-client.ts`; auth ditegakkan `proxy.ts` pada `/api/*` (kecuali signup/login) + redirect client saat 401 | Tidak ada data household dirender saat build, jadi prerender aman dan shell lebih cepat; isolasi household + revalidasi session penuh tetap di route handler Node | Tidak |
+| 2026-10-07 | E2E: dev server port 3010, `reuseExistingServer: false`, `globalSetup` pre-warm semua route, expect timeout 15s | WSL2 meneruskan nginx ke localhost:3000 sehingga health check `reuseExistingServer` menempel ke nginx (semua request 404). Port terdedikasi + pre-warm menghilangkan race cold-compile Next dev antar 6 worker | Tidak (hanya tooling test) |
+| 2026-10-07 | Integration test berjalan terhadap PostgreSQL lokal lewat `DATABASE_URL` di `.env` memakai `@prisma/adapter-pg` | `integration-db.ts` selalu adapter-pg; `.env` menunjuk `financial_planner_t003` (14 tabel, 2 migrasi ter-apply) | Tidak |
 
 ## QA Log
 
 | Tanggal | AC diuji | Hasil | Catatan |
 |---|---|---|---|
-| (diisi QA) | | | |
+| 2026-10-07 | AC-F2-1..AC-F2-10 | Pass | Harness QA independen 9/9 (cross-check DTO vs raw SQL: balance, budget unset, transfer exclusion, boundary WIB, pagination ties, isolasi, int32); unit 213; integration 8; E2E 39 (mobile/tablet/desktop); lint/tsc/build hijau. Residual (audit visual penuh, matriks state UI, deployment Neon/Vercel) defer T-008. Detail: agent-comms/2026-10-07-qa-t005-report.md |
 
 ## Open Questions
 

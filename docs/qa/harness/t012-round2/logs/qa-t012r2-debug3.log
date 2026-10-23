@@ -1,0 +1,18 @@
+[WebServer] $ next dev -p "3033"
+
+Running 2 tests using 1 worker
+
+[DBG3 mobile-390 #0] openedAt=0ms intent +=1 history 2->2 urlBefore=/transactions?month=2025-03 urlAfterClick=/transactions?month=2025-03 urlNow=/transactions?month=2025-03
+[DBG3 mobile-390 #1] openedAt=0ms intent +=1 history 2->2 urlBefore=/transactions?month=2025-03 urlAfterClick=/transactions?month=2025-03 urlNow=/transactions?month=2025-03
+[DBG3 mobile-390 #2] openedAt=0ms intent +=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfterClick=/transactions?month=2025-03 urlNow=/transactions?month=2025-03
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-debug3.qa.spec.ts:15:5 › race debug3 intent delivery (2.2s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3307166295'
+[WebServer] }
+[DBG3 desktop-1280 #0] openedAt=0ms intent +=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfterClick=/transactions?month=2025-03 urlNow=/transactions?month=2025-03
+[DBG3 desktop-1280 #1] openedAt=0ms intent +=1 history 2->2 urlBefore=/transactions?month=2025-03 urlAfterClick=/transactions?month=2025-03 urlNow=/transactions?month=2025-03
+[DBG3 desktop-1280 #2] openedAt=0ms intent +=1 history 2->2 urlBefore=/transactions?month=2025-03&add=1 urlAfterClick=/transactions?month=2025-03 urlNow=/transactions?month=2025-03
+  ✓  2 [desktop-1280] › docs\qa\harness\t012-round2\t012-debug3.qa.spec.ts:15:5 › race debug3 intent delivery (1.5s)
+
+  2 passed (9.4s)

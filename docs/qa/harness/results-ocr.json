@@ -1,0 +1,62 @@
+{
+  "base": "http://localhost:3010",
+  "at": "2026-10-06T03:32:54.936Z",
+  "pass": 9,
+  "fail": 0,
+  "results": [
+    {
+      "id": "OCR-0",
+      "name": "unauthenticated upload -> 401",
+      "pass": true,
+      "detail": "status=401"
+    },
+    {
+      "id": "OCR-1",
+      "name": "valid receipt upload -> 200 job+draft",
+      "pass": true,
+      "detail": "status=200 jobStatus=SUCCEEDED errorCode=null"
+    },
+    {
+      "id": "OCR-2",
+      "name": "draft fields extracted (merchant/total/date/confidence)",
+      "pass": true,
+      "detail": "draft={\"merchant\":\"WARUNG SEGAR JAYA\",\"totalAmountMinor\":150000,\"currencyCode\":\"IDR\",\"occurredAt\":\"2026-10-06\",\"category\":\"shopping\",\"taxAmountMinor\":null,\"confidence\":1,\"missingFields\":[],\"notes\":\"Pembelian bahan pokok dan sabun cuci\"}"
+    },
+    {
+      "id": "OCR-3",
+      "name": "draft total looks like the receipt (150000 +/- rounding)",
+      "pass": true,
+      "detail": "total=150000"
+    },
+    {
+      "id": "OCR-4",
+      "name": "OCR upload does NOT create a transaction",
+      "pass": true,
+      "detail": "before=10 after=10"
+    },
+    {
+      "id": "OCR-5",
+      "name": "duplicate receipt -> 409 DUPLICATE_RECEIPT + job/draft",
+      "pass": true,
+      "detail": "status=409 code=DUPLICATE_RECEIPT hasJob=true hasDraft=true"
+    },
+    {
+      "id": "OCR-6",
+      "name": "invalid mime -> 422 FILE_INVALID",
+      "pass": true,
+      "detail": "status=422 code=FILE_INVALID"
+    },
+    {
+      "id": "OCR-7",
+      "name": "file > 4MB -> 422 FILE_INVALID",
+      "pass": true,
+      "detail": "status=422 code=FILE_INVALID"
+    },
+    {
+      "id": "OCR-8",
+      "name": "confirm draft -> 201 source=OCR",
+      "pass": true,
+      "detail": "status=201 source=OCR"
+    }
+  ]
+}

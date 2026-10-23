@@ -1,27 +1,27 @@
 import { cn } from "@/lib/utils";
 
-type CardVariant = "white" | "peach" | "lavender" | "mint" | "sky";
+type CardVariant = "default" | "tint" | "mint" | "danger" | "navy";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: CardVariant;
 }
 
 /*
-  Pastel washes come from docs/design/01-design-system-tokens.md section 2.2.
-  Each variant carries a matching border so the card edge stays visible on the
-  off-white canvas without relying on a heavy shadow.
+  Surfaces from docs/design/01-design-system-tokens.md §2.1 and §2.4.
+  Variant names are semantic: tint (Bersama context), mint (targets/success),
+  danger (error/denial), navy (structural dark panels). Cards stay flat with a
+  hairline border and the shared bento shadow, never a gradient.
 */
 const variantClasses: Record<CardVariant, string> = {
-  white: "bg-white border-slate-100",
-  peach: "bg-gradient-to-br from-orange-100/70 via-amber-50/60 to-rose-50/50 border-orange-200/50",
-  lavender:
-    "bg-gradient-to-br from-purple-100/80 via-indigo-50/70 to-purple-50/40 border-purple-200/60",
-  mint: "bg-gradient-to-br from-emerald-100/70 via-teal-50/60 to-green-50/40 border-emerald-200/50",
-  sky: "bg-gradient-to-br from-sky-100/70 via-blue-50/60 to-indigo-50/40 border-sky-200/50",
+  default: "border-[#D8E2EE] bg-white",
+  tint: "border-[#BCD6EF] bg-[#DCEBFA]",
+  mint: "border-[#BBE5C7] bg-[#DCFCE7]",
+  danger: "border-[#F3C2C2] bg-[#FDECEC]",
+  navy: "border-white/10 bg-[#14273F] text-white",
 };
 
 export function Card({
-  variant = "white",
+  variant = "default",
   className,
   children,
   ...props

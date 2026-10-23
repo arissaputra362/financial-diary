@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/Card";
+import { Card } from "./Card";
 
 export interface ComingSoonProps {
   title: string;
@@ -12,14 +12,14 @@ export interface ComingSoonProps {
 export function ComingSoon({ title, description }: ComingSoonProps) {
   return (
     <div className="mx-auto max-w-xl py-10">
-      <Card variant="sky" className="text-center">
-        <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">
+      <Card variant="tint" className="text-center">
+        <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#46597A]">
           Segera hadir
         </span>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[#17304F]">
           {title}
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+        <p className="mt-2 text-[15px] leading-relaxed text-[#46597A]">
           {description}
         </p>
       </Card>

@@ -42,9 +42,27 @@ kegagalan model menjadi error bertipe, tidak pernah data karangan.
 - **Re-validasi zod di boundary:** output model divalidasi ulang dengan zod di route
   handler; `responseSchema` adalah hint, bukan jaminan. Output invalid → error bertipe
   (`OCR_INVALID_OUTPUT` / `ADVISOR_INVALID_OUTPUT`).
-- **OCR:** `thinkingConfig.thinkingBudget = 0` (ekstraksi tidak butuh reasoning panjang).
+- **OCR:** `thinkingConfig` sengaja **tidak dikirim** (amendemen 2026-10-23) karena model
+  default saat ini (`gemini-3.5-flash-lite`) menolak `thinkingBudget: 0` dengan HTTP 400
+  INVALID_ARGUMENT; budget default model dipakai dan **timeout 8–10 detik tetap jadi
+  penjaga latensi**.
 - **Timeout eksplisit 8–10 detik** per panggilan model; `maxDuration` di route handler
   disetel agar sesuai batas platform Vercel.
+- **Rantai model berbatas (amendemen 2026-10-23):** kedua provider memakai rantai
+  model berurutan dari env `GEMINI_MODEL` + `GEMINI_MODEL_FALLBACKS` (default
+  `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite`; nilai di-trim, token kosong
+  di-drop, dedupe, seluruh rantai maksimal 3 model). Fallback ke model berikutnya
+  **hanya** pada kegagalan spesifik-model: HTTP 429 (RESOURCE_EXHAUSTED; kuota free
+  tier berlaku per project DAN per model), HTTP 404 (model pensiun), HTTP 503
+  (UNAVAILABLE). **Bukan** retry model yang sama (panggilan ulang instan tidak
+  memulihkan kuota 429 per model) dan **bukan** round-robin lintas-request (tidak ada
+  status kesehatan model yang diandalkan). HTTP 400 INVALID_ARGUMENT dikecualikan agar
+  bug request terlihat, tidak tertutupi model lain; timeout juga tidak fallback dan
+  berakhir `OCR_TIMEOUT` dengan guard time-budget rantai (28.000 ms OCR /
+  19.000 ms advisor). Maksimal satu tahap fallback terbatas per request; effort
+  berbatas: `ocr_job.model` mencatat model yang benar-benar berhasil. Preseden error
+  final: attempt manapun kena 429 → `OCR_RATE_LIMITED` / `ADVISOR_RATE_LIMITED`;
+  selain itu kode attempt terakhir.
 - **Kegagalan OCR (A-10):** `POST /api/ocr/receipts` tetap **HTTP 200** dengan
   `{ job: { status: FAILED, errorCode }, draft: null }`; namespace error:
   `OCR_TIMEOUT`, `OCR_RATE_LIMITED`, `OCR_INVALID_OUTPUT`, `OCR_MODEL_UNAVAILABLE`.

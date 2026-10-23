@@ -202,6 +202,7 @@ Strategi DB: lihat Keputusan Teknis (mock Prisma client vs DB nyata).
 | 2026-10-01 | Zod contracts 5 domain + common | Error eksplisit terstruktur; OCR/advisor error namespace sebagai kontrak |
 | 2026-10-01 | Unit test kontrak + repository | Strategi: mock Prisma client (lihat Keputusan Teknis) |
 | 2026-10-01 | Validasi test/lint/build | Output di laporan PM |
+| 2026-10-07 | Perbaikan timezone sesi `PrismaPg` (temuan QA T-008) | Adapter pg meng-encode/decode `timestamptz` dengan asumsi sesi UTC; pada DB non-UTC (lokal `Asia/Bangkok`, +07) setiap instant bergeser sebesar offset sesi, sehingga app self-consistent tetapi raw SQL/`now()` berbeda 7 jam. Fix: `options: '-c TimeZone=UTC'` di `lib/db.ts` (branch pg) dan `lib/server/testing/integration-db.ts`; branch Neon tidak diubah. Regression test: `lib/server/repositories/timestamp.integration.test.ts`. Tanpa migration/perubahan skema. |
 
 ## Keputusan Teknis
 
@@ -214,12 +215,13 @@ Strategi DB: lihat Keputusan Teknis (mock Prisma client vs DB nyata).
 | 2026-10-01 | PK UUID = `uuid()` default Prisma (bukan uuid(7)) | Prisma 7.10 belum mendukung `uuid(7)`; ERD §1 menyatakan "fallback generate di aplikasi" | Tidak |
 | 2026-10-01 | Kontrak disimpan di `lib/server/contracts/` (bukan `lib/server/validation/`) | AGENTS.md §3 menetapkan `lib/server/` untuk server-only; pola yang ada belum punya folder validasi; `contracts` mencerminkan isi tiket (typed API contracts) | Tidak |
 | 2026-10-01 | `prisma7.config.ts` memuat `dotenv/config` | Prisma 7 tidak memuat .env otomatis; file config hasil `prisma init` sudah memakai pola ini | Tidak |
+| 2026-10-07 | Pin sesi koneksi `@prisma/adapter-pg` ke UTC via `options: '-c TimeZone=UTC'` (branch Postgres lokal/self-hosted di `lib/db.ts` + `integration-db.ts`); branch Neon (`@prisma/adapter-neon`) dibiarkan | Adapter pg melakukan encode/decode `timestamptz` dengan asumsi `+00:00` (`formatDateTime` + `normalize_timestamptz`); bila `TimeZone` sesi bukan UTC, semua instant bergeser sebesar offset sesi (temuan QA T-008 di DB `Asia/Bangkok`). Neon default UTC sehingga aman tanpa opsi. Alternatif "ubah timezone DB global" ditolak (di luar boundary, menyentuh konfigurasi DB). Tanpa perubahan skema/migration. | Tidak |
 
 ## QA Log
 
 | Tanggal | AC diuji | Hasil | Catatan |
 |---|---|---|---|
-| (diisi QA) | | | |
+| 2026-10-08 | T-008 cross-cutting timestamp persistence (bounded) | Pass, bounded local evidence | Independent retest: local DB default timezone `Asia/Bangkok`; actual app `lib/db.ts` `PrismaPg` session `SHOW TIME ZONE=UTC`; `timestamp.integration.test.ts` 1/1; real `POST /api/transactions` date-only persisted with API, Prisma readback, and raw SQL all at epoch `1791349200000`. Cleanup counts 0; ports 3000/3010/3011 had no listeners. Local only; no Neon/production validation. Does not establish full calendar/filter semantics. Evidence: `../agent-comms/2026-10-08-qa-t008-timezone-fix.md`. |
 
 ## Open Questions
 

@@ -1,0 +1,164 @@
+{
+  "base": "http://localhost:3010",
+  "at": "2026-10-06T03:31:14.061Z",
+  "pass": 20,
+  "fail": 6,
+  "results": [
+    {
+      "id": "AUTH-1",
+      "name": "login wrong creds -> 401",
+      "pass": true,
+      "detail": "status=401"
+    },
+    {
+      "id": "AUTH-2",
+      "name": "owner login -> 200 OPEN_HOME + cookie",
+      "pass": true,
+      "detail": "status=200 nextAction=OPEN_HOME cookies=1"
+    },
+    {
+      "id": "AUTH-3",
+      "name": "GET /api/transactions no cookie -> 401",
+      "pass": true,
+      "detail": "status=401"
+    },
+    {
+      "id": "AUTH-4",
+      "name": "owner list loads active rows",
+      "pass": true,
+      "detail": "status=200 rows=5"
+    },
+    {
+      "id": "AUTH-5",
+      "name": "non-approved member -> 403 ACCESS_PENDING",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_PENDING"
+    },
+    {
+      "id": "TX-1",
+      "name": "manual MONEY_OUT create -> 201 + DTO",
+      "pass": true,
+      "detail": "status=201 amount=50000"
+    },
+    {
+      "id": "TX-2",
+      "name": "future occurredAt -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR field={\"occurredAt\":[\"Tanggal tidak boleh di masa depan.\"]}"
+    },
+    {
+      "id": "BD-1",
+      "name": "amount 0 -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "BD-2",
+      "name": "amount -1 -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "BD-3",
+      "name": "amount 2147483648 -> 422 AMOUNT_OUT_OF_RANGE",
+      "pass": true,
+      "detail": "status=422 code=AMOUNT_OUT_OF_RANGE"
+    },
+    {
+      "id": "BD-4",
+      "name": "invalid category -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "BD-5",
+      "name": "note > 500 -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "BD-6",
+      "name": "merchant > 120 -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "BD-7",
+      "name": "amount = int32 max accepted -> 201",
+      "pass": true,
+      "detail": "status=201"
+    },
+    {
+      "id": "IDEM-1",
+      "name": "same key + same payload -> replay identical",
+      "pass": false,
+      "detail": "s1=201 s2=500"
+    },
+    {
+      "id": "IDEM-2",
+      "name": "same key + different payload -> 409 IDEMPOTENCY_CONFLICT",
+      "pass": false,
+      "detail": "status=500 code=INTERNAL_ERROR"
+    },
+    {
+      "id": "DEL-1",
+      "name": "soft delete -> 200",
+      "pass": true,
+      "detail": "status=200"
+    },
+    {
+      "id": "DEL-2",
+      "name": "deleted row hidden from active, present in trash",
+      "pass": true,
+      "detail": "activeHas=false trashHas=true"
+    },
+    {
+      "id": "DEL-3",
+      "name": "double trash -> 200 ALREADY_DELETED",
+      "pass": false,
+      "detail": "status=200 code=undefined body={\"id\":\"56415b61-b55e-41e3-99bd-5636ff33e069\",\"deletedAt\":\"2026-10-06T03:31:10.294Z\",\"alreadyDeleted\":true}"
+    },
+    {
+      "id": "DEL-4",
+      "name": "restore -> 200",
+      "pass": true,
+      "detail": "status=200"
+    },
+    {
+      "id": "DEL-5",
+      "name": "restore already-active -> 200 ALREADY_ACTIVE",
+      "pass": false,
+      "detail": "status=200 code=undefined body={\"id\":\"56415b61-b55e-41e3-99bd-5636ff33e069\",\"deletedAt\":null,\"alreadyActive\":true}"
+    },
+    {
+      "id": "XH-1",
+      "name": "cross-household trash by id -> 404 (not 403)",
+      "pass": true,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "XH-2",
+      "name": "household B list does not leak A rows",
+      "pass": true,
+      "detail": "B rows=1 leaked=false"
+    },
+    {
+      "id": "XH-3",
+      "name": "malformed id -> 400",
+      "pass": false,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "TRF-1",
+      "name": "transfer create -> 201 with 2 legs",
+      "pass": false,
+      "detail": "status=500 legs=0 body={\"error\":{\"code\":\"INTERNAL_ERROR\",\"message\":\"Terjadi kesalahan pada server.\",\"fieldErrors\":null}}"
+    },
+    {
+      "id": "DTO-1",
+      "name": "DTO uses amountMinor integer + suffix",
+      "pass": true,
+      "detail": "sample={\"id\":\"21c61773-de48-4d9b-b739-0fc7cb96788d\",\"type\":\"MONEY_OUT\",\"amountMinor\":50000,\"currencyCode\":\"IDR\",\"category\":\"food\",\"merchant\":\"QA Harness Merchant\",\"note\":null,\"occurredAt\":\"2026-10-06T05:00:00.000Z\",\"source\":\"MANUAL\",\"receiptId\":null,\"transferGroupId\":null,\"deletedAt\":null,\"createdAt\":\"2026-10-06T03:31:05.510Z\"}"
+    }
+  ]
+}

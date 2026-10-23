@@ -1,5 +1,7 @@
 # Authentication & Family Member Management Flow
 
+> **Canonical status:** Business behavior remains PM-approved; visual refresh PM-approved for T-010 (2026-10-20). Business behavior (invite-only, waiting room, DECLINED/REVOKED, Owner management, read-only member view) is unchanged. Updated 2026-10-20 by the UI/UX Designer: backgrounds, status pill contrast, and CTA colors restyled to the blue-white-green tokens (doc 01); peach/lavender/purple references retired (amber kept as a status color only, in contrast-compliant pairs). Tickets: T-010 (visual refresh).
+
 ## 1. Invite-Only Architecture & Philosophy
 The Financial Planner operates on a **"One Big Ledger" (Invite-Only)** model. A family shares one unified record so everyone can contribute expenses and see savings goals. Random users who sign up cannot see or tamper with family data until explicitly vetted.
 
@@ -16,13 +18,13 @@ The Financial Planner operates on a **"One Big Ledger" (Invite-Only)** model. A 
 
 ### 2.1. Login / Sign Up Card
 - **Layout:** Centered card (`max-w-md w-full rounded-3xl bg-white p-8 shadow-bento border border-slate-100`).
-- **Header:** Playful brand logo (`✦ Financial Planner`) with welcoming subtitle *"Keuangan keluarga jadi lebih mudah."*
+- **Header:** product name as plain text (`Financial Planner`; no invented logo, icon, or mark, matching the actual auth screen and the auth mockup), with welcoming subtitle *"Keuangan keluarga jadi lebih mudah."*
 - **Segmented Control:** `[ Masuk (pill) ]  [ Buat akun ]`.
 - **Inputs:**
-  - Email (`rounded-2xl border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100`).
+  - Email (`rounded-2xl border-[#E2E8F0] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15`).
   - Password with show/hide eye toggle (min 8 characters).
   - **Kode undangan (opsional):** a single optional field. There is no "Household Name" field on signup.
-- **Primary CTA:** Pill button `[ Buat akun keluarga ]` on the signup tab, `[ Masuk ]` on the login tab (`bg-slate-900 text-white rounded-full py-3.5`).
+- **Primary CTA:** Pill button `[ Buat akun keluarga ]` on the signup tab, `[ Masuk ]` on the login tab (`bg-[#166534] text-white rounded-full py-3.5`; primary action green, doc 01 §5.1).
 - **Helper text:** *"Punya kode undangan? Masukkan untuk bergabung ke keluarga yang sudah ada. Tanpa kode, kamu akan membuat keluarga baru."*
 
 ---
@@ -34,7 +36,7 @@ When a user signs up to join an existing family, they are placed in a friendly, 
 ### 3.1. Wireframe
 ```
 +--------------------------------------------------------+
-|                      Planner ✦                         |
+|                      Financial Planner                         |
 +--------------------------------------------------------+
 |                                                        |
 |   +------------------------------------------------+   |
@@ -61,9 +63,9 @@ When a user signs up to join an existing family, they are placed in a friendly, 
 ```
 
 ### 3.2. Design Specifications
-- **Visuals:** Warm pastel peach & lavender background gradient (`from-orange-50 via-purple-50 to-white`).
-- **Friendly Icon:** 3D house illustration or emoji badge with a soft floating bounce animation.
-- **Status Pill:** Amber badge `bg-amber-100 text-amber-800 font-medium px-4 py-1.5 rounded-full inline-flex items-center gap-2`.
+- **Visuals:** Light blue-white background (`bg-[#F1F5FA]` canvas with a `#FFFFFF` card, hairline `#E2E8F0`; the former warm peach-and-lavender gradient is retired, doc 01 §2.5).
+- **Friendly Icon:** friendly house badge in a circular blue tint well (`bg-[#DCEBFA] text-[#1D4F87]`); static, no floating bounce unless `prefers-reduced-motion` is honored.
+- **Status Pill:** amber status tint `bg-[#FDF3D7] text-[#8A5A00] font-medium px-4 py-1.5 rounded-full inline-flex items-center gap-2` with icon + label (amber is a status color, not brand; measured readable pair 5.36:1, doc 01 §2.3).
 - **Polling (A-29):** a manual `[ Periksa lagi ]` button plus exactly one automatic re-check. No continuous polling.
 - **Privacy (A-29):** the owner's email is NOT shown. No "contact the owner" address.
 - **Status announcement (A-29):** status changes are announced via `aria-live="polite"` on the status pill.
@@ -88,12 +90,14 @@ The Owner has access to a dedicated **Keluarga** tab in the navigation.
 
 +-----------------------------------------------------------------------------+
 | BENTO CARD A: Permintaan bergabung (1 permintaan)                           |
-| Soft Amber Gradient (from-amber-100/60 to-orange-50/50 rounded-3xl p-6)    |
+| White card (bg-white rounded-3xl p-6 border border-[#E2E8F0]);              |
+| tiap baris memakai chip status amber tint (Menunggu persetujuan) dengan    |
+| ikon + label; amber adalah warna status, bukan warna bagian (doc 01 §2.3)  |
 |                                                                             |
 | (Avatar)  Sarah Miller                                                      |
 |           sarah@gmail.com • Diminta 15 menit lalu                           |
 |                                                                             |
-|           Aksi:  [ ✅ Izinkan bergabung (pill) ]   [ ✕ Tolak (pill) ]       |
+|           Aksi:  [ ✅ Izinkan bergabung ]   [ ✕ Tolak ]
 +-----------------------------------------------------------------------------+
 
 +-----------------------------------------------------------------------------+
@@ -112,7 +116,7 @@ The Owner has access to a dedicated **Keluarga** tab in the navigation.
 
 +-----------------------------------------------------------------------------+
 | BENTO CARD C: Keamanan keluarga                                             |
-| Soft Sky Blue Gradient (from-sky-100/60 to-blue-50/40 rounded-3xl p-6)      |
+| Blue tint well (bg-[#DCEBFA] rounded-3xl p-6, teks navy #14273F)            |
 |                                                                             |
 | 🔒 Item terhapus tetap di Trash sampai dipulihkan                           |
 | 🔑 Akses diperiksa ulang di setiap permintaan                               |
@@ -148,4 +152,3 @@ A minimal page reachable from the avatar. It shows:
 - A single `[ Keluar ]` button (logout).
 
 No extra configuration and no destructive account actions in the MVP.
-

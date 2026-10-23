@@ -44,6 +44,13 @@ describe("advisorInsightRequestSchema", () => {
         .success,
     ).toBe(false);
   });
+
+  it("rejects impossible calendar dates", () => {
+    expect(
+      advisorInsightRequestSchema.safeParse({ period: { start: "2026-02-30", end: "2026-03-01" } })
+        .success,
+    ).toBe(false);
+  });
 });
 
 describe("advisorInsightOutputSchema", () => {

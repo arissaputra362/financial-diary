@@ -2,39 +2,74 @@
 
 /*
   Design tokens for the Bento financial planner.
-  Source of truth: docs/design/01-design-system-tokens.md
+  Source of truth: docs/design/01-design-system-tokens.md (PM-approved 2026-10-20).
   The app ships a single light theme, so no dark-mode override is defined.
 */
 @theme {
   --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
 
-  /* Structural surfaces */
-  --color-canvas: #f8f9fd;
-  --color-nav: #15171c;
-  --color-card-border: #eef1f6;
+  /* Brand core: blue, white, green */
+  --color-canvas: #f1f5fa;
+  --color-card: #ffffff;
+  --color-navy: #14273f;
+  --color-blue: #1d4f87;
+  --color-blue-tint: #dcebfa;
+  --color-blue-wash: #eff4fa;
+  --color-green: #166534;
+  --color-green-hover: #155c30;
+  --color-mint: #dcfce7;
+  --color-bar-track: #e5edf5;
+
+  /* Text */
+  --color-ink: #17304f;
+  --color-ink-2: #46597a;
+  --color-ink-3: #5c7191;
+  --color-placeholder: #5c6c86;
+  --color-on-dark: #ffffff;
+  --color-on-dark-soft: #d9e6f5;
+  --color-on-dark-muted: #9fb9d6;
+
+  /* Interface neutrals */
+  --color-card-border: #d8e2ee;
+  --color-input-border: #c9d6e4;
+  --color-row-divider: #eaeef4;
+  --color-chip-slate: #e6ecf4;
+
+  /* Semantic status */
+  --color-warning: #8a5a00;
+  --color-warning-bg: #fdf3d7;
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fdecec;
 
   /* Elevation */
-  --shadow-bento: 0 10px 30px -5px rgba(15, 23, 42, 0.04),
-    0 0 1px 1px rgba(15, 23, 42, 0.02);
-  --shadow-floating-nav: 0 20px 40px -10px rgba(0, 0, 0, 0.25);
-  --shadow-pill: 0 4px 14px 0 rgba(0, 0, 0, 0.08);
-  --shadow-hover: 0 14px 28px rgba(15, 23, 42, 0.08);
+  --shadow-bento: 0 10px 30px -5px rgba(20, 39, 63, 0.06),
+    0 0 1px 1px rgba(20, 39, 63, 0.03);
+  --shadow-floating-nav: 0 20px 40px -10px rgba(20, 39, 63, 0.35);
+  --shadow-pill: 0 4px 14px 0 rgba(20, 39, 63, 0.1);
+  --shadow-hover: 0 14px 28px rgba(20, 39, 63, 0.1);
 }
 
 body {
   background: var(--color-canvas);
-  color: #0f172a;
+  color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
 /*
-  Visible keyboard focus on every interactive element (R-32).
-  A dark outline plus a light halo stays visible on both the white canvas and
-  the charcoal navbar, where a single-colour ring would fail the 3:1 minimum.
+  Visible keyboard focus on every interactive element.
+  The blue outline carries the brand focus token; the light halo keeps it
+  visible on the navy navigation, where a blue-only ring would be too quiet.
 */
 :focus-visible {
-  outline: 2px solid #0f172a;
+  outline: 2px solid #1d4f87;
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.85);
-  border-radius: 10px;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
 }

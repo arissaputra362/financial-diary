@@ -1,0 +1,16 @@
+[WebServer] $ next dev -p "3033"
+
+Running 2 tests using 1 worker
+
+[WebServer] (node:18832) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+[WebServer] (Use `node --trace-deprecation ...` to show where the warning was created)
+[CYCLES mobile-390] url before save = http://localhost:3033/transactions?month=2025-03&add=1
+[CYCLES mobile-390] replaceState writes during save = 1, url after save = http://localhost:3033/transactions?month=2025-03
+[CYCLES mobile-390] ok, history=2
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save (4.6s)
+[CYCLES desktop-1280] url before save = http://localhost:3033/transactions?month=2025-03&add=1
+[CYCLES desktop-1280] replaceState writes during save = 1, url after save = http://localhost:3033/transactions?month=2025-03
+[CYCLES desktop-1280] ok, history=2
+  ✓  2 [desktop-1280] › docs\qa\harness\t012-round2\t012-cycles.qa.spec.ts:25:5 › two close/reopen cycles, then a third open after save (2.2s)
+
+  2 passed (13.8s)

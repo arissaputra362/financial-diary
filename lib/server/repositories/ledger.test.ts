@@ -74,11 +74,13 @@ function makeDb() {
 const HOUSEHOLD_A = "11111111-1111-4111-8111-111111111111";
 const HOUSEHOLD_B = "22222222-2222-4222-8222-222222222222";
 const USER = "33333333-3333-4333-8333-333333333333";
+const WALLET = "66666666-6666-4666-8666-666666666666";
+const actorA = { userId: USER, householdId: HOUSEHOLD_A, role: "OWNER" };
 
 describe("TransactionRepository", () => {
   it("excludes soft-deleted rows from active queries (AC)", () => {
     const { db, captured } = makeDb();
-    createTransactionRepository(db).listActive(HOUSEHOLD_A);
+    createTransactionRepository(db).listActive(actorA);
     expect(captured.transactionWhere).toMatchObject({
       householdId: HOUSEHOLD_A,
       deletedAt: null,
@@ -87,7 +89,7 @@ describe("TransactionRepository", () => {
 
   it("scopes listActive to the given household", () => {
     const { db, captured } = makeDb();
-    createTransactionRepository(db).listActive(HOUSEHOLD_B, { type: "MONEY_OUT" });
+    createTransactionRepository(db).listActive({ ...actorA, householdId: HOUSEHOLD_B }, { type: "MONEY_OUT" });
     expect(captured.transactionWhere).toMatchObject({
       householdId: HOUSEHOLD_B,
       type: "MONEY_OUT",
@@ -115,7 +117,7 @@ describe("TransactionRepository", () => {
 
   it("denies cross-household reads by id (extended-unique where)", async () => {
     const { db, captured } = makeDb();
-    await createTransactionRepository(db).findById(HOUSEHOLD_A, "tx-1");
+    await createTransactionRepository(db).findById(actorA, "tx-1");
     expect(captured.transactionWhere).toMatchObject({
       id: "tx-1",
       householdId: HOUSEHOLD_A,
@@ -125,7 +127,7 @@ describe("TransactionRepository", () => {
   it("soft-deletes only within the household scope", async () => {
     const { db } = makeDb();
     const updateMany = db.transaction.updateMany as ReturnType<typeof vi.fn>;
-    await createTransactionRepository(db).softDelete(HOUSEHOLD_A, "tx-1", USER);
+    await createTransactionRepository(db).softDelete(actorA, "tx-1", USER);
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: "tx-1", householdId: HOUSEHOLD_A, deletedAt: null }),
@@ -136,7 +138,7 @@ describe("TransactionRepository", () => {
   it("restores only soft-deleted rows within the household scope", async () => {
     const { db } = makeDb();
     const updateMany = db.transaction.updateMany as ReturnType<typeof vi.fn>;
-    await createTransactionRepository(db).restore(HOUSEHOLD_A, "tx-1");
+    await createTransactionRepository(db).restore(actorA, "tx-1");
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: "tx-1", householdId: HOUSEHOLD_A, deletedAt: { not: null } }),
@@ -146,7 +148,7 @@ describe("TransactionRepository", () => {
 
   it("lists trash rows only (deleted_at not null), separate from active reads", () => {
     const { db, captured } = makeDb();
-    createTransactionRepository(db).listTrash(HOUSEHOLD_A);
+    createTransactionRepository(db).listTrash(actorA);
     expect(captured.transactionWhere).toMatchObject({
       householdId: HOUSEHOLD_A,
       deletedAt: { not: null },
@@ -158,8 +160,8 @@ describe("TransactionRepository", () => {
     const legs = await createTransactionRepository(db).createTransferPair(
       HOUSEHOLD_A,
       USER,
-      { amountMinor: 50_000, occurredAt: new Date("2026-10-01T12:00:00+07:00") },
-      { amountMinor: 50_000, occurredAt: new Date("2026-10-01T12:00:00+07:00") },
+      { amountMinor: 50_000, occurredAt: new Date("2026-10-01T12:00:00+07:00"), walletId: WALLET },
+      { amountMinor: 50_000, occurredAt: new Date("2026-10-01T12:00:00+07:00"), walletId: "77777777-7777-4777-8777-777777777777" },
     );
     expect(legs).toHaveLength(2);
     expect(legs[0]?.transferGroupId).toBe(legs[1]?.transferGroupId);

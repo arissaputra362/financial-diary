@@ -1,0 +1,16 @@
+[WebServer] $ next dev -p "3033"
+
+Running 2 tests using 1 worker
+
+[DBG2 mobile-390 #0] elapsed=1503 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03 historyBefore=2 body="CATATAN KEUANGAN KELUARGA |  | Aktivitas | Tambah transaksi | Transaksi | Trash |  | Maret 2025 |  | Belum ada transaksi"
+[DBG2 mobile-390 #1] elapsed=1506 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03 historyBefore=2 body="CATATAN KEUANGAN KELUARGA |  | Aktivitas | Tambah transaksi | Transaksi | Trash |  | Maret 2025 |  | Belum ada transaksi"
+[DBG2 mobile-390 #2] elapsed=1503 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03&add=1 historyBefore=2 body="CATATAN KEUANGAN KELUARGA |  | Aktivitas | Tambah transaksi | Transaksi | Trash |  | Maret 2025 |  | Belum ada transaksi"
+[DBG2 mobile-390 #3] elapsed=1504 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03&add=1 historyBefore=2 body="CATATAN KEUANGAN KELUARGA |  | Aktivitas | Tambah transaksi | Transaksi | Trash |  | Maret 2025 |  | Belum ada transaksi"
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-debug2.qa.spec.ts:18:5 › race debug exact loop (8.6s)
+[DBG2 desktop-1280 #0] elapsed=1511 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03&add=1 historyBefore=2 body="Catatan Keluarga | Beranda | Budget | Aktivitas | Keluarga | Tambah transaksi |  | CATATAN KEUANGAN KELUARGA |  | Aktivi"
+[DBG2 desktop-1280 #1] elapsed=1513 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03 historyBefore=2 body="Catatan Keluarga | Beranda | Budget | Aktivitas | Keluarga | Tambah transaksi |  | CATATAN KEUANGAN KELUARGA |  | Aktivi"
+[DBG2 desktop-1280 #2] elapsed=1504 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03&add=1 historyBefore=2 body="Catatan Keluarga | Beranda | Budget | Aktivitas | Keluarga | Tambah transaksi |  | CATATAN KEUANGAN KELUARGA |  | Aktivi"
+[DBG2 desktop-1280 #3] elapsed=1504 err="locator.waitFor: Timeout 1500ms exceeded." byName=0 any=0 urlAtTap=/transactions?month=2025-03 historyBefore=2 body="Catatan Keluarga | Beranda | Budget | Aktivitas | Keluarga | Tambah transaksi |  | CATATAN KEUANGAN KELUARGA |  | Aktivi"
+  ✓  2 [desktop-1280] › docs\qa\harness\t012-round2\t012-debug2.qa.spec.ts:18:5 › race debug exact loop (8.7s)
+
+  2 passed (24.0s)

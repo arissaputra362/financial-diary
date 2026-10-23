@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileQuestion } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 
 /*
@@ -11,21 +12,21 @@ export default function NotFound() {
       <Card className="w-full text-center">
         <span
           aria-hidden="true"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl mx-auto"
+          className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]"
         >
-          🧭
+          <FileQuestion className="h-5 w-5" />
         </span>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900">
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[#17304F]">
           Halaman tidak ditemukan
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+        <p className="mt-2 text-[15px] leading-relaxed text-[#46597A]">
           Alamat yang kamu buka tidak ada atau sudah dipindahkan. Kembali ke
           Beranda untuk melanjutkan.
         </p>
         <div className="mt-5 flex justify-center">
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-900 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800 active:scale-[0.98]"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#155C30] active:scale-[0.98]"
           >
             Kembali ke Beranda
           </Link>

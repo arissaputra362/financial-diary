@@ -33,7 +33,7 @@ Full product requirements (archived): `docs/archive/requirements-2026-09-30.md` 
 | Database | **PostgreSQL on Neon.tech** | Serverless Postgres. Schema in `prisma/schema.prisma` (see `docs/erd/erd-database-schema.md`). |
 | ORM | **Prisma 7.10** + `@prisma/adapter-neon` | Driver-adapter mode; `prisma.config.ts`; migrations via `prisma migrate` (direct URL). See `docs/adr/ADR-001-prisma-neon-adapter.md`. |
 | Auth | **Custom `jose` JWT + DB session** | Invite-only. JWT claims `{sub, sid, token_version, iat, exp}` (no `role`); sliding session; session row revocable. See `docs/adr/ADR-002-auth-jwt-session.md`. |
-| AI / OCR | **Google Gemini API** (`@google/genai`) | `gemini-2.5-flash` via `GEMINI_MODEL`; structured output, fail-closed. Free tier. Used for receipt OCR and financial advice. |
+| AI / OCR | **Google Gemini API** (`@google/genai`) | `gemini-3.5-flash-lite` via `GEMINI_MODEL`; structured output, fail-closed. Free tier. Used for receipt OCR and financial advice. |
 | Storage | **Vercel Blob** (`@vercel/blob`) | Receipt images, ≤4MB, server-proxied. See `docs/adr/ADR-008-receipt-storage-blob.md`. |
 | Deployment | **Vercel** (free tier) | Deploy from `main` branch. See `docs/adr/ADR-007-free-tier-deployment.md`. |
 
@@ -97,20 +97,26 @@ Control/status documents (TASK-PLAN, tickets) live outside; see `../tickets/TASK
 
 ## 4. Design System
 
-The UI follows a **Bento Box dashboard** style with these specific design tokens:
+The UI follows a **Bento Box dashboard** style with the PM-approved blue-white-green tokens from `docs/design/01-design-system-tokens.md` (2026-10-20):
 
 | Token | Value | Usage |
 |---|---|---|
-| **Font** | Plus Jakarta Sans / Inter | Friendly, readable. Not monospace. |
-| **Navbar bg** | `#15171C` (charcoal) | Floating top navbar only. |
-| **Card: Peach** | `#FFE8D6` | Hero balance card, highlights. |
-| **Card: Lavender** | `#F3E8FF` | AI advisor panel accents. |
-| **Card: Mint** | `#DCFCE7` | Savings targets. |
-| **Card: White** | `#FFFFFF` | Default card surface. |
-| **Body bg** | `#F8F8FA` | App canvas background. |
-| **Radius: cards** | `rounded-3xl` | Bento cards. |
-| **Radius: buttons** | `rounded-full` | Pill-shaped primary buttons. |
-| **Radius: inputs** | `rounded-xl` | Form fields. |
+| **Font** | Plus Jakarta Sans (single family) | Friendly, readable. Money uses `tabular-nums`; no second family. |
+| **Canvas** | `#F1F5FA` | App page background. |
+| **Card surface** | `#FFFFFF` | Default card and sheet surface. |
+| **Structural navy** | `#14273F` | Floating nav, Finny panel, Dompet Bersama card, toast. |
+| **Brand blue** | `#1D4F87` | Money context, chart bars, selected emphasis, Dompet Pribadi card. |
+| **Blue tint / wash** | `#DCEBFA` / `#EFF4FA` | Bersama accents and light wells. |
+| **Brand green** | `#166534` | Primary actions, money in, target progress, wallet chip. |
+| **Mint well** | `#DCFCE7` | Savings target surface and success blocks. |
+| **Text** | `#17304F` / `#46597A` / `#5C7191` / `#5C6C86` | Primary, secondary, muted helper, placeholder. |
+| **Borders** | card `#D8E2EE`, input `#C9D6E4`, divider `#EAEEF4` | Hairlines and form boundaries. |
+| **Status** | amber text `#8A5A00` on `#FDF3D7`; danger `#B91C1C` on `#FDECEC` | Warnings and errors only, never decoration. |
+| **Radius: cards** | `rounded-3xl` | Bento cards, sheets, modals. |
+| **Radius: buttons** | `rounded-full` | Pill-shaped controls. |
+| **Radius: inputs** | `rounded-2xl` | Form fields. |
+
+Use the token pairs measured in design 01 for WCAG AA. Retired warm peach/lavender/coral/violet-fuchsia colors must not be reintroduced. Wallet cards use the generic ATM treatment from `docs/design/06-wallets.md` with no card numbers, expiry, CVV, real bank logos, or bank-integration claims.
 
 **Antislop dials:** ENERGY 2 / RHYTHM 2 / MOTION 1.
 
@@ -119,6 +125,7 @@ Wireframes: `docs/design/02-bento-dashboard-wireframes.md`
 OCR flow: `docs/design/03-transaction-and-ocr-flow.md`
 Auth flow: `docs/design/04-auth-and-household-admin.md`
 AI advisor: `docs/design/05-ai-advisor-panel.md`
+Wallets: `docs/design/06-wallets.md`
 
 ## 5. Core Feature Rules
 
@@ -189,7 +196,8 @@ Required in `.env.local` (never commit this file):
 ```env
 # Gemini API
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_MODEL_FALLBACKS=gemini-3.1-flash-lite
 
 # Neon.tech PostgreSQL
 DATABASE_URL=
@@ -200,6 +208,23 @@ AUTH_SECRET=
 # Vercel Blob (receipt storage)
 BLOB_READ_WRITE_TOKEN=
 ```
+
+### Local Development with PostgreSQL
+
+Untuk testing lokal dengan PostgreSQL lokal (bukan Neon cloud), lihat `docs/dev-setup-local.md`.
+
+Quick start:
+```bash
+createdb financial_planner_test
+cp .env.example .env.local
+# Edit .env.local dengan DATABASE_URL lokal
+bunx prisma migrate deploy
+bun dev
+```
+
+**Catatan:**
+- `lib/db.ts` memilih adapter dari `DATABASE_URL`: host `*.neon.tech` → `@prisma/adapter-neon`; selain itu (PostgreSQL lokal/self-hosted) → `@prisma/adapter-pg`. Karena itu `bun dev` bisa jalan di Neon maupun PostgreSQL lokal tanpa ganti file.
+- `lib/server/testing/integration-db.ts` selalu memakai `@prisma/adapter-pg` untuk integration test (`bun run test:integration`).
 
 ## 9. Sprint Tickets
 

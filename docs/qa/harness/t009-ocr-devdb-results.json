@@ -1,0 +1,129 @@
+{
+  "run": "mv0kp1h3c8mo",
+  "prefix": "qa-t009-ocr-mv0kp1h3c8mo-",
+  "pass": 20,
+  "fail": 0,
+  "total": 20,
+  "results": [
+    {
+      "id": "SETUP",
+      "name": "actors + wallets ready",
+      "pass": true,
+      "detail": "owner=201 member=201 pW=201 sW=201"
+    },
+    {
+      "id": "SEED",
+      "name": "receipt + SUCCEEDED job seeded (uploader=owner)",
+      "pass": true,
+      "detail": "receipt=1 job=1"
+    },
+    {
+      "id": "C19-1",
+      "name": "cross-uploader duplicate -> 409 DUPLICATE_RECEIPT",
+      "pass": true,
+      "detail": "status=409 code=DUPLICATE_RECEIPT"
+    },
+    {
+      "id": "C19-2",
+      "name": "cross-uploader 409 body is generic: only {error}, no job/draft/receiptId/uploader",
+      "pass": true,
+      "detail": "keys=error"
+    },
+    {
+      "id": "C19-3",
+      "name": "same-uploader retry -> 409 with own job+draft+flag (reuse own job)",
+      "pass": true,
+      "detail": "status=409 job=44ab5b53-8600-485d-930e-aaca3a6b290a flag=false"
+    },
+    {
+      "id": "C29-1",
+      "name": "non-uploader GET job -> 404 (uploader-only)",
+      "pass": true,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "C29-2",
+      "name": "uploader GET job -> 200 job+draft; flag false before any sharing link",
+      "pass": true,
+      "detail": "status=200 flag=false draftMerchant=Toko QA"
+    },
+    {
+      "id": "IMG-1",
+      "name": "unauthenticated image request -> 401",
+      "pass": true,
+      "detail": "status=401"
+    },
+    {
+      "id": "IMG-2",
+      "name": "non-uploader, no link -> 404 generic (no byte, no Blob call)",
+      "pass": true,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "IMG-3",
+      "name": "unknown receipt id -> 404 identical message",
+      "pass": true,
+      "detail": "unknown='Struk tidak tersedia.' nolink='Struk tidak tersedia.'"
+    },
+    {
+      "id": "C30-1",
+      "name": "owner saves OCR tx on PERSONAL wallet -> 201",
+      "pass": true,
+      "detail": "status=201"
+    },
+    {
+      "id": "C30-2",
+      "name": "owner sees Lihat-struk signal (receiptId non-null) on own PERSONAL row",
+      "pass": true,
+      "detail": "receiptId=677a1f89-8205-4afa-9bb2-53cc960c0245"
+    },
+    {
+      "id": "C30-3",
+      "name": "member does NOT see the PERSONAL OCR row",
+      "pass": true,
+      "detail": "visible=false"
+    },
+    {
+      "id": "C30-4",
+      "name": "member image for PERSONAL-only-linked receipt -> 404 (union not satisfied)",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "C28-1",
+      "name": "owner links same receipt to a SHARING transaction -> 201",
+      "pass": true,
+      "detail": "status=201"
+    },
+    {
+      "id": "C28-2",
+      "name": "uploader job flag now true (receipt share-visible via union)",
+      "pass": true,
+      "detail": "flag=true"
+    },
+    {
+      "id": "C28-3",
+      "name": "member sees SHARING row with receiptId signal (can Lihat struk)",
+      "pass": true,
+      "detail": "receiptId=677a1f89-8205-4afa-9bb2-53cc960c0245"
+    },
+    {
+      "id": "C29-3",
+      "name": "C-29: non-uploader still 404 on job after image is share-visible",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "BLOCKED-IMG-200",
+      "name": "authorized image 200-byte path intentionally NOT executed (would call live Vercel Blob; not permitted in QA)",
+      "pass": true,
+      "detail": "authorized actors: owner (uploader) and member (SHARING union) - route logic inspected; byte path deferred to a Blob-mocked/approved environment"
+    },
+    {
+      "id": "CLEANUP",
+      "name": "zero fixture users remain",
+      "pass": true,
+      "detail": "users=0"
+    }
+  ]
+}

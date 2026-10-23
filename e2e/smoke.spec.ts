@@ -1,12 +1,18 @@
 import { expect, test } from "@playwright/test";
+import { signUpOwner } from "./helpers";
 
 /*
-  T-002 responsive smoke. Every assertion is observable in the browser:
+  Responsive smoke (A-23, T-005). Every assertion is observable in the browser:
   HTTP status, visible heading, layout width, live nav targets, keyboard focus.
-  Runs on both the mobile (390x844) and desktop (1280x800) projects.
+  Runs on mobile (390x844), tablet (768x1024), and desktop (1280x800). Each test
+  signs up a fresh owner so the protected dashboard renders with a session.
 */
 
-const liveRoutes = ["/", "/transactions", "/profile"];
+const liveRoutes = ["/home", "/budget", "/transactions", "/family"];
+
+test.beforeEach(async ({ page }) => {
+  await signUpOwner(page);
+});
 
 test.describe("live routes", () => {
   for (const route of liveRoutes) {
@@ -50,7 +56,7 @@ test.describe("layout", () => {
 
 test.describe("navigation", () => {
   test("every visible nav link points to a live route", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/home");
 
     const nav = page.locator('nav[aria-label="Navigasi utama"]:visible');
     await expect(nav).toHaveCount(1);
@@ -69,7 +75,7 @@ test.describe("navigation", () => {
   test("keyboard focus reaches a nav link with a visible outline", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/home");
 
     let focusedNavLink = false;
     for (let i = 0; i < 12 && !focusedNavLink; i += 1) {

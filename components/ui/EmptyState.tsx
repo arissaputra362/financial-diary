@@ -1,3 +1,4 @@
+import { Inbox } from "lucide-react";
 import { Card } from "./Card";
 
 export interface EmptyStateProps {
@@ -16,12 +17,12 @@ export function EmptyState({ title, description, action }: EmptyStateProps) {
     <Card className="flex flex-col items-center gap-3 py-10 text-center">
       <span
         aria-hidden="true"
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]"
       >
-        🗒️
+        <Inbox className="h-5 w-5" />
       </span>
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      <p className="max-w-sm text-[15px] leading-relaxed text-slate-600">
+      <h2 className="text-lg font-semibold text-[#17304F]">{title}</h2>
+      <p className="max-w-sm text-[15px] leading-relaxed text-[#46597A]">
         {description}
       </p>
       {action ? <div className="mt-1">{action}</div> : null}

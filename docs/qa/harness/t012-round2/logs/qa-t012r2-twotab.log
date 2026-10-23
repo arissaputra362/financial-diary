@@ -1,0 +1,14 @@
+[WebServer] $ next dev -p "3033"
+
+Running 8 tests using 1 worker
+
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:105:7 › BUG-2 two tabs on the same FAILED receipt › tab A retried to SUCCEEDED, tab B reaches the editable review (2.6s)
+  ✓  2 [mobile-390] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:151:7 › BUG-2 two tabs on the same FAILED receipt › tab A's retry lands FAILED, tab B sees the newest FAILED attempt and can retry it (1.4s)
+  ✓  3 [mobile-390] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:210:7 › BUG-2 two tabs on the same FAILED receipt › latest job stays PROCESSING: in-progress notice, no retry, poll is paced and stops on close (12.9s)
+  ✓  4 [mobile-390] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:254:7 › BUG-2 two tabs on the same FAILED receipt › two tabs racing: tab B shows in-progress then resolves to the review once tab A finishes (3.8s)
+  ✓  5 [desktop-1280] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:105:7 › BUG-2 two tabs on the same FAILED receipt › tab A retried to SUCCEEDED, tab B reaches the editable review (1.6s)
+  ✓  6 [desktop-1280] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:151:7 › BUG-2 two tabs on the same FAILED receipt › tab A's retry lands FAILED, tab B sees the newest FAILED attempt and can retry it (1.5s)
+  ✓  7 [desktop-1280] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:210:7 › BUG-2 two tabs on the same FAILED receipt › latest job stays PROCESSING: in-progress notice, no retry, poll is paced and stops on close (12.8s)
+  ✓  8 [desktop-1280] › docs\qa\harness\t012-round2\t012-two-tab.qa.spec.ts:254:7 › BUG-2 two tabs on the same FAILED receipt › two tabs racing: tab B shows in-progress then resolves to the review once tab A finishes (3.9s)
+
+  8 passed (47.6s)

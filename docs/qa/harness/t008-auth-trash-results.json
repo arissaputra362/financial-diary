@@ -1,0 +1,308 @@
+{
+  "run": "muy4w30nuucu",
+  "prefix": "qa-t008-phase1-muy4w30nuucu-",
+  "pass": 47,
+  "fail": 3,
+  "results": [
+    {
+      "id": "F1-1a",
+      "name": "signup w/o invite -> 201 OWNER/APPROVED OPEN_HOME + household",
+      "pass": true,
+      "detail": "status=201 role=OWNER mstatus=APPROVED next=OPEN_HOME household=true"
+    },
+    {
+      "id": "F1-1b",
+      "name": "DB: exactly 1 user + 1 OWNER household + 1 OWNER/APPROVED membership",
+      "pass": true,
+      "detail": "user=1 household=1 membership=1"
+    },
+    {
+      "id": "F1-1c",
+      "name": "signup response carries no ledger payload",
+      "pass": true,
+      "detail": "keys=user,household,role,status,nextAction"
+    },
+    {
+      "id": "F1-1d",
+      "name": "password < 8 -> 422 VALIDATION_ERROR",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F1-2pre",
+      "name": "owner creates invite -> 201 with 8-char one-time code",
+      "pass": true,
+      "detail": "status=201 codeLen=8 redeemed=null"
+    },
+    {
+      "id": "F1-2a",
+      "name": "valid invite signup -> 201 PENDING WAIT_FOR_APPROVAL MEMBER (not APPROVED)",
+      "pass": true,
+      "detail": "status=201 mstatus=PENDING next=WAIT_FOR_APPROVAL role=MEMBER"
+    },
+    {
+      "id": "F1-2b",
+      "name": "DB: invite redeemed_at set + membership PENDING + REQUESTED event",
+      "pass": true,
+      "detail": "redeemed=t mstatus=PENDING reqEvents=1"
+    },
+    {
+      "id": "F1-3a",
+      "name": "wrong/expired/revoked/reused -> all 400",
+      "pass": true,
+      "detail": "statuses=400,400,400,400"
+    },
+    {
+      "id": "F1-3b",
+      "name": "four causes return byte-identical {code,message} (no enumeration)",
+      "pass": true,
+      "detail": "uniqueBodies=1 code=INVALID_INVITE"
+    },
+    {
+      "id": "F1-4a",
+      "name": "PENDING /api/dashboard -> 403 ACCESS_PENDING",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_PENDING"
+    },
+    {
+      "id": "F1-4b",
+      "name": "PENDING /api/transactions -> 403 ACCESS_PENDING",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_PENDING"
+    },
+    {
+      "id": "F1-4c",
+      "name": "PENDING /api/auth/me -> 200 allowed exception",
+      "pass": true,
+      "detail": "status=200 mstatus=PENDING"
+    },
+    {
+      "id": "F1-4d",
+      "name": "403 body carries only the error envelope (no ledger data)",
+      "pass": true,
+      "detail": "keys=error"
+    },
+    {
+      "id": "F1-4e",
+      "name": "PENDING logout allowed (204) and old session then 401",
+      "pass": true,
+      "detail": "logout=204 meAfter=401"
+    },
+    {
+      "id": "F1-5b",
+      "name": "PENDING->DECLINED transition 200 + DECLINED event",
+      "pass": true,
+      "detail": "status=200 mstatus=DECLINED events=1"
+    },
+    {
+      "id": "F1-4f",
+      "name": "DECLINED /api/dashboard -> 403 ACCESS_DECLINED",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_DECLINED"
+    },
+    {
+      "id": "F1-4g",
+      "name": "DECLINED /api/auth/me -> 200 status DECLINED",
+      "pass": true,
+      "detail": "status=200 mstatus=DECLINED"
+    },
+    {
+      "id": "F1-5c",
+      "name": "APPROVED->REVOKED transition 200 + REVOKED event",
+      "pass": true,
+      "detail": "approve=200 revoke=200 events=1"
+    },
+    {
+      "id": "F1-4h",
+      "name": "APPROVED then REVOKED -> dashboard 403 ACCESS_REVOKED",
+      "pass": true,
+      "detail": "before=200 after=403 code=ACCESS_REVOKED"
+    },
+    {
+      "id": "F1-4i",
+      "name": "REVOKED /api/auth/me -> 200 status REVOKED",
+      "pass": true,
+      "detail": "status=200 mstatus=REVOKED"
+    },
+    {
+      "id": "F1-5a",
+      "name": "PENDING->APPROVED transition 200 + APPROVED event",
+      "pass": true,
+      "detail": "status=200 mstatus=APPROVED events=1"
+    },
+    {
+      "id": "F1-5d",
+      "name": "invalid DECLINED->APPROVED -> 409 INVALID_STATE_TRANSITION, no new event",
+      "pass": true,
+      "detail": "status=409 code=INVALID_STATE_TRANSITION events 2->2"
+    },
+    {
+      "id": "F1-5e",
+      "name": "non-owner (APPROVED MEMBER) approve -> 403 ACCESS_DENIED",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_DENIED"
+    },
+    {
+      "id": "F1-5f",
+      "name": "OWNER as target -> 409 INVALID_STATE_TRANSITION (approve + self-revoke)",
+      "pass": true,
+      "detail": "approve=409/INVALID_STATE_TRANSITION revoke=409/INVALID_STATE_TRANSITION"
+    },
+    {
+      "id": "F1-6a",
+      "name": "JWT TTL is 15 min (exp - iat = 900)",
+      "pass": true,
+      "detail": "ttl=900"
+    },
+    {
+      "id": "F1-6b",
+      "name": "JWT claims == {sub,sid,token_version,iat,exp}, no role/household_id",
+      "pass": true,
+      "detail": "keys=exp,iat,sid,sub,token_version"
+    },
+    {
+      "id": "F1-6g",
+      "name": "login mints a new sid (anti session fixation)",
+      "pass": true,
+      "detail": "sid1=088efae5 sid2=efd837ba"
+    },
+    {
+      "id": "F1-7c",
+      "name": "token version is v1 and sub is the owner id",
+      "pass": true,
+      "detail": "tv=v1 sub=152d7038"
+    },
+    {
+      "id": "F1-6c",
+      "name": "protected request reissues the sliding session cookie (same sid)",
+      "pass": true,
+      "detail": "status=200 reissued=true sameSid=true"
+    },
+    {
+      "id": "F1-6d",
+      "name": "session cookie flags HttpOnly / Secure / SameSite=Lax",
+      "pass": true,
+      "detail": "flags=httpOnly:true,secure:true,lax:true"
+    },
+    {
+      "id": "F1-6e",
+      "name": "logout -> 204, session revoked_at set, cookie cleared (Max-Age=0)",
+      "pass": true,
+      "detail": "logout=204 revoked=t cleared=true me=401"
+    },
+    {
+      "id": "F1-6h",
+      "name": "session past absolute expiry -> 401",
+      "pass": false,
+      "detail": "status=200"
+    },
+    {
+      "id": "F1-7a",
+      "name": "approved member regains access on the next request (was 403 PENDING)",
+      "pass": true,
+      "detail": "status=200"
+    },
+    {
+      "id": "F5-pre",
+      "name": "baseline dashboard balance=200000 spending=300000",
+      "pass": true,
+      "detail": "balance=200000 spent=300000"
+    },
+    {
+      "id": "F5-1a",
+      "name": "trash transaction -> 200 with deletedAt filled, alreadyDeleted=false",
+      "pass": true,
+      "detail": "status=200 deletedAt=true alreadyDeleted=false"
+    },
+    {
+      "id": "F5-1b",
+      "name": "DB: row still exists (not hard delete) with deleted_at + deleted_by_user_id + amount intact",
+      "pass": false,
+      "detail": "row=true|152d7038-44c9-4d59-9025-26cc8d206924|200000"
+    },
+    {
+      "id": "F5-1c",
+      "name": "deleted record gone from active list",
+      "pass": true,
+      "detail": "activeRows=2 hasDeleted=false"
+    },
+    {
+      "id": "F5-1d",
+      "name": "dashboard excludes deleted: balance=400000 spending=100000",
+      "pass": true,
+      "detail": "balance=400000 spent=100000"
+    },
+    {
+      "id": "F5-3a",
+      "name": "trash ordered deleted_at DESC",
+      "pass": true,
+      "detail": "order=a77c,f66e,2a5b,0719"
+    },
+    {
+      "id": "F5-3b",
+      "name": "trash has only soft-deleted rows (active excluded) and is household-scoped",
+      "pass": true,
+      "detail": "rows=4 allDeleted=true"
+    },
+    {
+      "id": "F5-3c",
+      "name": "household B trash never shows household A records",
+      "pass": true,
+      "detail": "Brows=0"
+    },
+    {
+      "id": "F5-3d",
+      "name": "trash cursor pagination: page1=[t5,t4], nextCursor present, page2=[t3,tOut2], no dup/loss",
+      "pass": true,
+      "detail": "page1=a77c,f66e cursor=true page2=2a5b,0719"
+    },
+    {
+      "id": "F5-4a",
+      "name": "restore -> 200 deletedAt null alreadyActive=false",
+      "pass": true,
+      "detail": "status=200 deletedAt=null alreadyActive=false"
+    },
+    {
+      "id": "F5-4b",
+      "name": "restore clears deleted_at/deleted_by and preserves occurred_at/amount/created_by",
+      "pass": false,
+      "detail": "after=true|NULL|2026-10-07 05:00:00+07|200000|152d7038-44c9-4d59-9025-26cc8d206924 before=2026-10-07 05:00:00+07|200000|152d7038-44c9-4d59-9025-26cc8d206924"
+    },
+    {
+      "id": "F5-4c",
+      "name": "restored record back in active list and recalculated (balance back to 200000)",
+      "pass": true,
+      "detail": "inActive=true balance=200000"
+    },
+    {
+      "id": "F5-7a",
+      "name": "cross-household trash by id -> 404 NOT_FOUND (not 403)",
+      "pass": true,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "F5-7b",
+      "name": "cross-household restore by id -> 404 NOT_FOUND",
+      "pass": true,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "F5-7c",
+      "name": "cross-household message identical to unknown-id (no existence leak)",
+      "pass": true,
+      "detail": "cross='Transaksi tidak ditemukan.' unknown='Transaksi tidak ditemukan.'"
+    },
+    {
+      "id": "F5-7d",
+      "name": "B's cross-household attempts did not mutate A's rows",
+      "pass": true,
+      "detail": "tInActive=t tOut2Active=t"
+    },
+    {
+      "id": "CLEANUP",
+      "name": "zero generated fixture users / transactions remain",
+      "pass": true,
+      "detail": "users=0 transactions=0 prefix=qa-t008-phase1-muy4w30nuucu-"
+    }
+  ]
+}

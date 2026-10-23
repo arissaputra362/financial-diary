@@ -1,0 +1,42 @@
+{
+  "pass": 5,
+  "fail": 1,
+  "results": [
+    {
+      "id": "SES-1",
+      "name": "login -> 200 + cookie",
+      "pass": true,
+      "detail": "status=200"
+    },
+    {
+      "id": "SES-2",
+      "name": "GET /me authenticated -> 200",
+      "pass": true,
+      "detail": "status=200"
+    },
+    {
+      "id": "SES-3",
+      "name": "invalid token -> 401",
+      "pass": true,
+      "detail": "status=401"
+    },
+    {
+      "id": "SES-4",
+      "name": "logout -> 200",
+      "pass": false,
+      "detail": "status=204 setCookie=clear"
+    },
+    {
+      "id": "SES-5",
+      "name": "old session after logout -> 401 (revoked)",
+      "pass": true,
+      "detail": "status=401"
+    },
+    {
+      "id": "SES-6",
+      "name": "re-login -> new session works",
+      "pass": true,
+      "detail": "login=200 me=200"
+    }
+  ]
+}

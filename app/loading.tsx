@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 /** Global loading fallback: a neutral card grid, no fake numbers. */
 export default function Loading() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 lg:pt-24">
+    <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 md:pt-24">
       <span className="sr-only" role="status">
         Sedang memuat halaman
       </span>

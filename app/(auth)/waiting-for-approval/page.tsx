@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Ban, Clock, Home as HomeIcon, Lock, RefreshCw } from "lucide-react";
 
 type MeResponse = {
   user: { id: string; email: string; displayName: string };
@@ -58,11 +59,11 @@ export default function WaitingForApprovalPage() {
       case "DECLINED":
         return (
           <>
-            <div className="text-4xl mb-6" aria-hidden="true">
-              🚫
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-[#FDECEC] text-[#B91C1C]">
+              <Ban className="h-6 w-6" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">Permintaanmu belum disetujui</h1>
-            <p className="text-slate-600 mb-6">
+            <h1 className="mb-4 text-2xl font-bold text-[#17304F]">Permintaanmu belum disetujui</h1>
+            <p className="mb-6 text-[#46597A]">
               Pemilik keluarga belum menyetujui aksesmu. Kamu bisa menghubungi mereka secara langsung.
             </p>
           </>
@@ -70,11 +71,11 @@ export default function WaitingForApprovalPage() {
       case "REVOKED":
         return (
           <>
-            <div className="text-4xl mb-6" aria-hidden="true">
-              🔒
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-[#FDECEC] text-[#B91C1C]">
+              <Lock className="h-6 w-6" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">Aksesmu dihentikan</h1>
-            <p className="text-slate-600 mb-6">
+            <h1 className="mb-4 text-2xl font-bold text-[#17304F]">Aksesmu dihentikan</h1>
+            <p className="mb-6 text-[#46597A]">
               Aksesmu ke keluarga ini sudah dihentikan oleh pemilik.
             </p>
           </>
@@ -82,25 +83,26 @@ export default function WaitingForApprovalPage() {
       default:
         return (
           <>
-            <div className="text-4xl mb-6" aria-hidden="true">
-              🏡 ⏳ ✨
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]">
+              <HomeIcon className="h-6 w-6" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-4">
+            <h1 className="mb-4 text-2xl font-bold text-[#17304F]">
               {displayName ? `Tunggu sebentar, ${displayName}!` : "Tunggu sebentar!"}
             </h1>
-            <p className="text-slate-600 mb-6">
+            <p className="mb-6 text-[#46597A]">
               {householdName
                 ? `Permintaanmu untuk bergabung dengan "${householdName}" sudah dikirim.`
                 : "Permintaanmu untuk bergabung dengan keluarga sudah dikirim."}
             </p>
             <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-100 text-amber-800 font-medium mb-6"
+              className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#FDF3D7] px-4 py-1.5 font-medium text-[#8A5A00]"
               role="status"
               aria-live="polite"
             >
-              🟡 Menunggu persetujuan pemilik
+              <Clock className="h-4 w-4" aria-hidden="true" />
+              Menunggu persetujuan pemilik
             </div>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="mb-6 text-sm text-[#5C7191]">
               Agar keuangan keluarga tetap aman dan private, pemilik keluarga perlu menyetujui aksesmu.
             </p>
           </>
@@ -109,9 +111,9 @@ export default function WaitingForApprovalPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-orange-50 via-purple-50 to-white px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl bg-white p-8 shadow-bento border border-slate-100 text-center">
+        <div className="rounded-3xl border border-[#D8E2EE] bg-white p-8 text-center shadow-bento">
           {renderContent()}
 
           {status === "PENDING" && (
@@ -119,8 +121,9 @@ export default function WaitingForApprovalPage() {
               type="button"
               onClick={check}
               disabled={checking}
-              className="w-full bg-white border border-slate-200 text-slate-700 py-2.5 rounded-full font-medium hover:bg-slate-50 transition-all disabled:opacity-50"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#BFD3E8] bg-white py-2.5 font-semibold text-[#1D4F87] transition-all hover:bg-[#EFF4FA] disabled:cursor-not-allowed disabled:bg-[#E6ECF4] disabled:text-[#46597A]"
             >
+              <RefreshCw className={checking ? "h-4 w-4 animate-spin" : "h-4 w-4"} aria-hidden="true" />
               {checking ? "Memeriksa..." : "Periksa lagi"}
             </button>
           )}
@@ -128,7 +131,7 @@ export default function WaitingForApprovalPage() {
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-4 text-slate-500 hover:text-slate-700 text-sm"
+            className="mt-4 min-h-11 text-sm font-medium text-[#46597A] hover:text-[#17304F]"
           >
             Keluar
           </button>

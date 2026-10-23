@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LogOut, User } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type MeState = {
   user: { id: string; email: string; displayName: string };
@@ -51,8 +53,9 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <AppShell>
-        <div className="flex items-center justify-center py-20">
-          <p className="text-slate-500">Memuat...</p>
+        <div className="space-y-5" aria-busy="true" aria-label="Memuat profil">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-64 w-full" />
         </div>
       </AppShell>
     );
@@ -61,32 +64,40 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="px-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Profil
-          </p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950">
-            {me?.user?.displayName || "Pengguna"}
-          </h1>
+        <div className="flex items-center gap-4 px-1">
+          <span
+            aria-hidden="true"
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]"
+          >
+            <User className="h-6 w-6" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
+              Profil
+            </p>
+            <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-[#17304F]">
+              {me?.user?.displayName || "Pengguna"}
+            </h1>
+          </div>
         </div>
 
         <Card>
-          <dl className="space-y-4">
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">Nama</dt>
-              <dd className="mt-1 text-slate-900">{me?.user?.displayName}</dd>
+          <dl className="divide-y divide-[#EAEEF4]">
+            <div className="py-3 first:pt-0 last:pb-0">
+              <dt className="text-xs font-medium uppercase tracking-wider text-[#5C7191]">Nama</dt>
+              <dd className="mt-1 text-[#17304F]">{me?.user?.displayName}</dd>
             </div>
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">Email</dt>
-              <dd className="mt-1 text-slate-900">{me?.user?.email}</dd>
+            <div className="py-3 first:pt-0 last:pb-0">
+              <dt className="text-xs font-medium uppercase tracking-wider text-[#5C7191]">Email</dt>
+              <dd className="mt-1 break-words text-[#17304F]">{me?.user?.email}</dd>
             </div>
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">Keluarga</dt>
-              <dd className="mt-1 text-slate-900">{me?.household?.name || "-"}</dd>
+            <div className="py-3 first:pt-0 last:pb-0">
+              <dt className="text-xs font-medium uppercase tracking-wider text-[#5C7191]">Keluarga</dt>
+              <dd className="mt-1 text-[#17304F]">{me?.household?.name || "-"}</dd>
             </div>
-            <div>
-              <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">Status</dt>
-              <dd className="mt-1 text-slate-900">
+            <div className="py-3 first:pt-0 last:pb-0">
+              <dt className="text-xs font-medium uppercase tracking-wider text-[#5C7191]">Status</dt>
+              <dd className="mt-1 inline-flex items-center rounded-full bg-[#E6ECF4] px-3 py-1 text-sm font-semibold text-[#46597A]">
                 {me?.role === "OWNER" ? "Pemilik keluarga" : "Anggota"}
               </dd>
             </div>
@@ -99,6 +110,7 @@ export default function ProfilePage() {
           isLoading={loggingOut}
           className="w-full"
         >
+          <LogOut className="h-4 w-4" aria-hidden="true" />
           Keluar
         </Button>
       </div>

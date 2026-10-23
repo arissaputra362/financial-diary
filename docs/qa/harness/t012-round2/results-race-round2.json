@@ -1,0 +1,928 @@
+﻿{
+    "generatedFrom":  "qa-t012r2-harness.log (run 2026-10-22)",
+    "raceAttemptsTotal":  768,
+    "projects":  {
+                     "mobile-390":  {
+                                        "totals":  {
+                                                       "attempts":  384,
+                                                       "opened":  384,
+                                                       "stayedOpen":  384,
+                                                       "cleanUrl":  384,
+                                                       "historyStable":  384,
+                                                       "viewPreserved":  384,
+                                                       "addPresentAtClose":  42
+                                                   },
+                                        "perCase":  {
+                                                        "X|month|0ms":  {
+                                                                            "attempts":  12,
+                                                                            "opened":  12,
+                                                                            "stayedOpen":  12,
+                                                                            "cleanUrl":  12,
+                                                                            "historyStable":  12,
+                                                                            "viewPreserved":  12,
+                                                                            "addPresentAtClose":  11,
+                                                                            "maxLatencyMs":  6,
+                                                                            "medianLatencyMs":  4,
+                                                                            "failures":  [
+
+                                                                                         ]
+                                                                        },
+                                                        "X|month|50ms":  {
+                                                                             "attempts":  12,
+                                                                             "opened":  12,
+                                                                             "stayedOpen":  12,
+                                                                             "cleanUrl":  12,
+                                                                             "historyStable":  12,
+                                                                             "viewPreserved":  12,
+                                                                             "addPresentAtClose":  1,
+                                                                             "maxLatencyMs":  7,
+                                                                             "medianLatencyMs":  4,
+                                                                             "failures":  [
+
+                                                                                          ]
+                                                                         },
+                                                        "X|month|100ms":  {
+                                                                              "attempts":  12,
+                                                                              "opened":  12,
+                                                                              "stayedOpen":  12,
+                                                                              "cleanUrl":  12,
+                                                                              "historyStable":  12,
+                                                                              "viewPreserved":  12,
+                                                                              "addPresentAtClose":  0,
+                                                                              "maxLatencyMs":  6,
+                                                                              "medianLatencyMs":  4,
+                                                                              "failures":  [
+
+                                                                                           ]
+                                                                          },
+                                                        "X|month|150ms":  {
+                                                                              "attempts":  12,
+                                                                              "opened":  12,
+                                                                              "stayedOpen":  12,
+                                                                              "cleanUrl":  12,
+                                                                              "historyStable":  12,
+                                                                              "viewPreserved":  12,
+                                                                              "addPresentAtClose":  0,
+                                                                              "maxLatencyMs":  5,
+                                                                              "medianLatencyMs":  4,
+                                                                              "failures":  [
+
+                                                                                           ]
+                                                                          },
+                                                        "X|trash|0ms":  {
+                                                                            "attempts":  12,
+                                                                            "opened":  12,
+                                                                            "stayedOpen":  12,
+                                                                            "cleanUrl":  12,
+                                                                            "historyStable":  12,
+                                                                            "viewPreserved":  12,
+                                                                            "addPresentAtClose":  8,
+                                                                            "maxLatencyMs":  5,
+                                                                            "medianLatencyMs":  4,
+                                                                            "failures":  [
+
+                                                                                         ]
+                                                                        },
+                                                        "X|trash|50ms":  {
+                                                                             "attempts":  12,
+                                                                             "opened":  12,
+                                                                             "stayedOpen":  12,
+                                                                             "cleanUrl":  12,
+                                                                             "historyStable":  12,
+                                                                             "viewPreserved":  12,
+                                                                             "addPresentAtClose":  0,
+                                                                             "maxLatencyMs":  6,
+                                                                             "medianLatencyMs":  4,
+                                                                             "failures":  [
+
+                                                                                          ]
+                                                                         },
+                                                        "X|trash|100ms":  {
+                                                                              "attempts":  12,
+                                                                              "opened":  12,
+                                                                              "stayedOpen":  12,
+                                                                              "cleanUrl":  12,
+                                                                              "historyStable":  12,
+                                                                              "viewPreserved":  12,
+                                                                              "addPresentAtClose":  0,
+                                                                              "maxLatencyMs":  6,
+                                                                              "medianLatencyMs":  4,
+                                                                              "failures":  [
+
+                                                                                           ]
+                                                                          },
+                                                        "X|trash|150ms":  {
+                                                                              "attempts":  12,
+                                                                              "opened":  12,
+                                                                              "stayedOpen":  12,
+                                                                              "cleanUrl":  12,
+                                                                              "historyStable":  12,
+                                                                              "viewPreserved":  12,
+                                                                              "addPresentAtClose":  0,
+                                                                              "maxLatencyMs":  5,
+                                                                              "medianLatencyMs":  5,
+                                                                              "failures":  [
+
+                                                                                           ]
+                                                                          },
+                                                        "Batal|month|0ms":  {
+                                                                                "attempts":  12,
+                                                                                "opened":  12,
+                                                                                "stayedOpen":  12,
+                                                                                "cleanUrl":  12,
+                                                                                "historyStable":  12,
+                                                                                "viewPreserved":  12,
+                                                                                "addPresentAtClose":  11,
+                                                                                "maxLatencyMs":  7,
+                                                                                "medianLatencyMs":  5,
+                                                                                "failures":  [
+
+                                                                                             ]
+                                                                            },
+                                                        "Batal|month|50ms":  {
+                                                                                 "attempts":  12,
+                                                                                 "opened":  12,
+                                                                                 "stayedOpen":  12,
+                                                                                 "cleanUrl":  12,
+                                                                                 "historyStable":  12,
+                                                                                 "viewPreserved":  12,
+                                                                                 "addPresentAtClose":  0,
+                                                                                 "maxLatencyMs":  6,
+                                                                                 "medianLatencyMs":  4,
+                                                                                 "failures":  [
+
+                                                                                              ]
+                                                                             },
+                                                        "Batal|month|100ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  0,
+                                                                                  "maxLatencyMs":  6,
+                                                                                  "medianLatencyMs":  5,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                        "Batal|month|150ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  0,
+                                                                                  "maxLatencyMs":  6,
+                                                                                  "medianLatencyMs":  5,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                        "Batal|trash|0ms":  {
+                                                                                "attempts":  12,
+                                                                                "opened":  12,
+                                                                                "stayedOpen":  12,
+                                                                                "cleanUrl":  12,
+                                                                                "historyStable":  12,
+                                                                                "viewPreserved":  12,
+                                                                                "addPresentAtClose":  11,
+                                                                                "maxLatencyMs":  8,
+                                                                                "medianLatencyMs":  4,
+                                                                                "failures":  [
+
+                                                                                             ]
+                                                                            },
+                                                        "Batal|trash|50ms":  {
+                                                                                 "attempts":  12,
+                                                                                 "opened":  12,
+                                                                                 "stayedOpen":  12,
+                                                                                 "cleanUrl":  12,
+                                                                                 "historyStable":  12,
+                                                                                 "viewPreserved":  12,
+                                                                                 "addPresentAtClose":  0,
+                                                                                 "maxLatencyMs":  14,
+                                                                                 "medianLatencyMs":  5,
+                                                                                 "failures":  [
+
+                                                                                              ]
+                                                                             },
+                                                        "Batal|trash|100ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  0,
+                                                                                  "maxLatencyMs":  6,
+                                                                                  "medianLatencyMs":  5,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                        "Batal|trash|150ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  0,
+                                                                                  "maxLatencyMs":  6,
+                                                                                  "medianLatencyMs":  5,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                        "Escape|month|0ms":  {
+                                                                                 "attempts":  12,
+                                                                                 "opened":  12,
+                                                                                 "stayedOpen":  12,
+                                                                                 "cleanUrl":  12,
+                                                                                 "historyStable":  12,
+                                                                                 "viewPreserved":  12,
+                                                                                 "addPresentAtClose":  0,
+                                                                                 "maxLatencyMs":  8,
+                                                                                 "medianLatencyMs":  6,
+                                                                                 "failures":  [
+
+                                                                                              ]
+                                                                             },
+                                                        "Escape|month|50ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  0,
+                                                                                  "maxLatencyMs":  15,
+                                                                                  "medianLatencyMs":  5,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                        "Escape|month|100ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  6,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                        "Escape|month|150ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  7,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                        "Escape|trash|0ms":  {
+                                                                                 "attempts":  12,
+                                                                                 "opened":  12,
+                                                                                 "stayedOpen":  12,
+                                                                                 "cleanUrl":  12,
+                                                                                 "historyStable":  12,
+                                                                                 "viewPreserved":  12,
+                                                                                 "addPresentAtClose":  0,
+                                                                                 "maxLatencyMs":  14,
+                                                                                 "medianLatencyMs":  5,
+                                                                                 "failures":  [
+
+                                                                                              ]
+                                                                             },
+                                                        "Escape|trash|50ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  0,
+                                                                                  "maxLatencyMs":  6,
+                                                                                  "medianLatencyMs":  5,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                        "Escape|trash|100ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  6,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                        "Escape|trash|150ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  8,
+                                                                                   "medianLatencyMs":  6,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                        "backdrop|month|0ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  7,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                        "backdrop|month|50ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  9,
+                                                                                    "medianLatencyMs":  5,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                        "backdrop|month|100ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  6,
+                                                                                     "medianLatencyMs":  5,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                        "backdrop|month|150ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  7,
+                                                                                     "medianLatencyMs":  6,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                        "backdrop|trash|0ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  12,
+                                                                                   "medianLatencyMs":  7,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                        "backdrop|trash|50ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  8,
+                                                                                    "medianLatencyMs":  6,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                        "backdrop|trash|100ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  7,
+                                                                                     "medianLatencyMs":  6,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                        "backdrop|trash|150ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  7,
+                                                                                     "medianLatencyMs":  5,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 }
+                                                    }
+                                    },
+                     "desktop-1280":  {
+                                          "totals":  {
+                                                         "attempts":  384,
+                                                         "opened":  384,
+                                                         "stayedOpen":  384,
+                                                         "cleanUrl":  384,
+                                                         "historyStable":  384,
+                                                         "viewPreserved":  384,
+                                                         "addPresentAtClose":  46
+                                                     },
+                                          "perCase":  {
+                                                          "X|month|0ms":  {
+                                                                              "attempts":  12,
+                                                                              "opened":  12,
+                                                                              "stayedOpen":  12,
+                                                                              "cleanUrl":  12,
+                                                                              "historyStable":  12,
+                                                                              "viewPreserved":  12,
+                                                                              "addPresentAtClose":  12,
+                                                                              "maxLatencyMs":  4,
+                                                                              "medianLatencyMs":  4,
+                                                                              "failures":  [
+
+                                                                                           ]
+                                                                          },
+                                                          "X|month|50ms":  {
+                                                                               "attempts":  12,
+                                                                               "opened":  12,
+                                                                               "stayedOpen":  12,
+                                                                               "cleanUrl":  12,
+                                                                               "historyStable":  12,
+                                                                               "viewPreserved":  12,
+                                                                               "addPresentAtClose":  0,
+                                                                               "maxLatencyMs":  5,
+                                                                               "medianLatencyMs":  4,
+                                                                               "failures":  [
+
+                                                                                            ]
+                                                                           },
+                                                          "X|month|100ms":  {
+                                                                                "attempts":  12,
+                                                                                "opened":  12,
+                                                                                "stayedOpen":  12,
+                                                                                "cleanUrl":  12,
+                                                                                "historyStable":  12,
+                                                                                "viewPreserved":  12,
+                                                                                "addPresentAtClose":  0,
+                                                                                "maxLatencyMs":  5,
+                                                                                "medianLatencyMs":  4,
+                                                                                "failures":  [
+
+                                                                                             ]
+                                                                            },
+                                                          "X|month|150ms":  {
+                                                                                "attempts":  12,
+                                                                                "opened":  12,
+                                                                                "stayedOpen":  12,
+                                                                                "cleanUrl":  12,
+                                                                                "historyStable":  12,
+                                                                                "viewPreserved":  12,
+                                                                                "addPresentAtClose":  0,
+                                                                                "maxLatencyMs":  10,
+                                                                                "medianLatencyMs":  5,
+                                                                                "failures":  [
+
+                                                                                             ]
+                                                                            },
+                                                          "X|trash|0ms":  {
+                                                                              "attempts":  12,
+                                                                              "opened":  12,
+                                                                              "stayedOpen":  12,
+                                                                              "cleanUrl":  12,
+                                                                              "historyStable":  12,
+                                                                              "viewPreserved":  12,
+                                                                              "addPresentAtClose":  12,
+                                                                              "maxLatencyMs":  6,
+                                                                              "medianLatencyMs":  4,
+                                                                              "failures":  [
+
+                                                                                           ]
+                                                                          },
+                                                          "X|trash|50ms":  {
+                                                                               "attempts":  12,
+                                                                               "opened":  12,
+                                                                               "stayedOpen":  12,
+                                                                               "cleanUrl":  12,
+                                                                               "historyStable":  12,
+                                                                               "viewPreserved":  12,
+                                                                               "addPresentAtClose":  0,
+                                                                               "maxLatencyMs":  6,
+                                                                               "medianLatencyMs":  5,
+                                                                               "failures":  [
+
+                                                                                            ]
+                                                                           },
+                                                          "X|trash|100ms":  {
+                                                                                "attempts":  12,
+                                                                                "opened":  12,
+                                                                                "stayedOpen":  12,
+                                                                                "cleanUrl":  12,
+                                                                                "historyStable":  12,
+                                                                                "viewPreserved":  12,
+                                                                                "addPresentAtClose":  0,
+                                                                                "maxLatencyMs":  6,
+                                                                                "medianLatencyMs":  5,
+                                                                                "failures":  [
+
+                                                                                             ]
+                                                                            },
+                                                          "X|trash|150ms":  {
+                                                                                "attempts":  12,
+                                                                                "opened":  12,
+                                                                                "stayedOpen":  12,
+                                                                                "cleanUrl":  12,
+                                                                                "historyStable":  12,
+                                                                                "viewPreserved":  12,
+                                                                                "addPresentAtClose":  0,
+                                                                                "maxLatencyMs":  6,
+                                                                                "medianLatencyMs":  5,
+                                                                                "failures":  [
+
+                                                                                             ]
+                                                                            },
+                                                          "Batal|month|0ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  11,
+                                                                                  "maxLatencyMs":  7,
+                                                                                  "medianLatencyMs":  4,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                          "Batal|month|50ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  7,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                          "Batal|month|100ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  7,
+                                                                                    "medianLatencyMs":  5,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                          "Batal|month|150ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  8,
+                                                                                    "medianLatencyMs":  4,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                          "Batal|trash|0ms":  {
+                                                                                  "attempts":  12,
+                                                                                  "opened":  12,
+                                                                                  "stayedOpen":  12,
+                                                                                  "cleanUrl":  12,
+                                                                                  "historyStable":  12,
+                                                                                  "viewPreserved":  12,
+                                                                                  "addPresentAtClose":  11,
+                                                                                  "maxLatencyMs":  7,
+                                                                                  "medianLatencyMs":  5,
+                                                                                  "failures":  [
+
+                                                                                               ]
+                                                                              },
+                                                          "Batal|trash|50ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  5,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                          "Batal|trash|100ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  7,
+                                                                                    "medianLatencyMs":  5,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                          "Batal|trash|150ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  9,
+                                                                                    "medianLatencyMs":  5,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                          "Escape|month|0ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  7,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                          "Escape|month|50ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  8,
+                                                                                    "medianLatencyMs":  5,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                          "Escape|month|100ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  7,
+                                                                                     "medianLatencyMs":  5,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                          "Escape|month|150ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  6,
+                                                                                     "medianLatencyMs":  5,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                          "Escape|trash|0ms":  {
+                                                                                   "attempts":  12,
+                                                                                   "opened":  12,
+                                                                                   "stayedOpen":  12,
+                                                                                   "cleanUrl":  12,
+                                                                                   "historyStable":  12,
+                                                                                   "viewPreserved":  12,
+                                                                                   "addPresentAtClose":  0,
+                                                                                   "maxLatencyMs":  9,
+                                                                                   "medianLatencyMs":  5,
+                                                                                   "failures":  [
+
+                                                                                                ]
+                                                                               },
+                                                          "Escape|trash|50ms":  {
+                                                                                    "attempts":  12,
+                                                                                    "opened":  12,
+                                                                                    "stayedOpen":  12,
+                                                                                    "cleanUrl":  12,
+                                                                                    "historyStable":  12,
+                                                                                    "viewPreserved":  12,
+                                                                                    "addPresentAtClose":  0,
+                                                                                    "maxLatencyMs":  8,
+                                                                                    "medianLatencyMs":  5,
+                                                                                    "failures":  [
+
+                                                                                                 ]
+                                                                                },
+                                                          "Escape|trash|100ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  9,
+                                                                                     "medianLatencyMs":  6,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                          "Escape|trash|150ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  9,
+                                                                                     "medianLatencyMs":  6,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                          "backdrop|month|0ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  8,
+                                                                                     "medianLatencyMs":  5,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                          "backdrop|month|50ms":  {
+                                                                                      "attempts":  12,
+                                                                                      "opened":  12,
+                                                                                      "stayedOpen":  12,
+                                                                                      "cleanUrl":  12,
+                                                                                      "historyStable":  12,
+                                                                                      "viewPreserved":  12,
+                                                                                      "addPresentAtClose":  0,
+                                                                                      "maxLatencyMs":  7,
+                                                                                      "medianLatencyMs":  6,
+                                                                                      "failures":  [
+
+                                                                                                   ]
+                                                                                  },
+                                                          "backdrop|month|100ms":  {
+                                                                                       "attempts":  12,
+                                                                                       "opened":  12,
+                                                                                       "stayedOpen":  12,
+                                                                                       "cleanUrl":  12,
+                                                                                       "historyStable":  12,
+                                                                                       "viewPreserved":  12,
+                                                                                       "addPresentAtClose":  0,
+                                                                                       "maxLatencyMs":  7,
+                                                                                       "medianLatencyMs":  6,
+                                                                                       "failures":  [
+
+                                                                                                    ]
+                                                                                   },
+                                                          "backdrop|month|150ms":  {
+                                                                                       "attempts":  12,
+                                                                                       "opened":  12,
+                                                                                       "stayedOpen":  12,
+                                                                                       "cleanUrl":  12,
+                                                                                       "historyStable":  12,
+                                                                                       "viewPreserved":  12,
+                                                                                       "addPresentAtClose":  0,
+                                                                                       "maxLatencyMs":  9,
+                                                                                       "medianLatencyMs":  5,
+                                                                                       "failures":  [
+
+                                                                                                    ]
+                                                                                   },
+                                                          "backdrop|trash|0ms":  {
+                                                                                     "attempts":  12,
+                                                                                     "opened":  12,
+                                                                                     "stayedOpen":  12,
+                                                                                     "cleanUrl":  12,
+                                                                                     "historyStable":  12,
+                                                                                     "viewPreserved":  12,
+                                                                                     "addPresentAtClose":  0,
+                                                                                     "maxLatencyMs":  7,
+                                                                                     "medianLatencyMs":  6,
+                                                                                     "failures":  [
+
+                                                                                                  ]
+                                                                                 },
+                                                          "backdrop|trash|50ms":  {
+                                                                                      "attempts":  12,
+                                                                                      "opened":  12,
+                                                                                      "stayedOpen":  12,
+                                                                                      "cleanUrl":  12,
+                                                                                      "historyStable":  12,
+                                                                                      "viewPreserved":  12,
+                                                                                      "addPresentAtClose":  0,
+                                                                                      "maxLatencyMs":  6,
+                                                                                      "medianLatencyMs":  5,
+                                                                                      "failures":  [
+
+                                                                                                   ]
+                                                                                  },
+                                                          "backdrop|trash|100ms":  {
+                                                                                       "attempts":  12,
+                                                                                       "opened":  12,
+                                                                                       "stayedOpen":  12,
+                                                                                       "cleanUrl":  12,
+                                                                                       "historyStable":  12,
+                                                                                       "viewPreserved":  12,
+                                                                                       "addPresentAtClose":  0,
+                                                                                       "maxLatencyMs":  11,
+                                                                                       "medianLatencyMs":  7,
+                                                                                       "failures":  [
+
+                                                                                                    ]
+                                                                                   },
+                                                          "backdrop|trash|150ms":  {
+                                                                                       "attempts":  12,
+                                                                                       "opened":  12,
+                                                                                       "stayedOpen":  12,
+                                                                                       "cleanUrl":  12,
+                                                                                       "historyStable":  12,
+                                                                                       "viewPreserved":  12,
+                                                                                       "addPresentAtClose":  0,
+                                                                                       "maxLatencyMs":  8,
+                                                                                       "medianLatencyMs":  6,
+                                                                                       "failures":  [
+
+                                                                                                    ]
+                                                                                   }
+                                                      }
+                                      }
+                 }
+}

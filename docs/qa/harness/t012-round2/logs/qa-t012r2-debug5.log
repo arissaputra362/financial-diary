@@ -1,0 +1,14 @@
+[WebServer] $ next dev -p "3033"
+
+Running 2 tests using 1 worker
+
+[DBG5 mobile-390 #0] openedAt=0ms navClicks=2 intents=2 urlAtTap=/transactions?month=2025-03 timeline=
+[DBG5 mobile-390 #1] openedAt=0ms navClicks=4 intents=4 urlAtTap=/transactions?month=2025-03 timeline=
+[DBG5 mobile-390 #2] openedAt=0ms navClicks=6 intents=6 urlAtTap=/transactions?month=2025-03&add=1 timeline=
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-debug5.qa.spec.ts:15:5 › race debug5 zero-gap tap, long observation (2.2s)
+[DBG5 desktop-1280 #0] openedAt=0ms navClicks=2 intents=2 urlAtTap=/transactions?month=2025-03&add=1 timeline=
+[DBG5 desktop-1280 #1] openedAt=0ms navClicks=4 intents=4 urlAtTap=/transactions?month=2025-03&add=1 timeline=
+[DBG5 desktop-1280 #2] openedAt=0ms navClicks=6 intents=6 urlAtTap=/transactions?month=2025-03&add=1 timeline=
+  ✓  2 [desktop-1280] › docs\qa\harness\t012-round2\t012-debug5.qa.spec.ts:15:5 › race debug5 zero-gap tap, long observation (1.5s)
+
+  2 passed (9.3s)

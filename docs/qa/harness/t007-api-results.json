@@ -1,0 +1,234 @@
+{
+  "pass": 38,
+  "fail": 0,
+  "results": [
+    {
+      "id": "R-SES",
+      "name": "owner login -> 200 + cookie",
+      "pass": true,
+      "detail": "status=200 next=OPEN_HOME"
+    },
+    {
+      "id": "F1-1",
+      "name": "target 0 -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F1-2",
+      "name": "target -1 -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F1-3",
+      "name": "empty name -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F1-4",
+      "name": "name > 80 chars -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F1-5",
+      "name": "non-integer target -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F1-6",
+      "name": "malformed deadline -> 422",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F1-7",
+      "name": "duplicate names -> 2x201 (and past deadline accepted)",
+      "pass": true,
+      "detail": "d1=201 d2=201"
+    },
+    {
+      "id": "F1-8",
+      "name": "Idempotency-Key replay -> same goal id, no duplicate row",
+      "pass": true,
+      "detail": "first=201(50c44811) second=201(50c44811)"
+    },
+    {
+      "id": "F2-1",
+      "name": "saved > target -> DTO progress capped at 100",
+      "pass": true,
+      "detail": "progress=100 saved=5250 target=5000"
+    },
+    {
+      "id": "F2-2",
+      "name": "DB counter NOT capped (250 over target kept)",
+      "pass": true,
+      "detail": "raw=5250"
+    },
+    {
+      "id": "F3-1",
+      "name": "saved 0 - 1 -> 422 SAVED_AMOUNT_INVALID, no change",
+      "pass": true,
+      "detail": "status=422 code=SAVED_AMOUNT_INVALID raw=0"
+    },
+    {
+      "id": "F3-2",
+      "name": "delta 0 -> 422",
+      "pass": true,
+      "detail": "status=422 code=SAVED_AMOUNT_INVALID"
+    },
+    {
+      "id": "F3-3",
+      "name": "delta > int32 -> 422",
+      "pass": true,
+      "detail": "status=422 code=SAVED_AMOUNT_INVALID"
+    },
+    {
+      "id": "F3-4",
+      "name": "malformed goal id -> 404",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "F3-5",
+      "name": "unknown but valid id -> 404",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "SEC-1",
+      "name": "household B list never contains A's goals",
+      "pass": true,
+      "detail": "rows=0 leaked=false"
+    },
+    {
+      "id": "SEC-2",
+      "name": "cross-household PATCH -> 404 (not 403, no leak)",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "SEC-3",
+      "name": "PENDING member of the SAME household -> 403 ACCESS_PENDING",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_PENDING"
+    },
+    {
+      "id": "SEC-5",
+      "name": "APPROVED member (non-owner) can write goals",
+      "pass": true,
+      "detail": "patch=200 saved=5260"
+    },
+    {
+      "id": "F4-1",
+      "name": "trash -> 200 deletedAt filled",
+      "pass": "2026-10-07T08:53:58.414Z",
+      "detail": "status=200"
+    },
+    {
+      "id": "F4-2",
+      "name": "trashed goal gone from active list",
+      "pass": true,
+      "detail": "rows=5"
+    },
+    {
+      "id": "F4-3",
+      "name": "trashed goal present in /api/goals/trash",
+      "pass": true,
+      "detail": "rows=1"
+    },
+    {
+      "id": "F4-4",
+      "name": "increment on trashed goal -> 404",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "F4-5",
+      "name": "cross-household trash -> 404",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "F4-6",
+      "name": "restore -> active again (deletedAt null)",
+      "pass": true,
+      "detail": "status=200 deletedAt=null"
+    },
+    {
+      "id": "F6-1",
+      "name": "first call FRESH, second call CACHE for the same period",
+      "pass": true,
+      "detail": "first=200/FRESH second=200/CACHE"
+    },
+    {
+      "id": "F6-2",
+      "name": "CACHE insight has same generatedAt as the FRESH row",
+      "pass": true,
+      "detail": "gen1=2026-10-07T08:54:07.394Z"
+    },
+    {
+      "id": "F6-3",
+      "name": "sourcePeriod equals the REQUESTED period (not model-invented)",
+      "pass": true,
+      "detail": "sp={\"start\":\"2026-10-01\",\"end\":\"2026-10-07\"}"
+    },
+    {
+      "id": "F6-4",
+      "name": "insight fields complete + actions >=1 with enum type",
+      "pass": true,
+      "detail": "fields=8"
+    },
+    {
+      "id": "F8-1",
+      "name": "no forbidden phrases in real insight text",
+      "pass": true,
+      "detail": "len=689"
+    },
+    {
+      "id": "SEC-6",
+      "name": "prompt never leaks into the client payload",
+      "pass": true,
+      "detail": "nessie=none"
+    },
+    {
+      "id": "F6-5",
+      "name": "different period is NOT served from cache (FRESH or honest failure}",
+      "pass": true,
+      "detail": "status=503 delivery=undefined code=ADVISOR_UNAVAILABLE"
+    },
+    {
+      "id": "F5-1",
+      "name": "period > 90 days -> 422 VALIDATION_ERROR",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR"
+    },
+    {
+      "id": "F5-2",
+      "name": "start > end -> 422",
+      "pass": true,
+      "detail": "status=422"
+    },
+    {
+      "id": "F5-3",
+      "name": "start == end accepted (FRESH or honest failure, never 422)",
+      "pass": true,
+      "detail": "status=200 delivery=FRESH"
+    },
+    {
+      "id": "F5-4",
+      "name": "exactly 91 days span -> 422 (server-side)",
+      "pass": true,
+      "detail": "status=422"
+    },
+    {
+      "id": "F5-5",
+      "name": "exactly 90 days span accepted -> not 422",
+      "pass": true,
+      "detail": "status=503 code=ADVISOR_UNAVAILABLE"
+    }
+  ]
+}

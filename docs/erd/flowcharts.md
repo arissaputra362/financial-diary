@@ -241,3 +241,192 @@ flowchart TD
 | §7 Goals | feat-goals-advisor | target 0 ditolak, atomic increment, cap 100% |
 | §8 Advisor | feat-goals-advisor | FRESH vs CACHE, rate limit, invalid output |
 | §9 Dashboard | feat-dashboard | balance benar, spentMinor tanpa TRANSFER, filter lokal cocok dengan rows |
+
+---
+
+## 11. Draft Amendment — Wallet F6 flows (T-009)
+
+**Status:** Draft, Developer (T-009) · **2026-10-09** · **Pending PM approval.**
+**Efek:** menambah/mengamandemen §4 (transaksi manual), §5 (OCR), §6 (soft delete), dan §9 (dashboard) untuk wallet. Bila bertentangan, section ini menang. Skenario test tetap milik QA (`docs/qa/user-journey-map.md` §10, W1..W14); section ini hanya alur kontrak.
+
+### 11.1 Buat / ubah / arsip wallet
+
+```mermaid
+flowchart TD
+    A[User: Buat dompet] --> B{Anggota APPROVED?}
+    B -->|tidak| C[403 ACCESS_PENDING/DECLINED/REVOKED]
+    B -->|ya| D{Validasi: nama wajib <=80; tujuan <=80; opening >= 0}
+    D -->|gagal| E[422 + fieldErrors, input terjaga]
+    D -->|valid| F[TRANSAKSI: insert wallet\nscope default PERSONAL\nopening kosong = 0]
+    F --> G[201 WalletDTO]
+    H[User: Ubah dompet] --> I{scope?}
+    I -->|SHARING| J[Semua APPROVED boleh ubah nama/tujuan]
+    I -->|PERSONAL| K[Hanya pemilik]
+    J --> L{Edit opening balance?}
+    K --> L
+    L -->|ada baris transaksi termasuk trashed / satu kaki transfer| M[422 WALLET_OPENING_BALANCE_LOCKED]
+    L -->|belum ada baris, lock wallet row + re-check NOT EXISTS| N[Update opening]
+    O[User: Arsipkan/Pulihkan] --> P{scope SHARING?}
+    P -->|ya| Q{pembuat wallet atau Owner?}
+    P -->|tidak| R{pemilik?}
+    Q -->|tidak| S[403 ACCESS_DENIED]
+    R -->|tidak| S
+    Q -->|ya| T[Set/Clear archived_at, non-destruktif]
+    R -->|ya| T
+```
+
+### 11.2 Money in/out dengan wallet
+
+```mermaid
+flowchart TD
+    A[User: catat MONEY_IN / MONEY_OUT] --> B[Pilih wallet: hanya SHARING + PERSONAL milik caller, aktif]
+    B --> C{Wallet valid, household sama, aktif?}
+    C -->|tidak| D[404 NOT_FOUND / 422 WALLET_UNAVAILABLE]
+    C -->|ya| E[TRANSAKSI: insert transaction + wallet_id]
+    E --> F[Saldo wallet = opening + MONEY_IN aktif - MONEY_OUT aktif]
+    F --> G[Baris trashed tidak dihitung; opening bukan aktivitas]
+```
+
+### 11.3 Transfer (termasuk lintas scope) + privasi
+
+```mermaid
+flowchart TD
+    A[User: Transfer] --> B[Pilih fromWalletId + toWalletId, satu jumlah]
+    B --> C{from != to; keduanya visible + aktif + household sama?}
+    C -->|tidak| D[422 TRANSFER_INVALID / 404 NOT_FOUND]
+    C -->|ya| E[TRANSAKSI: 2 kaki MONEY_OUT dari + MONEY_IN ke\ntransfer_group_id sama, jumlah+tanggal konsisten]
+    E --> F{Aktor melihat kaki Pribadi?}
+    F -->|ya, pemilik| G[DTO penuh kedua kaki]
+    F -->|tidak| H[DTO generik sisi SHARING: jumlah+tanggal saja;\nwallet/note/receipt/transferGroupId = null]
+    I[Trash/Restore transfer] --> J{Pasangan: scope?}
+    J -->|PERSONAL-PERSONAL| K[hanya pemilik]
+    J -->|SHARING-SHARING| L[semua APPROVED yang bisa akses]
+    J -->|lintas scope| M[pembuat transfer atau Owner]
+    K --> N[Atomic kedua kaki via transfer_group_id]
+    L --> N
+    M --> N
+```
+
+### 11.4 Dashboard & agregat wallet
+
+```mermaid
+flowchart TD
+    A[GET /api/dashboard] --> B[Auth + APPROVED]
+    B --> C[sharedBalanceMinor: wallet SHARING aktif+arsip\n= opening + MONEY_IN aktif - MONEY_OUT aktif]
+    B --> D[personalBalanceMinor: wallet PERSONAL caller\naktif+arsip]
+    C --> E[Dua angka terpisah, tidak dijumlahkan]
+    D --> E
+    E --> F[wallets: kartu aktif saja, penanda scope]
+    G[Budget/grafik/advisor] --> H[Hanya MONEY_OUT aktif wallet SHARING termasuk arsip;\nkaki transfer dikecualikan; opening dikecualikan]
+    H --> I[Cache advisor dibangun dari SHARING-only]
+```
+
+### 11.5 OCR wallet + dedup by uploader
+
+```mermaid
+flowchart TD
+    A[Upload struk] --> B{sha256 sudah ada di household?}
+    B -->|tidak| C[Simpan receipt + job; wallet TIDAK ditebak]
+    B -->|ya| D{Uploader sama?}
+    D -->|ya| E[Reuse job/draft milik sendiri]
+    D -->|tidak| F[Respons generik: tanpa job/draft/uploader/receipt lama]
+    C --> G[Review: user pilih wallet sebelum simpan]
+    G --> H[POST /api/transactions source=OCR + walletId]
+    H --> I[Akses receipt setelah simpan mengikuti wallet]
+    B -. P2002 race .-> J[Re-read receipt lalu cabang uploader sama/lain]
+```
+
+### 11.6 Migrasi pre-wallet
+
+```mermaid
+flowchart TD
+    A[Migrasi aktif] --> B[Additive: wallet + transaction.wallet_id nullable]
+    B --> C[Backfill: per household lama\n1 wallet SHARING default system_key=legacy_default opening 0]
+    C --> D[Update transaction.wallet_id WHERE wallet_id IS NULL\ntermasuk trashed + kedua kaki transfer, per household]
+    D --> E[Verifikasi: nol NULL; paritas ledger; pasangan transfer utuh]
+    E --> F[Enforce: NOT NULL + composite FK + index]
+    F --> G[Cutover kode wallet]
+```
+
+
+## 12. Draft Amendment - Bank Institution flows (T-011)
+
+**Sumber:** `docs/spec/feat-bank-institutions.md`, `docs/design/07-bank-institutions.md`, A-52..A-59, dan Dev Plan T-011.
+**Efek:** menambah alur Quick Add, pemilihan institusi pada wallet, pembacaan label dengan privasi, dan update seed. Tidak mengubah alur transaksi, OCR, saldo, budget, goal, atau dashboard selain label metadata pada wallet.
+
+### 12.1 Quick Add institusi privat
+
+```mermaid
+flowchart TD
+    A[User: Tambah bank atau penyedia] --> B{APPROVED?}
+    B -->|tidak| C[403 ACCESS_*]
+    B -->|ya| D[Zod: name 1..80, trim]
+    D --> E[Normalisasi: NFKC, trim, collapse whitespace, case-fold]
+    E --> F{Nama sama dengan bank resmi aktif?}
+    F -->|ya| G[409 INSTITUTION_ALREADY_EXISTS\nkind=OFFICIAL, existing=public row]
+    F -->|tidak| H{Nama sama dengan entri privat aktif milik actor?}
+    H -->|ya| I[409 INSTITUTION_ALREADY_EXISTS\nkind=CUSTOM, existing=own row]
+    H -->|tidak| J{Ada entri privat arsip dengan nama sama?}
+    J -->|ya| K[Reaktivasi baris arsip\narchived_at = null, 200]
+    J -->|tidak| L[Insert baris privat baru, 201]
+    K --> M[Entri tetap ada walau wallet dibatalkan]
+    L --> M
+```
+
+### 12.2 Buat / ubah wallet dengan institusi
+
+```mermaid
+flowchart TD
+    A[POST /api/wallets atau PATCH /api/wallets/id] --> B{Institution field?}
+    B -->|omit| C[Create: manual, both null\nUpdate: label tidak berubah]
+    B -->|NONE| D[Both null]
+    B -->|OFFICIAL| E{Bank ada dan aktif?}
+    B -->|CUSTOM| F{Entri milik actor dan aktif?}
+    E -->|tidak| G[422 INSTITUTION_UNAVAILABLE]
+    F -->|foreign/unknown| H[404 NOT_FOUND generik]
+    F -->|archived| G
+    E -->|ya| I[official_id = id, custom_id = null]
+    F -->|ya| J[official_id = null, custom_id = id]
+    C --> K[DB CHECK: at most one]
+    D --> K
+    I --> K
+    J --> K
+    K --> L[WalletDTO + institution]
+```
+
+### 12.3 Baca label wallet dan privasi
+
+```mermaid
+flowchart TD
+    A[GET /api/wallets atau /api/wallets/id] --> B[Visibilitas wallet existing A-38]
+    B --> C[Join official + custom TANPA filter aktif/arsip]
+    C --> D{Institution null?}
+    D -->|ya| E[institution = null, manual]
+    D -->|tidak| F{Kind?}
+    F -->|OFFICIAL| G[id + name]
+    F -->|CUSTOM| H{actor = pemilik entri?}
+    H -->|ya| I[id + name]
+    H -->|tidak| J[id = null, name = label wallet]
+    G --> K[WalletDTO]
+    I --> K
+    J --> K
+    E --> K
+    L[GET /api/institutions] --> M[official aktif + custom aktif milik session]
+    M --> N[User lain tidak pernah menerima daftar privat actor]
+```
+
+### 12.4 Arsip dan update seed katalog
+
+```mermaid
+flowchart TD
+    A[Pemilik: arsipkan entri] --> B[archived_at = now]
+    B --> C[Entri hilang dari picker/daftar aktif]
+    B --> D[Wallet lama tetap menampilkan label\njoin tanpa filter arsip]
+    E[Developer/ops: update katalog] --> F[Unduh file OJK resmi terbaru]
+    F --> G[Parse + validasi + normalisasi]
+    G --> H{Konflik nama/kode?}
+    H -->|ya| I[Gagal dan laporkan; jangan pilih diam-diam]
+    H -->|tidak| J[Upsert by source_ref / normalized_name]
+    J --> K[Nonaktifkan baris yang hilang, tanpa delete]
+    K --> L[Catat source, source_url, source_period (YYYY-MM), seed_version]
+```

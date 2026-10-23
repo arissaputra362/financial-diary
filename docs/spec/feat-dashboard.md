@@ -22,20 +22,28 @@ terjadi. Server adalah sumber kebenaran; client tidak menghitung ulang angka.
 
 ## Behavior Detail
 
-### AC-1 (AC-F2-1): Saldo tersedia dihitung server
+### AC-1 (AC-F2-1): Ringkasan uang dihitung server
 
 - Kondisi: household punya campuran transaksi aktif, deleted, dan transfer.
-- Yang terjadi: `balanceMinor = sum(MONEY_IN aktif) − sum(MONEY_OUT aktif)` seluruh waktu;
-  kaki TRANSFER tidak mengubah saldo (in dan out saling menghapus).
+- Yang terjadi sebelum wallet feature: `balanceMinor = sum(MONEY_IN aktif) −
+  sum(MONEY_OUT aktif)` seluruh household; kaki TRANSFER tidak mengubah total.
+  Setelah wallet feature (AC-F6-7), dashboard menampilkan dua ringkasan server-side:
+  total wallet Sharing dan total wallet Pribadi milik caller secara terpisah. Saldo tiap
+  wallet = saldo awal + MONEY_IN aktif − MONEY_OUT aktif; saldo wallet terarsip tetap
+  masuk ringkasan. Transfer netral terhadap gabungan wallet yang relevan.
 - Yang tidak boleh terjadi: client menghitung saldo dari subset recentActivity;
-  record soft-deleted ikut dihitung.
+  record soft-deleted ikut dihitung; data wallet Pribadi anggota lain masuk ke ringkasan
+  Sharing atau Pribadi caller.
 
 ### AC-2 (AC-F2-2): Budget bulan berjalan
 
 - Kondisi: household_budget untuk bulan berjalan ada / tidak ada.
 - Yang terjadi: `budgetMinor` dari budget bulan berjalan (periode kalender timezone
-  aplikasi — keputusan D-7: Asia/Jakarta, bukan jam proses server UTC); `spentMinor` =
-  sum MONEY_OUT aktif dalam periode; `remainingMinor` = budget − spent. Budget bulan
+  aplikasi — keputusan D-7: Asia/Jakarta, bukan jam proses server UTC); sebelum wallet
+  feature `spentMinor` memakai MONEY_OUT aktif household; setelah wallet feature
+  (AC-F6-8), `spentMinor` hanya memakai MONEY_OUT aktif pada wallet Sharing (termasuk
+  wallet Sharing terarsip) dalam periode, tanpa kaki transfer; `remainingMinor` = budget
+  − spent. Budget bulan
   berjalan belum di-set → kartu budget menampilkan state "atur budget" (bukan angka 0
   yang menyesatkan) dengan CTA ke halaman `/budget`.
 - Yang tidak boleh terjadi: kaki TRANSFER dihitung sebagai spending; periode memakai
@@ -53,23 +61,76 @@ terjadi. Server adalah sumber kebenaran; client tidak menghitung ulang angka.
 - UX: state "atur budget", form edit owner, dan view read-only member didefinisikan di
   design doc halaman budget+goals (sign-off UI/UX Designer sebelum dev plan).
 
+### AC-2c (AC-F2-2c): Budget pribadi dan mode Pribadi/Bersama (T-015)
+
+- Kondisi: user membuka kartu Budget atau halaman `/budget` dan memilih mode
+  `Pribadi` atau `Bersama`.
+- Yang terjadi:
+  - `GET /api/budget?scope=shared|personal` mengembalikan budget bulan berjalan
+    untuk scope tersebut; default `shared` sehingga konsumen lama tidak berubah.
+  - `PUT /api/budget` menerima `scope` opsional, default `shared`. Scope `shared`
+    tetap OWNER-only. Scope `personal` boleh ditulis setiap member approved hanya
+    untuk dirinya sendiri; server memakai `userId` dari session dan tidak menerima
+    `userId` dari client.
+  - Budget pribadi disimpan di `personal_budget` dengan kunci unik
+    `(household_id, user_id, period_start)`; budget keluarga tetap di
+    `household_budget`.
+  - `spentMinor` pribadi hanya menjumlahkan MONEY_OUT aktif tanpa kaki transfer
+    pada wallet `PERSONAL` milik user, termasuk wallet terarsip. `spentMinor`
+    bersama tetap hanya wallet `SHARING`.
+  - Dashboard menambah `personalMonthlyBudget` dan `personalSpending`; field lama
+    `monthlyBudget` dan `spending` tetap berarti scope Bersama.
+  - Mode kartu Budget dan scope grafik independen. Default keduanya `Bersama`.
+- Yang tidak boleh terjadi: owner membaca atau mengubah budget pribadi anggota
+  lain; member mengubah budget keluarga; budget pribadi dan keluarga dijumlahkan;
+  satu user punya dua baris budget pribadi pada bulan yang sama; scope personal
+  memakai wallet milik user lain; perubahan mode mengubah data aktivitas.
+
 ### AC-3 (AC-F2-4): TRANSFER bukan spending
 
 - Kondisi: household hanya punya transfer bulan ini.
-- Yang terjadi: spentMinor = 0; transfer tetap terlihat di aktivitas.
+- Yang terjadi: sebelum wallet feature, spentMinor = 0. Setelah wallet feature,
+  spentMinor tetap 0 untuk transfer dan expense pada wallet Pribadi; transfer sisi
+  Sharing tetap terlihat secara umum di aktivitas sesuai AC-F6-6.
 - Yang tidak boleh terjadi: transfer dihitung ganda sebagai pengeluaran.
 
 ### AC-4 (AC-F2-5): Grafik per hari + tab periode
 
 - Kondisi: tab 7D/30D/90D.
 - Yang terjadi: `byDay` = bucket MONEY_OUT aktif per hari kalender (timezone aplikasi —
-  D-7: Asia/Jakarta), periode berakhir di "hari ini" kalender Asia/Jakarta (bukan jam
+  setelah wallet feature hanya dari wallet Sharing aktif maupun terarsip, tanpa kaki
+  transfer, AC-F6-8), D-7: Asia/Jakarta; periode
+  berakhir di "hari ini" kalender Asia/Jakarta (bukan jam
   proses server UTC); 7D = 7 hari kalender terakhir termasuk hari ini (7 bucket), dst.
   Hari tanpa pengeluaran tetap muncul bernilai 0.
 - Yang tidak boleh terjadi: hari tanpa pengeluaran hilang dari sumbu; tab mengubah
   data daftar aktivitas (tab hanya untuk grafik); bucket berubah karena jam proses
   server UTC. Boundary: `occurred_at = 2026-09-30T17:30:00Z` (= 1 Okt 00:30 WIB) masuk
   bucket 1 Okt.
+- Tampilan 90D (PM-approved 2026-10-23, T-014): `byDay` 90 hari dikelompokkan
+  client-side menjadi bucket mingguan yang selaras Senin, sekitar 13 bucket.
+  Bucket pertama dan terakhir boleh parsial dan menampilkan rentang sebenarnya.
+  Total bucket sama dengan `spending.totalOutMinor`; ini pengelompokan tampilan,
+  bukan perubahan perhitungan keuangan. 7D dan 30D tetap harian.
+- Anti-overflow: label sumbu hanya muncul pada langkah label, disejajarkan dengan
+  bar, dan tidak boleh keluar dari kartu pada 390px, 768px, atau 1280px. Tooltip
+  harian menampilkan tanggal dan total persis; tooltip mingguan menampilkan
+  rentang dan total persis.
+- Yang tidak boleh terjadi pada grafik: scroll horizontal halaman atau kartu,
+  label terpotong atau keluar kartu, jumlah bucket berubah antar breakpoint,
+  atau total bucket berbeda dari total periode.
+
+### AC-4b (AC-F2-5b): Scope Pribadi/Bersama pada grafik (T-015)
+
+- Kondisi: kartu Rincian Pengeluaran menampilkan segmented `Pribadi` dan
+  `Bersama`.
+- Yang terjadi: scope `Bersama` memakai `spending` (wallet SHARING) dan scope
+  `Pribadi` memakai `personalSpending` (wallet PERSONAL milik user). Keduanya
+  memakai periode, timezone, bucket, dan aturan anti-overflow yang sama. Default
+  `Bersama`.
+- Yang tidak boleh terjadi: scope grafik mengubah mode kartu Budget; total scope
+  pribadi memuat wallet user lain; bucket mingguan 90D berubah perilaku; jumlah
+  atau rentang bucket berbeda antar scope pada periode yang sama.
 
 ### AC-5 (AC-F2-6): Filter lokal aktivitas
 
@@ -82,7 +143,8 @@ terjadi. Server adalah sumber kebenaran; client tidak menghitung ulang angka.
 - Yang tidak boleh terjadi: filter tidak memengaruhi rows yang ditampilkan; filter
   mengubah kartu saldo/budget/grafik (scope filter = daftar aktivitas saja); duplikat
   atau item hilang saat menelusuri semua halaman, termasuk dua transaksi dengan
-  `occurred_at` identik (tie-breaker id).
+  `occurred_at` identik (tie-breaker id); transaksi wallet Pribadi anggota lain atau
+  metadata privat transfer lintas scope muncul ke caller yang tidak berhak (AC-F6-2/6).
 
 ### AC-6 (AC-F2-7): Filter selalu mengubah data
 
@@ -144,8 +206,10 @@ terjadi. Server adalah sumber kebenaran; client tidak menghitung ulang angka.
 - Dashboard tidak boleh menampilkan data household lain.
 - Periode kalender memakai timezone aplikasi yang tetap (Asia/Jakarta — OQ-2/D-7),
   bukan jam proses server (UTC) dan bukan jam perangkat user.
-- Menghapus satu kaki transfer menggeser saldo seolah kaki itu tidak pernah ada
-  (lintas-ref: spec trash-restore edge case).
+- Sebelum fitur wallet, menghapus satu kaki transfer menggeser saldo seolah kaki itu
+  tidak pernah ada (lintas-ref: perilaku lama `feat-trash-restore`). Setelah wallet
+  feature aktif, trash/restore pasangan transfer harus atomik pada kedua kaki sesuai
+  `feat-wallets.md` AC-F6-5; perilaku lama per-kaki tidak lagi berlaku.
 
 ## Out of Scope
 

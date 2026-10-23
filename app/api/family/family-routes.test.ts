@@ -51,6 +51,14 @@ function context(family: FamilyMock): AuthenticatedContext {
     sessionId: "sid-1",
     auth: {} as unknown as AuthenticatedContext["auth"],
     family: family as unknown as AuthenticatedContext["family"],
+    transactions: {} as unknown as AuthenticatedContext["transactions"],
+    ocr: {} as unknown as AuthenticatedContext["ocr"],
+    dashboard: {} as AuthenticatedContext["dashboard"],
+    budget: {} as AuthenticatedContext["budget"],
+    goals: {} as AuthenticatedContext["goals"],
+    wallets: {} as AuthenticatedContext["wallets"],
+    institutions: {} as AuthenticatedContext["institutions"],
+    advisor: {} as AuthenticatedContext["advisor"],
   };
 }
 
@@ -176,3 +184,4 @@ describe("member decisions", () => {
     expect(family.decline).not.toHaveBeenCalled();
   });
 });
+

@@ -1,5 +1,8 @@
 # AI Financial Advisor ("Finny") Panel Design
 
+> **Canonical status:** Behavior remains PM-approved; visual refresh PM-approved for T-010 (2026-10-20). Persona, bounded action pills, period picker, footer rules, and error states are unchanged. Updated 2026-10-20 by the UI/UX Designer: Finny surfaces restyled to the navy structural token `#14273F` with white text (doc 01 §2.1); lavender/purple references retired; **placement clarified: Finny lives only on `/budget` (panel + drawer). `/home` renders no Finny card, matching the actual `DashboardView.tsx`.** Ticket: T-010 (visual refresh).
+> **Cross-reference (2026-10-22, revised, PM review requested):** the savings-contribution flow (`Catat progres` inside the global Tambah sheet) now records an immutable per-goal history event for **both increase and decrease** entries from two entry points (the sheet mode and the goal-level `Tambah saldo` / `Kurangi` controls); the optional note field was removed by user decision; history inherits the existing household-goal ACL; not a wallet transaction, no wallet/budget effect, no Beranda activity row. Spec: doc 02 §8. The goal-form target amount, add-to-savings, and contribution amount adopt the IDR live grouping of doc 01 §5.8. The weekly plan slider here keeps its current format. Goals business rules themselves are unchanged in this document.
+
 ## 1. Persona & Tone Guidelines
 The AI Advisor is named **Finny** (represented by a playful friendly avatar 🦉 / ✨). Finny transforms cold transaction numbers into encouraging, proactive financial guidance for families and laypeople. The model name is never shown in the UI (A-30).
 
@@ -12,14 +15,14 @@ The AI Advisor is named **Finny** (represented by a playful friendly avatar 🦉
 
 ## 2. Bento Card & Panel UI Components
 
-### 2.1. Dashboard Bento Card (Compact View, static, A-28)
-- Positioned on the top right of the dashboard bento grid.
-- Soft lavender gradient background (`from-purple-100/80 via-indigo-50/70 to-purple-50/40 border border-purple-200/60 rounded-3xl p-6`).
+### 2.1. Budget-page Finny panel (Compact View, static, A-28)
+- **Placement: `/budget` only.** The panel sits with the budget content (above the goals section, mirroring `AdvisorPanel.tsx` inside `BudgetView.tsx`). It is NOT rendered on `/home`; the dashboard has no advisor card (doc 02 §0 correction pass). Moving it to Beranda would be a new surface and needs explicit PM approval.
+- Navy panel background (`#14273F` with white/`#DCEBFA` text, solid, no gradient; `border border-white/10 rounded-3xl p-6`; doc 01 §2.1). The former lavender gradient is retired (doc 01 §2.5).
 - Static invitation copy only, no server data and no invented numbers. Example: *"Lihat saran untuk pengeluaran keluargamu bulan ini."*
-- Single CTA pill: `[ Lihat saran ]`, which opens the advisor drawer on `/budget`.
+- **CTA pill:** `Lihat saran` renders as a light pill on the navy panel (`bg-white text-[#14273F] hover:bg-[#DCEBFA]`) or the blue scan/AI accent pill outside the panel; one filled CTA only.
 
 ### 2.2. Interactive Advisor Drawer / Slide-Over (Full View)
-Tapping the Finny card opens an interactive drawer from the right on desktop, or a full-screen sheet on mobile.
+Tapping the Finny panel on `/budget` opens an interactive drawer from the right on desktop, or a full-screen sheet on mobile.
 
 ```
 +-------------------------------------------------------------+
@@ -83,4 +86,3 @@ Because the MVP relies on the model's free tier, the UI must gracefully handle r
 - **Rate-limit state:** *"Coba lagi sebentar."* (Soft amber pill banner). No promise of an automatic retry and no countdown.
 - **Cached insight:** When generation is rate-limited or unavailable and an unexpired cache exists for the requested period, display it with a subtle badge *"Menampilkan insight tersimpan"*. If no cache exists, show the unavailable state without invented advice.
 - **Unavailable / invalid output:** a plain-language state with a `[ Coba lagi ]` action; never fabricated guidance.
-

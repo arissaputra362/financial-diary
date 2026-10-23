@@ -43,33 +43,54 @@ restore idempotent. Tidak ada permanent deletion di MVP.
 ### AC-3 (AC-F5-3): Trash view terisolasi household
 
 - Kondisi: buka trash.
-- Yang terjadi: hanya record soft-deleted milik household caller; entry point tunggal =
+- Yang terjadi: hanya record soft-deleted yang dapat diakses caller pada household aktif;
+  setelah wallet feature, wallet Pribadi hanya terlihat oleh pemiliknya dan wallet Sharing
+  terlihat anggota approved. Entry point tunggal =
   tab "Trash" di halaman aktivitas — route `/transactions?view=trash` (keputusan A-25:
   route tetap `/transactions`, label nav "Activity"); urutan `deleted_at DESC`; cursor
   pagination sama dengan daftar aktif (D-8); UI tab didefinisikan di design doc 03/02
   (sign-off UI/UX Designer).
-- Yang tidak boleh terjadi: record household lain terlihat; record aktif ikut tampil.
+- Yang tidak boleh terjadi: record household lain atau wallet Pribadi anggota lain terlihat;
+  record aktif ikut tampil.
 
 ### AC-4 (AC-F5-4): Restore
 
-- Kondisi: restore record deleted milik household sendiri.
+- Kondisi: restore record deleted yang dapat diakses caller pada household sendiri.
 - Yang terjadi: deleted_at + deleted_by_user_id dikosongkan; record kembali dihitung
   di saldo/budget/grafik dan tampil di daftar aktif.
 - Yang tidak boleh terjadi: restore mengubah data lain (occurred_at, amount tetap);
-  restore record household lain.
+  restore record household lain atau wallet Pribadi anggota lain.
 
 ### AC-5 (AC-F5-5): Restore idempotent (ALREADY_ACTIVE)
 
 - Kondisi: restore record yang ternyata sudah aktif (mis. dua tab, klik ganda).
-- Yang terjadi: 200 dengan ALREADY_ACTIVE, tanpa error di UI.
+- Yang terjadi: 200 dengan flag `alreadyActive: true`, tanpa error di UI.
 - Yang tidak boleh terjadi: 409/500 yang membingungkan user; state UI rusak.
+
+**Format Response:**
+```json
+{
+  "id": "...",
+  "deletedAt": null,
+  "alreadyActive": true
+}
+```
 
 ### AC-5b (AC-F5-6): Trash ganda idempotent (keputusan D-20)
 
 - Kondisi: dua anggota (atau dua tab) meng-trash record yang sama hampir bersamaan.
-- Yang terjadi: satu sukses 200; satunya 200 dengan ALREADY_DELETED (idempotent,
-  tanpa error).
+- Yang terjadi: satu sukses 200; satunya 200 dengan flag `alreadyDeleted: true`
+  (idempotent, tanpa error).
 - Yang tidak boleh terjadi: 409/500; dua baris berubah dua kali (deleted_at dobel-set).
+
+**Format Response (untuk kasus already deleted):**
+```json
+{
+  "id": "...",
+  "deletedAt": "2026-10-06T10:00:00Z",
+  "alreadyDeleted": true
+}
+```
 
 ### AC-6 (AC-F5-7): Cross-household tidak bocor
 
@@ -86,10 +107,12 @@ restore idempotent. Tidak ada permanent deletion di MVP.
 
 ## Edge Case
 
-- Hapus transaksi yang menjadi kaki transfer → hanya kaki itu yang deleted; pasangan
-  tetap aktif; saldo dihitung seolah kaki itu tidak pernah ada (lintas-ref: spec
-  dashboard Constraint Bisnis); restore kaki mengembalikan pasangan ke netral;
-  UNIQUE(household_id, transfer_group_id, type) tetap memblokir kaki ketiga.
+- Hapus transfer setelah wallet feature aktif → kedua kaki dit-trash secara atomik dan
+  dipulihkan secara atomik; satu sisi tidak dapat dihapus/dipulihkan sendiri. Untuk
+  transfer lintas scope, hanya pembuat transfer atau Owner dapat trash/restore pasangan;
+  anggota yang hanya melihat sisi Sharing tidak dapat memodifikasinya. Sebelum wallet
+  feature diaktifkan, perilaku transfer yang sudah berlaku tetap mengikuti versi
+  implementasi saat ini. Detail perubahan kontrak ada di `feat-wallets.md` AC-F6-5.
 - Restore transaksi lama → saldo/budget/grafik masa lalu ikut berubah (benar, karena
   perhitungan selalu dari data aktif); `updated_at` berubah, tapi `occurred_at`,
   `amount_minor`, `created_by_user_id` tidak tersentuh.

@@ -1,0 +1,261 @@
+{
+  "run": "mv0djkdx7m34",
+  "prefix": "qa-t009-wallet-mv0djkdx7m34-",
+  "pass": 42,
+  "fail": 0,
+  "total": 42,
+  "results": [
+    {
+      "id": "SETUP",
+      "name": "owner+approved member+pending+ownerB created",
+      "pass": true,
+      "detail": "owner=201 approve=200 pending=PENDING"
+    },
+    {
+      "id": "F6-1a",
+      "name": "create without scope -> 201 PERSONAL, opening blank -> 0",
+      "pass": true,
+      "detail": "status=201 scope=PERSONAL open=0"
+    },
+    {
+      "id": "F6-1b",
+      "name": "owner creates PERSONAL+SHARING; member creates PERSONAL (all approved)",
+      "pass": true,
+      "detail": "pA=201 sA=201 pM=201"
+    },
+    {
+      "id": "F6-1c",
+      "name": "name empty/81 chars, purpose 81, opening -1 -> 422",
+      "pass": true,
+      "detail": "empty=422 name81=422 purpose81=422 neg=422"
+    },
+    {
+      "id": "F6-1d",
+      "name": "opening negative fieldErrors.openingBalanceMinor present",
+      "pass": true,
+      "detail": "{\"openingBalanceMinor\":[\"Saldo awal tidak boleh negatif.\"]}"
+    },
+    {
+      "id": "F6-1e",
+      "name": "PENDING create wallet -> 403 ACCESS_PENDING",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_PENDING"
+    },
+    {
+      "id": "F6-3a",
+      "name": "PATCH scope PERSONAL->SHARING -> 422 VALIDATION_ERROR fieldErrors.scope",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR fe={\"scope\":[\"Jenis dompet tidak bisa diubah.\"]}"
+    },
+    {
+      "id": "F6-3b",
+      "name": "scope unchanged after rejected mutation",
+      "pass": true,
+      "detail": "scope=PERSONAL"
+    },
+    {
+      "id": "F6-3c",
+      "name": "any APPROVED member edits SHARING name/purpose -> 200",
+      "pass": true,
+      "detail": "status=200 name=Bersama A (edit member)"
+    },
+    {
+      "id": "F6-3d",
+      "name": "member edits other's PERSONAL -> 404 (no existence leak, not 403)",
+      "pass": true,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "F6-3e",
+      "name": "non-creator member archives SHARING -> 403 ACCESS_DENIED",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_DENIED"
+    },
+    {
+      "id": "F6-3f",
+      "name": "creator archives SHARING -> 200; gone from active, present in archived",
+      "pass": true,
+      "detail": "archive=200 inActive=false inArchived=true"
+    },
+    {
+      "id": "F6-3g",
+      "name": "non-creator restore SHARING -> 403",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_DENIED"
+    },
+    {
+      "id": "F6-3h",
+      "name": "creator restore SHARING -> 200 archivedAt null",
+      "pass": true,
+      "detail": "status=200 archivedAt=null"
+    },
+    {
+      "id": "F6-3i",
+      "name": "archived wallet rejected for new tx and transfer -> 422 WALLET_UNAVAILABLE",
+      "pass": true,
+      "detail": "tx=422/WALLET_UNAVAILABLE transfer=422/WALLET_UNAVAILABLE"
+    },
+    {
+      "id": "F6-2a",
+      "name": "member list shows SHARING + own PERSONAL, never other's PERSONAL",
+      "pass": true,
+      "detail": "sharing=true ownPersonal=true otherPersonal=false"
+    },
+    {
+      "id": "F6-2b",
+      "name": "member GET other's PERSONAL by id -> 404",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "F6-2c",
+      "name": "cross-household GET SHARING -> 404",
+      "pass": true,
+      "detail": "status=404"
+    },
+    {
+      "id": "F6-2d",
+      "name": "unknown id message identical to private id (no existence leak)",
+      "pass": true,
+      "detail": "unknown='Dompet tidak ditemukan.' private='Dompet tidak ditemukan.'"
+    },
+    {
+      "id": "F6-4a",
+      "name": "MONEY_OUT without walletId -> 422 walletId",
+      "pass": true,
+      "detail": "status=422 fe={\"walletId\":[\"Pilih dompet.\"]}"
+    },
+    {
+      "id": "F6-4b",
+      "name": "MONEY_IN without walletId -> 422",
+      "pass": true,
+      "detail": "status=422"
+    },
+    {
+      "id": "F6-4c",
+      "name": "server balance = opening + in - out = 70000",
+      "pass": true,
+      "detail": "balance=70000"
+    },
+    {
+      "id": "F6-4d",
+      "name": "owner tx to member's PERSONAL wallet -> 404 safe",
+      "pass": true,
+      "detail": "status=404 code=NOT_FOUND"
+    },
+    {
+      "id": "F6-4e",
+      "name": "trashed row excluded from balance (back to 70000)",
+      "pass": true,
+      "detail": "trash=200 balance=70000"
+    },
+    {
+      "id": "F6-5a",
+      "name": "transfer same wallet -> 422 + differing-from-target message",
+      "pass": true,
+      "detail": "status=422 code=VALIDATION_ERROR fe={\"toWalletId\":[\"Dompet asal dan tujuan harus berbeda.\"]}"
+    },
+    {
+      "id": "F6-5b",
+      "name": "cross-scope transfer -> 201 two legs same group, one per wallet",
+      "pass": true,
+      "detail": "status=201 legs=2 groups=1"
+    },
+    {
+      "id": "F6-6a",
+      "name": "member cross-scope rows are generic (wallet/note/receipt/group/source/category null)",
+      "pass": true,
+      "detail": "memberRows=1 sample={\"id\":\"7b0fb1d1-0802-4399-bf7e-9c7cb9cb2d17\",\"type\":\"MONEY_IN\",\"amountMinor\":25000,\"currencyCode\":\"IDR\",\"category\":null,\"merchant\":null,\"note\":null,\"occurredAt\":\"2026-10-09T05:00:00.000Z\",\"source\":null,\"receiptId\":null,\"transferGroupId\":null,\"wallet\":null,\"deletedAt\":null,\"createdAt\":\"2026-10-09T02:56:51.363Z\"}"
+    },
+    {
+      "id": "F6-6b",
+      "name": "member still sees the SHARING leg amount/date (generic)",
+      "pass": true,
+      "detail": "seesSharingLeg=true"
+    },
+    {
+      "id": "F6-6c",
+      "name": "owner sees both legs with wallet refs (and note not lost)",
+      "pass": true,
+      "detail": "rows=2 wallets=[\"Balance W\",\"Bersama A (edit member)\"]"
+    },
+    {
+      "id": "F6-5c",
+      "name": "member (non-creator, non-owner) trashes cross-scope transfer -> 403",
+      "pass": true,
+      "detail": "status=403 code=ACCESS_DENIED"
+    },
+    {
+      "id": "F6-5d",
+      "name": "owner trash -> both legs soft-deleted atomically",
+      "pass": true,
+      "detail": "status=200 deletedLegs=2"
+    },
+    {
+      "id": "F6-5e",
+      "name": "owner restore -> both legs active atomically",
+      "pass": true,
+      "detail": "status=200 activeLegs=2"
+    },
+    {
+      "id": "F6-7a",
+      "name": "dashboard exposes sharedBalanceMinor and personalBalanceMinor separately",
+      "pass": true,
+      "detail": "shared=75000 personal=146000"
+    },
+    {
+      "id": "F6-7b",
+      "name": "member personal summary excludes owner's PERSONAL balances",
+      "pass": true,
+      "detail": "memberPersonal=0 ownerPersonal=146000"
+    },
+    {
+      "id": "F6-7c",
+      "name": "dashboard carousel has active wallets only and hides other's PERSONAL",
+      "pass": true,
+      "detail": "archivedInCarousel=false ownerPersonal=false"
+    },
+    {
+      "id": "F6-7d",
+      "name": "archived SHARING balance still counted in shared total (>=50000)",
+      "pass": true,
+      "detail": "shared=75000"
+    },
+    {
+      "id": "F6-8a",
+      "name": "dashboard spending counts SHARING MONEY_OUT only (4000), not PERSONAL (9000) nor transfers",
+      "pass": true,
+      "detail": "spendingTotal=4000"
+    },
+    {
+      "id": "F6-8b",
+      "name": "budget PUT/GET spent SHARING-only = 4000, remaining 96000",
+      "pass": true,
+      "detail": "put=200 spent=4000 remaining=96000"
+    },
+    {
+      "id": "F6-11a",
+      "name": "PENDING denied on wallets/transactions/dashboard -> 403 ACCESS_PENDING",
+      "pass": true,
+      "detail": "list=403 tx=403 dash=403 code=ACCESS_PENDING"
+    },
+    {
+      "id": "F6-15a",
+      "name": "after scope mutation attempt, member still cannot see PERSONAL history (404)",
+      "pass": true,
+      "detail": "status=404 personalTxRows=1"
+    },
+    {
+      "id": "F6-14a",
+      "name": "approved wallet access 200, after revoke -> 403 ACCESS_REVOKED",
+      "pass": true,
+      "detail": "before=200 after=403 code=ACCESS_REVOKED"
+    },
+    {
+      "id": "CLEANUP",
+      "name": "zero fixture users remain",
+      "pass": true,
+      "detail": "users=0"
+    }
+  ]
+}

@@ -15,18 +15,20 @@ export interface ButtonProps
   loadingLabel?: string;
 }
 
+/* Doc 01 §5.1: one filled green primary, outlined secondary, blue AI accent. */
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-slate-900 text-white hover:bg-slate-800 shadow-sm active:scale-[0.98]",
+    "bg-[#166534] text-white shadow-pill hover:bg-[#155C30] active:scale-[0.98]",
   secondary:
-    "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm active:scale-[0.98]",
-  ghost: "text-slate-600 hover:bg-slate-100 active:scale-[0.98]",
+    "border border-[#BFD3E8] bg-white text-[#1D4F87] shadow-sm hover:bg-[#EFF4FA] active:scale-[0.98]",
+  ghost:
+    "text-[#46597A] hover:bg-[#EFF4FA] hover:text-[#17304F] active:scale-[0.98]",
   danger:
-    "bg-rose-600 text-white hover:bg-rose-700 shadow-sm active:scale-[0.98]",
-  ai: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:opacity-95 shadow-md shadow-purple-500/20 active:scale-[0.98]",
+    "bg-[#B91C1C] text-white shadow-sm hover:bg-[#991B1B] active:scale-[0.98]",
+  ai: "bg-[#1D4F87] text-white shadow-sm hover:bg-[#173F6C] active:scale-[0.98]",
 };
 
-/* Every size keeps a tap target of at least 44px (R-03). */
+/* Every size keeps a tap target of at least 44px (doc 01 §6.4). */
 const sizeClasses: Record<ButtonSize, string> = {
   sm: "min-h-11 px-4 text-sm",
   md: "min-h-11 px-5 text-sm",
@@ -56,7 +58,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={isLoading || undefined}
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all",
-          "disabled:cursor-not-allowed disabled:opacity-60",
+          "disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#E6ECF4] disabled:text-[#46597A] disabled:shadow-none disabled:active:scale-100",
           variantClasses[variant],
           sizeClasses[size],
           className,

@@ -1,0 +1,166 @@
+[WebServer] $ next dev -p "3024"
+
+Running 30 tests using 1 worker
+
+PASS [NEST-a] Tab never leaves the nested picker into the parent sheet :: result=0
+PASS [NEST-b] Escape closes the nested picker only; the add-transaction sheet stays open :: parentDialogs=1
+PASS [NEST-c] input typed in the parent sheet survives the nested Escape :: amount=125.000 merchant=Warung QA Nest
+PASS [NEST-d] focus returns to the nested trigger (wallet field), not to BODY :: active={"tag":"BUTTON","hasPopup":"dialog","isBody":false}
+PASS [NEST-e] picker remains usable after the nested Escape round-trip :: fieldWithOption=1
+PASS [NEST-f] a second Escape closes the parent add-transaction sheet (one layer per press) :: parentDialogs=0
+PASS [NEST-g] focus after the parent Escape is the 'Tambah transaksi' trigger, not BODY :: active={"tag":"BUTTON","isBody":false,"text":"Tambah transaksi"}
+  Γ£ô   1 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:153:5 ΓÇ║ nested picker: Escape peels one layer, parent + input preserved, focus on the nested trigger, Tab stays inside (8.1s)
+PASS [V3-a] Tab never leaves the receipt viewer into the transaction detail sheet :: result=0
+PASS [V3-b] Escape closes the receipt viewer only; the transaction detail sheet stays open :: detailDialogs=1
+PASS [V3-c] focus returns to the 'Lihat struk' trigger, not to BODY :: active={"tag":"BUTTON","isBody":false,"text":"Lihat struk"}
+PASS [V3-d] receipt viewer reopens after the nested Escape round-trip (no dead end) :: imageRequests=4
+PASS [V3-e] a second Escape closes the transaction detail sheet (one layer per press) :: detailDialogs=0
+PASS [V3-f] focus after the detail sheet closes is not left on BODY :: active=BUTTON
+  Γ£ô   2 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:236:5 ΓÇ║ receipt viewer over detail sheet: Escape peels one layer, Tab stays inside, focus on 'Lihat struk' (2.9s)
+PASS [TOUCH-390-kelola] wallet card 'Kelola' is at least 44px tall :: [{"label":"Kelola","h":44,"w":77.83},{"label":"Kelola","h":44,"w":77.83}]
+PASS [TOUCH-390-arsip] 'Termasuk dompet di Arsip' helpers are at least 44px tall :: [{"label":"Termasuk dompet di Arsip","h":44,"w":129},{"label":"Termasuk dompet di Arsip","h":44,"w":129}]
+PASS [TOUCH-390-manage] manage-sheet row actions (Ubah/Arsipkan, Aktif tab) are at least 44px tall :: [{"label":"manage row action Ubah","h":44,"w":54.56},{"label":"manage row action Ubah","h":44,"w":54.56},{"label":"manage row action Arsipkan","h":44,"w":92.55},{"label":"manage row action Arsipkan","h":44,"w":92.55}]
+PASS [TOUCH-390-manage-arsip] manage-sheet row action (Pulihkan, Arsip tab) is at least 44px tall :: [{"label":"manage row action Pulihkan","h":44,"w":90.47},{"label":"manage row action Pulihkan","h":44,"w":90.47}]
+PASS [TOUCH-390-section] no wallet-section control is below 44px tall :: count=0 []
+PASS [TOUCH-390-sheet] add-transaction sheet: every WALLET surface control (field, chips, actions) is at least 44px tall :: count=0 []
+PASS [TOUCH-390-sheet-residual] RESIDUAL (pre-existing, non-wallet): transaction-form amount input and 'Scan struk' link are below 44px :: count=2 [{"label":"INPUT","h":32,"w":282},{"label":"Scan struk","h":16,"w":60}]
+  Γ£ô   3 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:305:5 ΓÇ║ wallet surfaces: Kelola, 'Termasuk dompet di Arsip' and manage-sheet actions are >= 44px (4.3s)
+PASS [R3-resp-home-390] /home has no horizontal overflow at 390 :: scrollWidth=390 clientWidth=390
+PASS [R3-scope-390] scope is conveyed by icon AND text label, not colour alone :: pillText=4 pillIcons=2
+PASS [R3-detail-trap-390] wallet detail sheet traps Tab focus :: result=0
+PASS [R3-detail-focus-390] Escape closes the detail sheet and focus returns to the wallet card :: active=Bersama Resp, Bersama, tersedia Rp0, buka detail
+PASS [R3-manage-trap-390] 'Kelola' opens the manage sheet, which traps Tab focus :: result=0
+PASS [R3-manage-focus-390] manage sheet moves focus into the panel on open :: active=Arsip
+PASS [R3-manage-return-390] Escape closes the manage sheet and focus returns to 'Kelola' :: active=Kelola
+  Γ£ô   4 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:451:5 ΓÇ║ responsive layout, scope by text, no console errors (11.2s)
+PASS [R3-console] no console errors / uncaught page errors across wallet sheets, picker, viewer and detail :: count=0 []
+
+CONSOLE_ERRORS=[]
+SUMMARY pass=28 fail=0 total=28
+  Γ£ô   5 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:511:5 ΓÇ║ no console errors while opening every wallet sheet and the nested dialogs (5.6s)
+PASS [RESP-390-a] /home has no horizontal overflow at 390 :: scrollWidth=390 clientWidth=390
+PASS [RESP-390-b] /home wallet surfaces: every wallet control is at least 44px tall :: count=0 []
+PASS [RESP-390-b2] INFORMATIONAL: whole /home page, controls under 44px in both axes (not wallet-only) :: count=1 [{"label":"7D","h":36,"w":40}]
+PASS [RESP-390-c] scope is never colour-only (scope pill carries a text label plus an icon) :: pillsWithText=4
+PASS [RESP-390-d] /transactions has no horizontal overflow at 390 :: scrollWidth=390 clientWidth=390
+PASS [RESP-390-e] wallet field trigger meets the 44px touch target :: h=48 w=348
+FAIL [RESP-390-f] add-transaction sheet (incl. nested wallet picker field): every control is at least 44px tall :: count=2 [{"label":"INPUT","h":32,"w":282},{"label":"Scan struk","h":16,"w":60}]
+  Γ£ô   6 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:199:5 ΓÇ║ wallet surfaces: layout, no horizontal overflow, touch targets, scope by text (2.8s)
+PASS [PICK-a] picker lists every active wallet as an option :: options=3
+PASS [PICK-b] with nothing bound yet, no option claims aria-selected=true :: selected=0
+PASS [PICK-c] reopened picker marks exactly the bound wallet aria-selected=true :: count=1 boundAttr=true
+PASS [PICK-d] selected state is not colour-only (check icon plus sr-only text) :: checkIcons=2 srOnly=1
+PASS [PICK-e] roving tabindex: exactly one tabbable option, and it is the selected wallet :: tabbableId=e4b79ab9-2b74-4367-84d0-02324dae22ad boundId=e4b79ab9-2b74-4367-84d0-02324dae22ad
+PASS [PICK-f] ArrowDown moves focus to the next option in the group :: activeId=27887168-9611-4aed-bce5-7e1c95e180e2 label=BersamaBersama DuaRp0
+PASS [PICK-g] the roving tabindex follows the arrow focus :: tabbableCount=1
+PASS [PICK-f2] Space activates the focused option and binds it to the field :: fieldWithOption=1
+PASS [PICK-f3] Enter activates the focused option and binds it to the field :: fieldWithOption=1
+PASS [PICK-h1] Tab cycles inside the picker panel (synthetic keydown) :: outside=0
+PASS [PICK-h2] Tab cycles inside the picker panel (real key presses) :: result=0
+PASS [PICK-i] Escape closes the picker AND leaves the parent add-transaction sheet open :: parentDialogs=1
+PASS [PICK-j] Escape closes the picker and focus returns to the wallet field trigger :: activeAriaHaspopup=dialog
+  Γ£ô   7 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:303:5 ΓÇ║ wallet picker: aria-selected, roving tabindex, Arrow navigation, Tab trap, focus return (2.9s)
+PASS [C32-a] clicking 'Buat dompet baru' closes the picker first (PM decision C-32) :: pickerCount=0
+PASS [C32-b] the create-wallet form opens on top of the closed picker :: form visible
+PASS [C32-c] the created wallet is auto-selected into the originating field :: field shows the new wallet
+PASS [C32-g] after saving, focus returns to the wallet field trigger that opened the picker (design 06 ┬º12/┬º14 C-32) :: active={"hasPopup":"dialog","text":"BersamaDompet Baru C32>","isBody":false}
+PASS [C32-d] the picker is not reopened after creating a wallet :: still closed
+PASS [C32-e] cancelling the create form leaves the originating field unchanged :: fieldWithNewWallet=1
+PASS [C32-f] cancelling does not reopen the picker :: closed
+PASS [C32-h] after cancelling, focus returns to the wallet field trigger (not left on body/behind the overlay) :: active={"hasPopup":"dialog","text":"BersamaDompet Baru C32>","isBody":false}
+  Γ£ô   8 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:412:5 ΓÇ║ C-32 flow: picker -> create wallet -> auto-select; cancel leaves the field unchanged (3.4s)
+PASS [SHEET-detail-a] detail sheet traps Tab focus (real key presses) :: result=0
+PASS [SHEET-detail-b] Escape closes the detail sheet and focus returns to the card that opened it :: active=Bersama Kelola, Bersama, tersedia Rp0, buka detail
+PASS [SHEET-manage-a] manage sheet traps Tab focus (real key presses) :: result=0
+PASS [SHEET-manage-b] Escape closes the manage sheet and focus returns to its 'Kelola' trigger :: active=Kelola
+PASS [SHEET-form-a] create-wallet form traps Tab focus (real key presses) :: result=0
+PASS [SHEET-form-b] opening the form moves focus to the first control inside the panel :: initialFocus={"id":"","tag":"BUTTON","label":null,"insidePanel":true}
+PASS [SHEET-form-c] Escape closes the form and focus returns to the 'Dompet baru' trigger :: active=+Dompet baru
+  Γ£ô   9 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:491:5 ΓÇ║ wallet sheets: focus trap on open, Escape closes, focus returns to the trigger (5.5s)
+PASS [VIEWER-a] viewer renders the bytes fetched from the authenticated route as a blob: URL :: src=blob:http://localhost:3024/d4df5242-297d-48da-a3fd-787764a65e2c
+PASS [VIEWER-b] DOM carries no storage key, public Blob URL, job id or draft payload :: imageRequests=2
+PASS [VIEWER-c] receipt viewer traps Tab focus (real key presses) :: result=0
+PASS [VIEWER-d] Escape closes the viewer and focus returns to the 'Lihat struk' trigger :: active=Lihat struk
+PASS [VIEWER-e] Escape inside the viewer does not close the transaction detail sheet :: dialogsAfterEscape=1
+
+CONSOLE_ERRORS=[]
+SUMMARY pass=39 fail=1 total=40
+  Γ£ô  10 [mobile-390] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:569:5 ΓÇ║ receipt viewer: focus trap, focus return, blob: src (no storage key / public URL) (3.7s)
+  -  11 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:153:5 ΓÇ║ nested picker: Escape peels one layer, parent + input preserved, focus on the nested trigger, Tab stays inside
+  -  12 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:236:5 ΓÇ║ receipt viewer over detail sheet: Escape peels one layer, Tab stays inside, focus on 'Lihat struk'
+PASS [TOUCH-768-kelola] wallet card 'Kelola' is at least 44px tall :: [{"label":"Kelola","h":44,"w":77.83},{"label":"Kelola","h":44,"w":77.83}]
+PASS [TOUCH-768-arsip] 'Termasuk dompet di Arsip' helpers are at least 44px tall :: [{"label":"Termasuk dompet di Arsip","h":44,"w":147.98},{"label":"Termasuk dompet di Arsip","h":44,"w":147.98}]
+PASS [TOUCH-768-manage] manage-sheet row actions (Ubah/Arsipkan, Aktif tab) are at least 44px tall :: [{"label":"manage row action Ubah","h":44,"w":54.56},{"label":"manage row action Ubah","h":44,"w":54.56},{"label":"manage row action Arsipkan","h":44,"w":92.55},{"label":"manage row action Arsipkan","h":44,"w":92.55}]
+PASS [TOUCH-768-manage-arsip] manage-sheet row action (Pulihkan, Arsip tab) is at least 44px tall :: [{"label":"manage row action Pulihkan","h":44,"w":90.47},{"label":"manage row action Pulihkan","h":44,"w":90.47}]
+PASS [TOUCH-768-section] no wallet-section control is below 44px tall :: count=0 []
+PASS [TOUCH-768-sheet] add-transaction sheet: every WALLET surface control (field, chips, actions) is at least 44px tall :: count=0 []
+PASS [TOUCH-768-sheet-residual] RESIDUAL (pre-existing, non-wallet): transaction-form amount input and 'Scan struk' link are below 44px :: count=2 [{"label":"INPUT","h":32,"w":396},{"label":"Scan struk","h":16,"w":60}]
+  Γ£ô  13 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:305:5 ΓÇ║ wallet surfaces: Kelola, 'Termasuk dompet di Arsip' and manage-sheet actions are >= 44px (8.3s)
+PASS [R3-resp-home-768] /home has no horizontal overflow at 768 :: scrollWidth=768 clientWidth=768
+PASS [R3-scope-768] scope is conveyed by icon AND text label, not colour alone :: pillText=4 pillIcons=2
+PASS [R3-detail-trap-768] wallet detail sheet traps Tab focus :: result=0
+PASS [R3-detail-focus-768] Escape closes the detail sheet and focus returns to the wallet card :: active=Bersama Resp, Bersama, tersedia Rp0, buka detail
+PASS [R3-manage-trap-768] 'Kelola' opens the manage sheet, which traps Tab focus :: result=0
+PASS [R3-manage-focus-768] manage sheet moves focus into the panel on open :: active=Arsip
+PASS [R3-manage-return-768] Escape closes the manage sheet and focus returns to 'Kelola' :: active=Kelola
+  Γ£ô  14 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:451:5 ΓÇ║ responsive layout, scope by text, no console errors (3.3s)
+
+CONSOLE_ERRORS=[]
+SUMMARY pass=14 fail=0 total=14
+  -  15 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:511:5 ΓÇ║ no console errors while opening every wallet sheet and the nested dialogs
+PASS [RESP-768-a] /home has no horizontal overflow at 768 :: scrollWidth=768 clientWidth=768
+PASS [RESP-768-b] /home wallet surfaces: every wallet control is at least 44px tall :: count=0 []
+PASS [RESP-768-b2] INFORMATIONAL: whole /home page, controls under 44px in both axes (not wallet-only) :: count=7 [{"label":"Γ£ªCatatan Keluarga","h":40,"w":40},{"label":"Beranda","h":40,"w":40},{"label":"Budget","h":40,"w":40},{"label":"Aktivitas","h":40,"w":40},{"label":"Keluarga","h":40,"w":40},{"label":"Buka profil kamu","h":40,"w":40},{"label":"7D","h":36,"w":40}]
+PASS [RESP-768-c] scope is never colour-only (scope pill carries a text label plus an icon) :: pillsWithText=4
+PASS [RESP-768-d] /transactions has no horizontal overflow at 768 :: scrollWidth=768 clientWidth=768
+PASS [RESP-768-e] wallet field trigger meets the 44px touch target :: h=48 w=462
+FAIL [RESP-768-f] add-transaction sheet (incl. nested wallet picker field): every control is at least 44px tall :: count=2 [{"label":"INPUT","h":32,"w":396},{"label":"Scan struk","h":16,"w":60}]
+  Γ£ô  16 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:199:5 ΓÇ║ wallet surfaces: layout, no horizontal overflow, touch targets, scope by text (2.7s)
+  -  17 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:303:5 ΓÇ║ wallet picker: aria-selected, roving tabindex, Arrow navigation, Tab trap, focus return
+  -  18 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:412:5 ΓÇ║ C-32 flow: picker -> create wallet -> auto-select; cancel leaves the field unchanged
+  -  19 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:491:5 ΓÇ║ wallet sheets: focus trap on open, Escape closes, focus returns to the trigger
+
+CONSOLE_ERRORS=[]
+SUMMARY pass=6 fail=1 total=7
+  -  20 [tablet-768] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:569:5 ΓÇ║ receipt viewer: focus trap, focus return, blob: src (no storage key / public URL)
+  -  21 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:153:5 ΓÇ║ nested picker: Escape peels one layer, parent + input preserved, focus on the nested trigger, Tab stays inside
+  -  22 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:236:5 ΓÇ║ receipt viewer over detail sheet: Escape peels one layer, Tab stays inside, focus on 'Lihat struk'
+PASS [TOUCH-1280-kelola] wallet card 'Kelola' is at least 44px tall :: [{"label":"Kelola","h":44,"w":77.83},{"label":"Kelola","h":44,"w":77.83}]
+PASS [TOUCH-1280-arsip] 'Termasuk dompet di Arsip' helpers are at least 44px tall :: [{"label":"Termasuk dompet di Arsip","h":44,"w":147.98},{"label":"Termasuk dompet di Arsip","h":44,"w":147.98}]
+PASS [TOUCH-1280-manage] manage-sheet row actions (Ubah/Arsipkan, Aktif tab) are at least 44px tall :: [{"label":"manage row action Ubah","h":44,"w":54.56},{"label":"manage row action Ubah","h":44,"w":54.56},{"label":"manage row action Arsipkan","h":44,"w":92.55},{"label":"manage row action Arsipkan","h":44,"w":92.55}]
+PASS [TOUCH-1280-manage-arsip] manage-sheet row action (Pulihkan, Arsip tab) is at least 44px tall :: [{"label":"manage row action Pulihkan","h":44,"w":90.47},{"label":"manage row action Pulihkan","h":44,"w":90.47}]
+PASS [TOUCH-1280-section] no wallet-section control is below 44px tall :: count=0 []
+PASS [TOUCH-1280-sheet] add-transaction sheet: every WALLET surface control (field, chips, actions) is at least 44px tall :: count=0 []
+PASS [TOUCH-1280-sheet-residual] RESIDUAL (pre-existing, non-wallet): transaction-form amount input and 'Scan struk' link are below 44px :: count=2 [{"label":"INPUT","h":32,"w":396},{"label":"Scan struk","h":16,"w":60}]
+  Γ£ô  23 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:305:5 ΓÇ║ wallet surfaces: Kelola, 'Termasuk dompet di Arsip' and manage-sheet actions are >= 44px (8.6s)
+PASS [R3-resp-home-1280] /home has no horizontal overflow at 1280 :: scrollWidth=1280 clientWidth=1280
+PASS [R3-scope-1280] scope is conveyed by icon AND text label, not colour alone :: pillText=4 pillIcons=2
+PASS [R3-detail-trap-1280] wallet detail sheet traps Tab focus :: result=0
+PASS [R3-detail-focus-1280] Escape closes the detail sheet and focus returns to the wallet card :: active=Bersama Resp, Bersama, tersedia Rp0, buka detail
+PASS [R3-manage-trap-1280] 'Kelola' opens the manage sheet, which traps Tab focus :: result=0
+PASS [R3-manage-focus-1280] manage sheet moves focus into the panel on open :: active=Arsip
+PASS [R3-manage-return-1280] Escape closes the manage sheet and focus returns to 'Kelola' :: active=Kelola
+  Γ£ô  24 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:451:5 ΓÇ║ responsive layout, scope by text, no console errors (3.1s)
+
+CONSOLE_ERRORS=[]
+SUMMARY pass=14 fail=0 total=14
+  -  25 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y-r3.spec.ts:511:5 ΓÇ║ no console errors while opening every wallet sheet and the nested dialogs
+PASS [RESP-1280-a] /home has no horizontal overflow at 1280 :: scrollWidth=1280 clientWidth=1280
+PASS [RESP-1280-b] /home wallet surfaces: every wallet control is at least 44px tall :: count=0 []
+PASS [RESP-1280-b2] INFORMATIONAL: whole /home page, controls under 44px in both axes (not wallet-only) :: count=2 [{"label":"Buka profil kamu","h":40,"w":40},{"label":"7D","h":36,"w":40}]
+PASS [RESP-1280-c] scope is never colour-only (scope pill carries a text label plus an icon) :: pillsWithText=4
+PASS [RESP-1280-d] /transactions has no horizontal overflow at 1280 :: scrollWidth=1280 clientWidth=1280
+PASS [RESP-1280-e] wallet field trigger meets the 44px touch target :: h=48 w=462
+FAIL [RESP-1280-f] add-transaction sheet (incl. nested wallet picker field): every control is at least 44px tall :: count=2 [{"label":"INPUT","h":32,"w":396},{"label":"Scan struk","h":16,"w":60}]
+  Γ£ô  26 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:199:5 ΓÇ║ wallet surfaces: layout, no horizontal overflow, touch targets, scope by text (2.6s)
+  -  27 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:303:5 ΓÇ║ wallet picker: aria-selected, roving tabindex, Arrow navigation, Tab trap, focus return
+  -  28 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:412:5 ΓÇ║ C-32 flow: picker -> create wallet -> auto-select; cancel leaves the field unchanged
+  -  29 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:491:5 ΓÇ║ wallet sheets: focus trap on open, Escape closes, focus returns to the trigger
+
+CONSOLE_ERRORS=[]
+SUMMARY pass=6 fail=1 total=7
+  -  30 [desktop-1280] ΓÇ║ docs\qa\harness\t009-a11y.spec.ts:569:5 ΓÇ║ receipt viewer: focus trap, focus return, blob: src (no storage key / public URL)
+
+  14 skipped
+  16 passed (2.7m)
+

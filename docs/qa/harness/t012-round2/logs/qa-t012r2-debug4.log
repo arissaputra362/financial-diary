@@ -1,0 +1,18 @@
+[WebServer] $ next dev -p "3033"
+
+Running 2 tests using 1 worker
+
+[DBG4 mobile-390 #0] openedAt=0ms navClicks+=1 intents+=1 urlAtTap=/transactions?month=2025-03 urlNow=/transactions?month=2025-03 history=2
+[DBG4 mobile-390 #1] openedAt=0ms navClicks+=1 intents+=1 urlAtTap=/transactions?month=2025-03 urlNow=/transactions?month=2025-03 history=2
+[DBG4 mobile-390 #2] openedAt=0ms navClicks+=1 intents+=1 urlAtTap=/transactions?month=2025-03&add=1 urlNow=/transactions?month=2025-03 history=2
+  ✓  1 [mobile-390] › docs\qa\harness\t012-round2\t012-debug4.qa.spec.ts:15:5 › race debug4 no-await tap (2.2s)
+[DBG4 desktop-1280 #0] openedAt=0ms navClicks+=1 intents+=1 urlAtTap=/transactions?month=2025-03&add=1 urlNow=/transactions?month=2025-03 history=2
+[DBG4 desktop-1280 #1] openedAt=0ms navClicks+=1 intents+=1 urlAtTap=/transactions?month=2025-03&add=1 urlNow=/transactions?month=2025-03&add=1 history=2
+[DBG4 desktop-1280 #2] openedAt=0ms navClicks+=1 intents+=1 urlAtTap=/transactions?month=2025-03&add=1 urlNow=/transactions?month=2025-03 history=2
+  ✓  2 [desktop-1280] › docs\qa\harness\t012-round2\t012-debug4.qa.spec.ts:15:5 › race debug4 no-await tap (1.5s)
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3307166295'
+[WebServer] }
+
+  2 passed (9.2s)

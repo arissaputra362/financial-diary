@@ -14,6 +14,7 @@ export default defineConfig({
   },
   test: {
     include: ["**/*.test.ts"],
-    exclude: ["node_modules/**", ".next/**", "e2e/**"],
+    /* DB integration suites run via vitest.integration.config.mts (test:integration). */
+    exclude: ["node_modules/**", ".next/**", "e2e/**", "**/*.integration.test.ts"],
   },
 });

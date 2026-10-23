@@ -1,7 +1,8 @@
 // Financial Planner — Prisma schema (T-003)
 // Single source of truth for column names/types: docs/erd/erd-database-schema.md §3.
 // Constraints marked `*` in the ERD (partial unique indexes, CHECKs) are added as
-// raw SQL in the migration — see prisma/migrations/00000000000000_init/migration.sql.
+// raw SQL in the migration files — see prisma/migrations/ (latest institution
+// constraints: 20261021120000_bank_institutions).
 // Money: Int minor units, IDR scale 0 (1 minor unit = 1 rupiah) — never Decimal/Float.
 // All timestamps are explicit @db.Timestamptz (UTC). All FKs are RESTRICT (no cascade).
 
@@ -35,15 +36,22 @@ enum MembershipEventType {
   REVOKED
 }
 
+// TRANSFER is input-only: the service persists a transfer as two legs
+// (MONEY_OUT + MONEY_IN) sharing one transfer_group_id (spec AC-F3-3).
 enum TransactionType {
   MONEY_IN
   MONEY_OUT
-  TRANSFER
 }
 
 enum TransactionSource {
   MANUAL
   OCR
+}
+
+// Wallet scope is immutable after create (A-36/C-31); the enum is create-only.
+enum WalletScope {
+  PERSONAL
+  SHARING
 }
 
 enum OcrJobStatus {
@@ -75,12 +83,17 @@ model User {
   sessions            Session[]
   transactionsCreated Transaction[]      @relation("TransactionCreatedBy")
   transactionsDeleted Transaction[]      @relation("TransactionDeletedBy")
+  walletsCreated      Wallet[]           @relation("WalletCreatedBy")
+  walletsArchived     Wallet[]           @relation("WalletArchivedBy")
   goalsCreated        SavingsGoal[]      @relation("GoalCreatedBy")
   goalsDeleted        SavingsGoal[]      @relation("GoalDeletedBy")
   receiptsUploaded    Receipt[]          @relation("ReceiptUploadedBy")
   insightsRequested   AdvisorInsight[]
   budgetsCreated      HouseholdBudget[]
+  personalBudgets     PersonalBudget[]   @relation("PersonalBudgetOwner")
+  personalBudgetsCreated PersonalBudget[] @relation("PersonalBudgetCreatedBy")
   idempotencyKeys     IdempotencyKey[]
+  customInstitutions  UserCustomInstitution[]
 
   @@index([email])
   @@map("user")
@@ -99,10 +112,12 @@ model Household {
   invites          Invite[]
   membershipEvents MembershipEvent[]
   transactions     Transaction[]
+  wallets          Wallet[]
   savingsGoals     SavingsGoal[]
   receipts         Receipt[]
   advisorInsights  AdvisorInsight[]
   budgets          HouseholdBudget[]
+  personalBudgets  PersonalBudget[]
 
   @@index([ownerUserId])
   @@map("household")
@@ -221,6 +236,7 @@ model Transaction {
   source          TransactionSource
   receiptId       String?           @map("receipt_id") @db.Uuid
   transferGroupId String?           @map("transfer_group_id") @db.Uuid
+  walletId        String            @map("wallet_id") @db.Uuid
   deletedAt       DateTime?         @map("deleted_at") @db.Timestamptz
   deletedByUserId String?           @map("deleted_by_user_id") @db.Uuid
   createdAt       DateTime          @map("created_at") @db.Timestamptz @default(now())
@@ -230,10 +246,87 @@ model Transaction {
   createdBy User      @relation("TransactionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   receipt   Receipt?  @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   deletedBy User?     @relation("TransactionDeletedBy", fields: [deletedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  wallet    Wallet    @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([householdId, transferGroupId, type])
   @@index([householdId, deletedAt, occurredAt(sort: Desc)])
+  @@index([householdId, walletId, deletedAt, occurredAt(sort: Desc)])
   @@map("transaction")
+}
+
+/// ERD §8.2 — wallet (A-36). Scope is immutable after create (C-31); archive is
+/// non-destructive (no hard delete); system_key marks the migrated default (A-48).
+/// The household-qualified composite FK on transaction is added in raw SQL (A-37).
+/// Institution references are additive and optional (T-011 / A-52..A-55): manual
+/// means both ids are null; the XOR CHECK is added in raw SQL.
+model Wallet {
+  id                  String      @id @default(uuid()) @db.Uuid
+  householdId         String      @map("household_id") @db.Uuid
+  createdByUserId     String      @map("created_by_user_id") @db.Uuid
+  scope               WalletScope
+  name                String      @db.VarChar
+  purpose             String?     @db.VarChar
+  openingBalanceMinor Int         @default(0) @map("opening_balance_minor")
+  officialInstitutionId String?   @map("official_institution_id") @db.Uuid
+  customInstitutionId   String?   @map("custom_institution_id") @db.Uuid
+  archivedAt          DateTime?   @map("archived_at") @db.Timestamptz
+  archivedByUserId    String?     @map("archived_by_user_id") @db.Uuid
+  systemKey           String?     @map("system_key") @db.VarChar
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  household    Household     @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy    User          @relation("WalletCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivedBy   User?         @relation("WalletArchivedBy", fields: [archivedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  officialInstitution BankInstitution?       @relation("WalletOfficialInstitution", fields: [officialInstitutionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  customInstitution   UserCustomInstitution? @relation("WalletCustomInstitution", fields: [customInstitutionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  transactions Transaction[]
+
+  @@unique([householdId, systemKey])
+  @@unique([householdId, id])
+  @@index([householdId, scope, archivedAt])
+  @@map("wallet")
+}
+
+/// A-52/A-53 — global, read-only official bank catalog. Populated only by the
+/// versioned static OJK seed; no user write route, admin UI, or automatic sync.
+model BankInstitution {
+  id             String   @id @default(uuid()) @db.Uuid
+  displayName    String   @map("display_name") @db.VarChar(160)
+  normalizedName String   @unique @map("normalized_name") @db.VarChar(160)
+  source         String   @default("OJK_OFFICE_LIST") @db.VarChar(40)
+  sourceUrl      String   @map("source_url") @db.VarChar(500)
+  /// Publication period from the source (`YYYY-MM`). No inferred day (A-53).
+  sourcePeriod   String   @map("source_period") @db.VarChar(7)
+  sourceRef      String?  @map("source_ref") @db.VarChar(255)
+  seedVersion    String   @map("seed_version") @db.VarChar(40)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  wallets Wallet[] @relation("WalletOfficialInstitution")
+
+  @@index([isActive, normalizedName])
+  @@map("bank_institution")
+}
+
+/// A-52/A-54 — private per-user Quick Add list. Never household-shared and never
+/// joined into another user's response. Archive is soft (`archived_at`); the
+/// partial unique active-name index is added in raw SQL.
+model UserCustomInstitution {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  displayName    String    @map("display_name") @db.VarChar(80)
+  normalizedName String    @map("normalized_name") @db.VarChar(80)
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  wallets Wallet[] @relation("WalletCustomInstitution")
+
+  @@index([userId, archivedAt, normalizedName])
+  @@map("user_custom_institution")
 }
 
 /// ERD §3.8 — soft delete; CHECK target > 0 and saved >= 0 (raw SQL appendix).
@@ -280,10 +373,13 @@ model Receipt {
 }
 
 /// ERD §3.10 — PROCESSING is transient within the upload request (D-8).
+/// T-012: `attempt` is the per-receipt trial order (1..n). It is an internal
+/// claim/audit sequence, not part of the OcrJobDTO contract.
 model OcrJob {
   id          String       @id @default(uuid()) @db.Uuid
   receiptId   String       @map("receipt_id") @db.Uuid
   status      OcrJobStatus
+  attempt     Int          @default(1)
   model       String?      @db.VarChar
   resultJson  Json?        @map("result_json")
   confidence  Float?
@@ -293,7 +389,9 @@ model OcrJob {
 
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
+  @@unique([receiptId, attempt])
   @@index([receiptId])
+  @@index([receiptId, attempt(sort: Desc)])
   @@map("ocr_job")
 }
 
@@ -335,6 +433,29 @@ model HouseholdBudget {
 
   @@unique([householdId, periodStart])
   @@map("household_budget")
+}
+
+/// ERD §3.12b (T-015) — personal budget per user; UNIQUE(household_id, user_id,
+/// period_start). No soft delete. Access is always resolved from the session
+/// user, with no owner override and no client-supplied userId.
+model PersonalBudget {
+  id              String   @id @default(uuid()) @db.Uuid
+  householdId     String   @map("household_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  periodStart     DateTime @map("period_start") @db.Date
+  amountMinor     Int      @map("amount_minor")
+  currencyCode    String   @default("IDR") @map("currency_code") @db.Char(3)
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @map("created_at") @db.Timestamptz @default(now())
+  updatedAt       DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  user      User      @relation("PersonalBudgetOwner", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy User      @relation("PersonalBudgetCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([householdId, userId, periodStart])
+  @@index([userId, periodStart])
+  @@map("personal_budget")
 }
 
 /// ERD §3.13 — scope per USER, not per household (A-22 / D-2).

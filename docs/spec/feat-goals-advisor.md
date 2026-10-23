@@ -64,7 +64,10 @@ yang menganalisis periode pengeluaran dan memberi aksi konkret — selalu dengan
 - Yang terjadi: response berisi headline, summary, actions (list), limitations,
   sourcePeriod, model, generatedAt, expiresAt. Period picker di drawer advisor
   (preset + rentang, maks 90 hari) dan penempatan limitations yang tidak hilang saat
-  scroll di 390px didefinisikan di design doc 05 (sign-off UI/UX Designer).
+  scroll di 390px didefinisikan di design doc 05 (sign-off UI/UX Designer). Setelah
+  wallet feature, advisor household hanya memakai transaksi aktif wallet Sharing,
+  termasuk wallet Sharing yang diarsipkan; transaksi Pribadi tidak dikirim ke model maupun
+  disertakan dalam insight/cache (AC-F6-11).
 - Yang tidak boleh terjadi: insight tanpa limitations; periode yang berbeda dari
   yang diminta tanpa penjelasan; data transaksi mentah per record tampil di insight;
   periode > 90 hari diterima.
@@ -87,6 +90,22 @@ yang menganalisis periode pengeluaran dan memberi aksi konkret — selalu dengan
   cache unexpired untuk periode yang diminta ada → dikembalikan dengan delivery=CACHE.
 - Yang tidak boleh terjadi: saran karangan saat gagal; retry tak terbatas; error
   teknis tampil ke user.
+
+### AC-7b (AC-F4-7 amendemen 2026-10-23): Fallback model berbatas
+
+- Kondisi: model utama gagal karena sebab spesifik-model: HTTP 429 (kuota / rate
+  limit, per project DAN per model), HTTP 404 (model pensiun), atau HTTP 503
+  (UNAVAILABLE).
+- Yang terjadi: provider mencoba SEKALI ke model berikutnya pada rantai
+  `GEMINI_MODEL` + `GEMINI_MODEL_FALLBACKS` (default `gemini-3.5-flash-lite` →
+  `gemini-3.1-flash-lite`; dedupe, seluruh rantai maksimal 3 model; time-budget
+  guard 19.000 ms untuk seluruh rantai di dalam transaksi idempotency ~20 detik,
+  timeout 9 detik per attempt tetap). Bila semua attempt gagal, preseden errorCode
+  final: attempt manapun kena 429 → `ADVISOR_RATE_LIMITED`; selain itu kode attempt
+  terakhir (`ADVISOR_UNAVAILABLE` untuk timeout / 400 / 404 / 503).
+- Yang tidak boleh terjadi: fallback pada HTTP 400 INVALID_ARGUMENT atau timeout;
+  retry otomatis tanpa batas; perubahan bentuk respons, delivery=CACHE, atau nama
+  error code.
 
 ### AC-8 (AC-F4-8): Batasan advice selalu tampil (testable, D-19)
 
@@ -119,6 +138,9 @@ yang menganalisis periode pengeluaran dan memberi aksi konkret — selalu dengan
 - Tidak ada chat history; hanya insight sukses yang dipersist, di-key per
   (household, periode), retensi maks ~10 terbaru per household (D-16).
 - Advice bukan nasihat keuangan profesional; limitations wajib menyatakannya.
+- Setelah wallet feature, data wallet Pribadi tidak boleh masuk ke prompt, input agregat,
+  atau cache advisor household; hanya transaksi aktif wallet Sharing yang dipakai,
+  termasuk wallet Sharing terarsip (AC-F6-11).
 - Progres dihitung dari counter manual (OQ-1: bukan dari transaksi nyata di MVP).
 - TTL cache insight 24 jam (D-17).
 - Halaman goals berada di `/budget` (budget + goals = perencanaan); route `/savings`

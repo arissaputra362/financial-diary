@@ -6,7 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/home";
+  /*
+    BUG-003: /home does not exist yet (T-005 Dashboard). Land on /transactions,
+    which is live, so a successful sign-in never hits a 404. TODO: change the
+    fallback back to /home once T-005 ships.
+  */
+  const redirectTo = searchParams.get("redirect") || "/transactions";
   const [isSignup, setIsSignup] = useState(initialSignup);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,27 +70,29 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-canvas px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl bg-white p-8 shadow-bento border border-slate-100">
-          {/* Brand Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-purple-500 to-indigo-600 mb-4">
-              <span className="text-2xl font-bold text-white">✦</span>
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900">Financial Planner</h1>
-            <p className="text-slate-500 mt-1">Keuangan keluarga jadi lebih mudah.</p>
+        <div className="rounded-3xl border border-[#D8E2EE] bg-white p-8 shadow-bento">
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-[#17304F]">
+              Financial Planner
+            </h1>
+            <p className="mt-1 text-[#46597A]">Keuangan keluarga jadi lebih mudah.</p>
           </div>
 
-          {/* Segmented Control */}
-          <div className="bg-slate-100/90 p-1 rounded-full flex mb-6">
+          <div
+            className="mb-6 flex rounded-full bg-[#EFF4FA] p-1"
+            role="group"
+            aria-label="Pilih mode akun"
+          >
             <button
               type="button"
               onClick={() => setIsSignup(false)}
-              className={`flex-1 py-1.5 px-4 rounded-full text-sm font-medium transition-all ${
+              aria-pressed={!isSignup}
+              className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/25 ${
                 !isSignup
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-white text-[#17304F] shadow-sm"
+                  : "text-[#46597A] hover:text-[#17304F]"
               }`}
             >
               Masuk
@@ -93,26 +100,29 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
             <button
               type="button"
               onClick={() => setIsSignup(true)}
-              className={`flex-1 py-1.5 px-4 rounded-full text-sm font-medium transition-all ${
+              aria-pressed={isSignup}
+              className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/25 ${
                 isSignup
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900"
+                  ? "bg-white text-[#17304F] shadow-sm"
+                  : "text-[#46597A] hover:text-[#17304F]"
               }`}
             >
               Buat akun
             </button>
           </div>
 
-          {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm" role="alert">
+            <div
+              className="mb-4 rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] p-3 text-sm text-[#B91C1C]"
+              role="alert"
+            >
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1.5">
+              <label htmlFor="email" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
                 Email
               </label>
               <input
@@ -122,7 +132,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value.trim().toLowerCase())}
                 required
-                className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition-all text-slate-900 placeholder-slate-400"
+                className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
                 placeholder="nama@contoh.com"
                 disabled={loading}
               />
@@ -130,7 +140,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
 
             {isSignup && (
               <div>
-                <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1.5">
+                <label htmlFor="displayName" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
                   Nama tampil
                 </label>
                 <input
@@ -141,7 +151,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
                   onChange={(e) => setDisplayName(e.target.value.trim())}
                   required
                   maxLength={60}
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition-all text-slate-900 placeholder-slate-400"
+                  className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
                   placeholder="Nama Anda"
                   disabled={loading}
                 />
@@ -149,7 +159,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
             )}
 
             <div className="relative">
-              <label htmlFor="password" className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1.5">
+              <label htmlFor="password" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
                 Kata sandi
               </label>
               <div className="relative">
@@ -161,22 +171,23 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition-all text-slate-900 placeholder-slate-400 pr-12"
+                  className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 pr-12 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
                   placeholder="Minimal 8 karakter"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[#5C7191] transition-colors hover:bg-[#EFF4FA] hover:text-[#17304F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/25"
                   aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                     </svg>
                   ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -187,7 +198,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
 
             {isSignup && (
               <div>
-                <label htmlFor="inviteCode" className="block text-xs font-medium uppercase tracking-wider text-slate-500 mb-1.5">
+                <label htmlFor="inviteCode" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
                   Kode undangan (opsional)
                 </label>
                 <input
@@ -195,11 +206,11 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
                   type="text"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition-all text-slate-900 placeholder-slate-400"
+                  className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
                   placeholder="Masukkan kode undangan"
                   disabled={loading}
                 />
-                <p className="mt-1.5 text-xs text-slate-500">
+                <p className="mt-1.5 text-xs text-[#5C7191]">
                   Punya kode undangan? Masukkan untuk bergabung ke keluarga yang sudah ada. Tanpa kode, kamu akan membuat keluarga baru.
                 </p>
               </div>
@@ -208,18 +219,18 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-slate-900 text-white py-3.5 rounded-full font-medium hover:bg-slate-800 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-full bg-[#166534] py-3.5 font-semibold text-white transition-all hover:bg-[#155C30] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#E6ECF4] disabled:text-[#46597A]"
             >
               {loading ? "Memproses..." : isSignup ? "Buat akun keluarga" : "Masuk"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p className="mt-6 text-center text-sm text-[#46597A]">
             {isSignup ? "Sudah punya akun? " : "Belum punya akun? "}
             <button
               type="button"
               onClick={() => setIsSignup(!isSignup)}
-              className="text-purple-600 hover:text-purple-700 font-medium"
+              className="font-semibold text-[#1D4F87] hover:text-[#17304F]"
             >
               {isSignup ? "Masuk" : "Buat akun"}
             </button>
@@ -234,8 +245,8 @@ export default function LoginPage({ initialSignup = false }: { initialSignup?: b
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-canvas px-4 py-12">
-          <p className="text-slate-500">Memuat...</p>
+        <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
+          <p className="text-[#5C7191]">Memuat...</p>
         </div>
       }
     >

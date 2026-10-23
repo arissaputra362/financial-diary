@@ -59,4 +59,15 @@ Gunakan **soft delete** via `deleted_at` + `deleted_by_user_id` pada `transactio
 
 - `docs/spec/feat-trash-restore.md` — AC-1..AC-7, AC-5b, Edge Case
 - `docs/erd/erd-database-schema.md` §3.7, §3.8
-- `docs/architecture-decisions.md` — Soft delete, A-17
+- `docs/architecture-decisions.md` — Soft delete, A-17; Amendment Wallet F6 A-36/A-40/A-41 (Accepted by PM 2026-10-09)
+
+## Amendment (T-009 / F6 wallet) — Accepted by PM 2026-10-09
+
+**Status:** Accepted (PM, 2026-10-09). Amends §Detail Implementasi "Transfer" above for two-legged transfers only; the original ADR-005 decision continues to apply to non-transfer records.
+
+Konteks: Spec `docs/spec/feat-wallets.md` (AC-F6-5) dan design `docs/design/06-wallets.md` (C-9, C-20) menetapkan bahwa **trash/restore transfer memproses kedua kaki secara atomik** dan bahwa untuk **transfer lintas scope hanya pembuat transfer atau Owner** yang boleh memutasi pasangan. Ini menggantikan perilaku per-kaki di §Detail Implementasi "Transfer" di atas. Diratifikasi sebagai bagian `docs/architecture-decisions.md` "Amendment — Wallet F6 (T-009)" A-40/A-41 (**Accepted by PM 2026-10-09**).
+
+- **Superseded:** kalimat lama "menghapus satu kaki transfer hanya men-soft-delete kaki itu; pasangan tetap aktif" **tidak berlaku lagi** untuk transfer dua kaki.
+- **Keputusan baru (Accepted):** trash/restore pada baris dengan `transfer_group_id` menyasar **semua baris** dengan `(household_id, transfer_group_id)` yang sama dalam **satu interactive transaction**; tidak pernah tersisa satu kaki aktif. Operasi idempoten: semua kaki sudah trashed → 200 `ALREADY_DELETED`; semua sudah aktif saat restore → 200 `ALREADY_ACTIVE`. State parsial (warisan perilaku per-kaki) direkonsiliasi dalam transaksi yang sama.
+- **Otorisasi (Accepted):** `PERSONAL↔PERSONAL` hanya pemilik; `SHARING↔SHARING` semua anggota APPROVED yang dapat mengakses kedua wallet; `lintas scope` hanya pembuat transfer atau Owner household. Aktor tanpa hak → 403 `ACCESS_DENIED`; id asing → 404 `NOT_FOUND`. Response tidak boleh mengungkap keberadaan kaki Pribadi (lihat A-39/A-41 di `docs/architecture-decisions.md`).
+- **Kontrak penuh:** `docs/architecture-decisions.md` "Amendment — Wallet F6 (T-009)" A-40/A-41. Amandemen ini berstatus **Accepted** (PM 2026-10-09); tidak ada bagian amandemen yang tersisa berstatus draft.

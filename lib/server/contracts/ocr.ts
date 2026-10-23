@@ -64,6 +64,24 @@ export const ocrJobStatusSchema = z.enum(["PROCESSING", "SUCCEEDED", "FAILED"]);
 
 export const ocrErrorCodeSchema = z.enum(OCR_ERROR_CODES);
 
+/*
+  T-012 retry control errors. These are HTTP envelope codes (409), not part of
+  the model-failure `OcrErrorCode` namespace: they are never written to
+  `job.error_code`. The client-visible union lives in `types/api.ts`.
+*/
+export const OCR_RETRY_CONTROL_ERROR_CODES = {
+  OCR_NOT_RETRYABLE: 409,
+  OCR_RETRY_IN_PROGRESS: 409,
+  OCR_IMAGE_UNAVAILABLE: 409,
+} as const;
+
+export type OcrRetryControlErrorCode = keyof typeof OCR_RETRY_CONTROL_ERROR_CODES;
+
+/** Canonical retry path, also used as the idempotency request-hash path. */
+export function ocrRetryPath(jobId: string): string {
+  return `/api/ocr/jobs/${jobId}/retry`;
+}
+
 export { OCR_ERROR_CODES };
 export type { OcrErrorCode } from "./common";
 

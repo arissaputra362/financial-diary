@@ -31,6 +31,14 @@ export const errorEnvelopeSchema = z.object({
     code: z.string(),
     message: z.string(),
     fieldErrors: z.record(z.string(), z.array(z.string())).optional(),
+    /** T-011 duplicate Quick Add match (own custom row or public official row). */
+    existing: z
+      .object({
+        kind: z.enum(["OFFICIAL", "CUSTOM"]),
+        id: z.string(),
+        name: z.string(),
+      })
+      .optional(),
   }),
 });
 
