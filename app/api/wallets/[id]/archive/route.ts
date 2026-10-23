@@ -1,0 +1,32 @@
+import { NextResponse } from "next/server";
+import { authenticatedRequest } from "@/lib/server/auth";
+import { idSchema } from "@/lib/server/contracts/transactions";
+import { notFound } from "@/lib/server/errors";
+import { pathParam, respondError } from "@/lib/server/http";
+import { setSessionCookie } from "@/lib/server/session";
+
+export const runtime = "nodejs";
+
+/*
+  POST /api/wallets/{id}/archive — non-destructive archive (A-43). Permission is
+  enforced server-side: SHARING = creator or Owner; PERSONAL = owner only. A
+  visible-but-unauthorized actor gets 403; unknown/private/foreign gets 404.
+*/
+export async function POST(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  try {
+    const session = await authenticatedRequest({ approvedOnly: true });
+    const params = await context.params;
+    const parsed = idSchema.safeParse(pathParam(params.id));
+    if (!parsed.success) throw notFound("Dompet tidak ditemukan.");
+    const actor = { userId: session.userId, householdId: session.householdId, role: session.role };
+    const result = await session.wallets.archive(actor, parsed.data);
+    const response = NextResponse.json(result.body, { status: result.status });
+    await setSessionCookie(response, session.sessionId, session.userId);
+    return response;
+  } catch (error) {
+    return respondError(error);
+  }
+}

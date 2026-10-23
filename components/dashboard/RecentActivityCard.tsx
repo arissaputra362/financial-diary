@@ -1,0 +1,294 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
+import { apiRequest } from "@/lib/api-client";
+import { formatDateLabel } from "@/lib/dates";
+import { formatIDR, formatSignedIDR } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import type { TransactionDTO, TransactionListDTO } from "@/types/api";
+import { categoryEmoji, categoryLabel, categoryTone, isTransferLeg } from "@/components/transactions/categories";
+
+type Kind = "all" | "in" | "out" | "ocr";
+
+const FILTERS: Array<{ kind: Kind; label: string }> = [
+  { kind: "all", label: "Semua" },
+  { kind: "in", label: "Uang masuk" },
+  { kind: "out", label: "Uang keluar" },
+  { kind: "ocr", label: "Struk hasil scan" },
+];
+
+export interface RecentActivityCardProps {
+  initialRows: TransactionDTO[];
+}
+
+/**
+ * Recent activity with local type/source/date filters (AC-F2-6, AC-F2-7).
+ * Filters only ever change this list: they call `GET /api/transactions`, never
+ * the balance/budget/chart cards. Every filter change either changes the rows or
+ * shows a clear filtered-empty state, and from > to is rejected before any call.
+ */
+export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
+  const router = useRouter();
+  const [kind, setKind] = useState<Kind>("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [fetchedRows, setFetchedRows] = useState<TransactionDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  const filtersActive = kind !== "all" || Boolean(from) || Boolean(to);
+  const dateInvalid = Boolean(from && to && from > to);
+  const rows = filtersActive ? fetchedRows : initialRows;
+  const shownError = dateInvalid ? "Tanggal 'dari' harus sebelum 'sampai'." : error;
+
+  useEffect(() => {
+    if (!filtersActive || dateInvalid) return;
+    let active = true;
+    const params = new URLSearchParams({ limit: "5" });
+    if (kind === "in") params.set("type", "MONEY_IN");
+    if (kind === "out") params.set("type", "MONEY_OUT");
+    if (kind === "ocr") params.set("source", "OCR");
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+
+    apiRequest<TransactionListDTO>(`/api/transactions?${params.toString()}`)
+      .then((response) => {
+        if (!active) return;
+        if (response.status === 401) {
+          router.push("/login");
+          return;
+        }
+        if (!response.ok) {
+          setFetchedRows([]);
+          setError(response.data?.error?.message ?? "Aktivitas belum bisa dimuat.");
+          return;
+        }
+        setFetchedRows(response.data?.rows ?? []);
+        setError(null);
+      })
+      .catch(() => {
+        if (!active) return;
+        setFetchedRows([]);
+        setError("Aktivitas belum bisa dimuat.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [filtersActive, dateInvalid, kind, from, to, reloadToken, router]);
+
+  const selectKind = (next: Kind) => {
+    setError(null);
+    setLoading(true);
+    setKind(next);
+  };
+
+  const changeFrom = (value: string) => {
+    setError(null);
+    setLoading(true);
+    setFrom(value);
+  };
+
+  const changeTo = (value: string) => {
+    setError(null);
+    setLoading(true);
+    setTo(value);
+  };
+
+  const reset = () => {
+    setError(null);
+    setLoading(false);
+    setKind("all");
+    setFrom("");
+    setTo("");
+  };
+
+  const retry = () => {
+    setError(null);
+    setLoading(true);
+    setReloadToken((token) => token + 1);
+  };
+
+  return (
+    <section
+      aria-labelledby="activity-title"
+      className="rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="activity-title" className="text-lg font-semibold text-[#17304F]">
+          Aktivitas terbaru
+        </h2>
+        <Link
+          href="/transactions"
+          className="inline-flex min-h-11 items-center rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] transition-colors hover:bg-[#EFF4FA]"
+        >
+          Lihat semua aktivitas
+        </Link>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <div
+          className="flex flex-wrap gap-1 rounded-2xl bg-[#EFF4FA] p-1"
+          role="group"
+          aria-label="Filter aktivitas"
+        >
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.kind}
+              type="button"
+              aria-pressed={kind === filter.kind}
+              onClick={() => selectKind(filter.kind)}
+              className={cn(
+                "min-h-11 rounded-full px-4 text-xs font-semibold transition-colors",
+                kind === filter.kind
+                  ? "bg-white text-[#17304F] shadow-sm"
+                  : "text-[#46597A] hover:text-[#17304F]",
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-[#46597A]">
+            Dari
+            <input
+              type="date"
+              value={from}
+              onChange={(event) => changeFrom(event.target.value)}
+              className="min-h-11 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-[#46597A]">
+            Sampai
+            <input
+              type="date"
+              value={to}
+              onChange={(event) => changeTo(event.target.value)}
+              className="min-h-11 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+            />
+          </label>
+          {filtersActive ? (
+            <button
+              type="button"
+              onClick={reset}
+              className="min-h-11 rounded-full px-3 text-xs font-semibold text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
+            >
+              Reset filter
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-5">
+        {shownError ? (
+          <div className="rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] p-4 text-sm text-[#B91C1C]">
+            <p>{shownError}</p>
+            {dateInvalid ? (
+              <button
+                type="button"
+                onClick={reset}
+                className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+              >
+                Reset filter
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={retry}
+                className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Coba lagi
+              </button>
+            )}
+          </div>
+        ) : loading ? (
+          <ul className="space-y-3" aria-busy="true" aria-label="Memuat aktivitas">
+            {[0, 1, 2].map((key) => (
+              <li key={key} className="h-14 animate-pulse rounded-2xl bg-[#E5EDF5] motion-reduce:animate-none" />
+            ))}
+          </ul>
+        ) : rows.length === 0 ? (
+          <div className="rounded-2xl bg-[#EFF4FA] p-6 text-center">
+            <p className="text-[15px] font-semibold text-[#17304F]">
+              {filtersActive ? "Tidak ada aktivitas yang cocok" : "Belum ada aktivitas"}
+            </p>
+            <p className="mt-1 text-sm text-[#46597A]">
+              {filtersActive
+                ? "Coba ubah atau reset filter untuk melihat aktivitas lain."
+                : "Transaksi yang kamu catat akan muncul di sini."}
+            </p>
+            <div className="mt-3">
+              {filtersActive ? (
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="inline-flex min-h-11 items-center rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                >
+                  Reset filter
+                </button>
+              ) : (
+                <Link
+                  href="/transactions?add=1"
+                  className="inline-flex min-h-11 items-center rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+                >
+                  Tambah transaksi
+                </Link>
+              )}
+            </div>
+          </div>
+        ) : (
+          <ul className="divide-y divide-[#EAEEF4]">
+            {rows.map((row) => (
+              <li key={row.id} className="flex items-center gap-3 py-3">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg",
+                    isTransferLeg(row) ? "bg-[#EFF4FA] text-[#1D4F87]" : categoryTone(row.category),
+                  )}
+                >
+                  {categoryEmoji(row.category)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium text-[#17304F]">{rowTitle(row)}</p>
+                  <p className="mt-0.5 truncate text-xs text-[#5C7191]">
+                    {row.source === "OCR" ? "Hasil scan" : "Manual"} · {formatDateLabel(row.occurredAt)}
+                  </p>
+                </div>
+                <p
+                  className={cn(
+                    "shrink-0 whitespace-nowrap text-sm font-bold tabular-nums",
+                    isTransferLeg(row)
+                      ? "text-[#17304F]"
+                      : row.type === "MONEY_IN"
+                        ? "text-[#166534]"
+                        : "text-[#17304F]",
+                  )}
+                >
+                  {isTransferLeg(row)
+                    ? formatIDR(row.amountMinor)
+                    : formatSignedIDR(row.type === "MONEY_IN" ? row.amountMinor : -row.amountMinor)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function rowTitle(row: TransactionDTO): string {
+  if (isTransferLeg(row)) return "Transfer antar dompet";
+  return row.merchant ?? row.note ?? categoryLabel(row.category);
+}
