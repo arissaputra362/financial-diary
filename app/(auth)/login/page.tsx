@@ -18,7 +18,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
   const [rememberEmail, setRememberEmail] = useState(false);
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(() => searchParams.get("invite")?.trim().toUpperCase() ?? "");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Clock, Crown, KeyRound, ShieldCheck, UserPlus, Users, X } from "lucide-react";
+import { Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -35,6 +35,9 @@ export default function FamilyView({
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const loading = false;
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteCopyError, setInviteCopyError] = useState<string | null>(null);
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -46,10 +49,28 @@ export default function FamilyView({
       const res = await fetch("/api/family/invites", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
-        setInviteCode(data.plaintextCode);
+        const code = typeof data.plaintextCode === "string" ? data.plaintextCode : null;
+        setInviteCode(code);
+        setInviteLink(
+          code ? `${window.location.origin}/signup?invite=${encodeURIComponent(code)}` : null,
+        );
+        setInviteCopied(false);
+        setInviteCopyError(null);
       }
     } finally {
       setCreatingInvite(false);
+    }
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (!inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setInviteCopied(true);
+      setInviteCopyError(null);
+    } catch {
+      setInviteCopied(false);
+      setInviteCopyError("Link tidak dapat disalin otomatis. Salin dari kolom di sebelah kiri.");
     }
   };
 
@@ -112,16 +133,37 @@ export default function FamilyView({
         {inviteCode && (
           <Card variant="tint">
             <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#17304F]">
-              <KeyRound className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
-              Kode undangan
+              <LinkIcon className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
+              Undangan anggota
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <code className="rounded-2xl border border-[#D8E2EE] bg-white px-4 py-2 text-2xl font-bold tracking-widest text-[#17304F]">
-                {inviteCode}
-              </code>
-              <p className="text-xs text-[#46597A]">
-                Bagikan kode ini ke anggota. Kode hanya tampil sekali.
-              </p>
+            <div className="space-y-3">
+              {inviteLink && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    readOnly
+                    value={inviteLink}
+                    aria-label="Link undangan"
+                    className="min-w-0 flex-1 rounded-2xl border border-[#D8E2EE] bg-white px-4 py-2 text-sm text-[#46597A]"
+                  />
+                  <Button size="sm" variant="secondary" onClick={handleCopyInviteLink}>
+                    <Copy className="h-4 w-4" aria-hidden="true" />
+                    {inviteCopied ? "Tersalin" : "Salin link"}
+                  </Button>
+                </div>
+              )}
+              {inviteCopyError && (
+                <p className="text-xs text-[#B91C1C]" role="alert">
+                  {inviteCopyError}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-3">
+                <code className="rounded-2xl border border-[#D8E2EE] bg-white px-4 py-2 text-2xl font-bold tracking-widest text-[#17304F]">
+                  {inviteCode}
+                </code>
+                <p className="text-xs text-[#46597A]">
+                  Link membuka form pendaftaran dengan kode terisi otomatis. Kode berlaku 7 hari dan hanya tampil sekali.
+                </p>
+              </div>
             </div>
           </Card>
         )}

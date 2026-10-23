@@ -15,10 +15,11 @@ export const MAX_IDR_DIGITS = 10;
 /**
  * Keep the integer digits of a raw amount and drop any decimal part.
  *
- * Indonesian text uses dots for thousands and a comma for decimals, but pasted
- * text can also arrive in English order, so the last separator present decides:
- * "Rp12.500.000,00" -> "12500000", "1,234.56" -> "1234". When only dots are
- * present they stay thousands separators: "2.500.000" -> "2500000".
+ * Indonesian text uses dots for thousands and a comma for decimals. A comma
+ * followed by exactly three digits is also accepted as an English thousands
+ * separator, so "100,000" remains "100000". When both separators are present,
+ * the last one is treated as the decimal separator: "12.500.000,00" becomes
+ * "12500000".
  */
 export function extractDigits(raw: string): string {
   const lastDot = raw.lastIndexOf(".");
@@ -26,8 +27,11 @@ export function extractDigits(raw: string): string {
 
   let integerPart = raw;
   if (lastComma > lastDot) {
-    /* Comma is the decimal separator (this also covers a lone comma). */
-    integerPart = raw.slice(0, lastComma);
+    const commaSuffix = raw.slice(lastComma + 1);
+    const commaIsThousandsSeparator = /^\d{3}$/.test(commaSuffix);
+    if (!commaIsThousandsSeparator) {
+      integerPart = raw.slice(0, lastComma);
+    }
   } else if (lastDot >= 0 && lastComma >= 0) {
     /* Both separators present and the dot comes last, so the dot is decimal. */
     integerPart = raw.slice(0, lastDot);
@@ -120,12 +124,7 @@ export function applyMoneyInputEdit({
 }: MoneyInputEditInput): MoneyInputEditResult {
   const previousDisplay = groupDigits(previousDigits);
 
-  /*
-    A plain keystroke that inserts a non-digit is rejected before parsing. Left
-    to the parser, a typed comma would read as a decimal separator and discard
-    the digits after it, including any selected range it replaced.
-  */
-  if (inputType === "insertText" && data !== undefined && /\D/.test(data)) {
+  if (inputType === "insertText" && data !== undefined && /[^\d.,]/.test(data)) {
     const start = Math.min(Math.max(caret - data.length, 0), previousDisplay.length);
     const replacedLength = previousDisplay.length - raw.length + data.length;
     const end = Math.min(Math.max(start + replacedLength, start), previousDisplay.length);

@@ -221,7 +221,7 @@ describe("typing digits", () => {
   });
 
   it("ignores letters and symbols without moving the caret", () => {
-    for (const rejected of ["a", "Z", "+", "-", ",", " ", "/", "Rp"]) {
+    for (const rejected of ["a", "Z", "+", "-", " ", "/", "Rp"]) {
       const next = typeAt("22.000.000", 3, rejected, "22000000");
       expect(next.digits).toBe("22000000");
       expect(next.display).toBe("22.000.000");
@@ -255,7 +255,7 @@ describe("typing digits", () => {
 
 describe("rejected keystrokes over a selection", () => {
   it("keeps the selected digits when typing a letter or symbol", () => {
-    for (const typed of ["a", "Z", "+", "-", ",", " "]) {
+    for (const typed of ["a", "Z", "+", "-", " "]) {
       const next = typeOverRange("22.000.000", 3, 6, typed, "22000000");
       expect(next.digits).toBe("22000000");
       expect(next.display).toBe("22.000.000");
@@ -373,6 +373,12 @@ describe("paste", () => {
     expect(next.digits).toBe("12500000");
     expect(next.display).toBe("12.500.000");
     expect(next.caret).toBe(10);
+  });
+
+  it("accepts a comma as an optional thousands separator", () => {
+    expect(normalizeDigits("100,000")).toBe("100000");
+    expect(normalizeDigits("100000")).toBe("100000");
+    expect(groupDigits(normalizeDigits("100,000"))).toBe("100.000");
   });
 
   it("drops the decimal-comma part of a short amount", () => {
