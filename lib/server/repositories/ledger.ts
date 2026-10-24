@@ -663,21 +663,23 @@ export function createWalletRepository(db: Db): WalletRepository {
       return count > 0;
     },
     async balances(householdId) {
-      const wallets = await db.wallet.findMany({
-        where: { householdId },
-        select: { id: true, openingBalanceMinor: true },
-      });
-      const grouped = await db.transaction.groupBy({
-        by: ["walletId", "type"],
-        where: { householdId, deletedAt: null },
-        _sum: { amountMinor: true },
-      });
-      /* Count includes trashed rows and transfer legs: any row locks opening (A-42). */
-      const counts = await db.transaction.groupBy({
-        by: ["walletId"],
-        where: { householdId },
-        _count: { _all: true },
-      });
+      const [wallets, grouped, counts] = await Promise.all([
+        db.wallet.findMany({
+          where: { householdId },
+          select: { id: true, openingBalanceMinor: true },
+        }),
+        db.transaction.groupBy({
+          by: ["walletId", "type"],
+          where: { householdId, deletedAt: null },
+          _sum: { amountMinor: true },
+        }),
+        /* Count includes trashed rows and transfer legs: any row locks opening (A-42). */
+        db.transaction.groupBy({
+          by: ["walletId"],
+          where: { householdId },
+          _count: { _all: true },
+        }),
+      ]);
       const map = new Map<string, { balanceMinor: number; transactionCount: number }>();
       for (const wallet of wallets) {
         map.set(wallet.id, { balanceMinor: wallet.openingBalanceMinor, transactionCount: 0 });

@@ -37,6 +37,13 @@ export class DashboardService {
     const now = options.now ?? new Date();
     const periodDays = options.periodDays ?? 7;
     const spendingPeriod = this.periods.lastNDays(now, periodDays);
+    const timings: Record<string, number> = {};
+    const timed = async <T>(name: string, work: Promise<T>): Promise<T> => {
+      const startedAt = performance.now();
+      const result = await work;
+      timings[name] = performance.now() - startedAt;
+      return result;
+    };
 
     const [
       wallets,
@@ -47,11 +54,11 @@ export class DashboardService {
       goalRows,
       activity,
     ] = await Promise.all([
-      this.repos.wallet.list(actor, "all"),
-      this.repos.wallet.balances(actor.householdId),
-      this.budget.get(actor.householdId, now),
-      this.budget.getPersonal(actor, now),
-      this.repos.transaction.listDashboardSpending
+      timed("wallets", this.repos.wallet.list(actor, "all")),
+      timed("balances", this.repos.wallet.balances(actor.householdId)),
+      timed("sharedBudget", this.budget.get(actor.householdId, now)),
+      timed("personalBudget", this.budget.getPersonal(actor, now)),
+      timed("spending", this.repos.transaction.listDashboardSpending
         ? this.repos.transaction.listDashboardSpending(actor, {
             from: spendingPeriod.start,
             to: spendingPeriod.end,
@@ -70,9 +77,9 @@ export class DashboardService {
           ]).then(([shared, personal]) => [
             ...shared.map((row) => ({ ...row, scope: "SHARING" as const })),
             ...personal.map((row) => ({ ...row, scope: "PERSONAL" as const })),
-          ]),
-      this.goals.listActive(actor.householdId),
-      this.repos.transaction.listActive(actor, { limit: RECENT_ACTIVITY_LIMIT }),
+          ])),
+      timed("goals", this.goals.listActive(actor.householdId)),
+      timed("activity", this.repos.transaction.listActive(actor, { limit: RECENT_ACTIVITY_LIMIT })),
     ]);
 
     const balanceMap = new Map(balances.map((row) => [row.walletId, row.balanceMinor]));
@@ -113,6 +120,16 @@ export class DashboardService {
     const personalByDay = bucketByJakartaDay(spendingPeriod.buckets, personalDailyRows);
     const personalTotalOutMinor = personalByDay.reduce((total, day) => total + day.amountMinor, 0);
 
+    const recentActivity = await timed(
+      "decorateActivity",
+      decorateTransactionRows(this.repos, actor, activity.rows),
+    );
+    console.info("dashboard_timing", {
+      timings: Object.fromEntries(
+        Object.entries(timings).map(([name, duration]) => [name, Number(duration.toFixed(1))]),
+      ),
+    });
+
     return {
       sharedBalanceMinor,
       personalBalanceMinor,
@@ -133,7 +150,7 @@ export class DashboardService {
         byDay: personalByDay,
       },
       goals: goalRows.map(toGoalSummaryDTO),
-      recentActivity: await decorateTransactionRows(this.repos, actor, activity.rows),
+      recentActivity,
     };
   }
 }
