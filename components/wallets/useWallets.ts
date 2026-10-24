@@ -13,9 +13,11 @@ export type WalletView = "active" | "archived" | "all";
  */
 export function useWallets(view: WalletView = "active", enabled = true) {
   const [wallets, setWallets] = useState<WalletDTO[]>([]);
-  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const requestKey = enabled ? `${view}:${reloadToken}` : null;
+  const [completedRequestKey, setCompletedRequestKey] = useState<string | null>(null);
+  const loading = requestKey !== null && completedRequestKey !== requestKey;
 
   useEffect(() => {
     if (!enabled) return;
@@ -39,15 +41,14 @@ export function useWallets(view: WalletView = "active", enabled = true) {
         if (active) setError("Dompet belum bisa dimuat. Periksa koneksimu lalu coba lagi.");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) setCompletedRequestKey(requestKey);
       });
     return () => {
       active = false;
     };
-  }, [enabled, view, reloadToken]);
+  }, [enabled, requestKey, view]);
 
   const reload = useCallback(() => {
-    setLoading(true);
     setReloadToken((token) => token + 1);
   }, []);
 

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, User } from "lucide-react";
+import { ChevronRight, LogOut, User, Users } from "lucide-react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -82,6 +83,34 @@ export default function ProfilePage() {
         </div>
 
         <Card>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#5C7191]">
+            Pengaturan akun
+          </p>
+          <nav aria-label="Menu profil" className="divide-y divide-[#EAEEF4]">
+            <Link
+              href="#detail-profil"
+              className="flex min-h-12 items-center justify-between gap-3 py-2 text-[#17304F]"
+            >
+              <span className="flex items-center gap-3">
+                <User className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
+                <span className="font-medium">Profil saya</span>
+              </span>
+              <ChevronRight className="h-4 w-4 text-[#5C7191]" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/family"
+              className="flex min-h-12 items-center justify-between gap-3 py-2 text-[#17304F]"
+            >
+              <span className="flex items-center gap-3">
+                <Users className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
+                <span className="font-medium">Keluarga</span>
+              </span>
+              <ChevronRight className="h-4 w-4 text-[#5C7191]" aria-hidden="true" />
+            </Link>
+          </nav>
+        </Card>
+
+        <Card id="detail-profil">
           <dl className="divide-y divide-[#EAEEF4]">
             <div className="py-3 first:pt-0 last:pb-0">
               <dt className="text-xs font-medium uppercase tracking-wider text-[#5C7191]">Nama</dt>

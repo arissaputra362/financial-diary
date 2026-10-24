@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/Button";
 
 function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
   const REMEMBERED_EMAIL_KEY = "financial_planner_remembered_email";
@@ -335,13 +336,14 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
               </div>
             )}
 
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-[#166534] py-3.5 font-semibold text-white transition-all hover:bg-[#155C30] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#E6ECF4] disabled:text-[#46597A]"
+              isLoading={loading}
+              loadingLabel="Memproses..."
+              className="w-full"
             >
-              {loading ? "Memproses..." : isSignup ? "Buat akun keluarga" : "Masuk"}
-            </button>
+              {isSignup ? "Buat akun keluarga" : "Masuk"}
+            </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-[#46597A]">

@@ -81,6 +81,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
   const [listFilter, setListFilter] = useState<ListFilter>("all");
   const [walletId, setWalletId] = useState("");
   const [wallets, setWallets] = useState<WalletDTO[]>([]);
+  const [walletsLoading, setWalletsLoading] = useState(true);
   const [walletsError, setWalletsError] = useState<string | null>(null);
   /* Active view is fetched month by month; the month lives in `?month=YYYY-MM`. */
   const [activeMonth, setActiveMonth] = useState<string>(() => resolveMonthKey(initialMonth));
@@ -171,6 +172,9 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
       })
       .catch(() => {
         if (active) setWalletsError("Filter dompet belum bisa dimuat.");
+      })
+      .finally(() => {
+        if (active) setWalletsLoading(false);
       });
     return () => {
       active = false;
@@ -645,6 +649,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
             <span className="shrink-0">Dompet</span>
             <select
               value={walletId}
+              disabled={walletsLoading || Boolean(walletsError)}
               onChange={(event) => {
                 setLoading(true);
                 setWalletId(event.target.value);
@@ -653,12 +658,15 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
               className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none"
               aria-label="Filter berdasarkan dompet"
             >
-              <option value="">Semua dompet</option>
-              {wallets.map((wallet) => (
-                <option key={wallet.id} value={wallet.id}>
-                  {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
-                </option>
-              ))}
+              <option value="">
+                {walletsLoading ? "Memuat dompet..." : walletsError ? "Dompet tidak tersedia" : "Semua dompet"}
+              </option>
+              {!walletsLoading &&
+                wallets.map((wallet) => (
+                  <option key={wallet.id} value={wallet.id}>
+                    {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
+                  </option>
+                ))}
             </select>
           </label>
           {walletsError ? (

@@ -428,7 +428,7 @@ export function createTransactionRepository(db: Db): TransactionRepository {
       const limit = filters.limit ?? 20;
       const rows = await db.transaction.findMany({
         where,
-        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
         take: limit + 1,
         ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
       });

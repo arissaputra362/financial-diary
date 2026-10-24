@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PiggyBank, Plus, ReceiptText, Users } from "lucide-react";
+import { LayoutDashboard, PiggyBank, Plus, ReceiptText, User } from "lucide-react";
 import { requestTransactionAddIntent } from "@/lib/transaction-add-intent";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ const items: NavItem[] = [
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/transactions?add=1", label: "Tambah", icon: Plus },
   { href: "/transactions", label: "Aktivitas", icon: ReceiptText, matchPrefix: "/transactions" },
-  { href: "/family", label: "Keluarga", icon: Users },
+  { href: "/profile", label: "Profil", icon: User },
 ];
 
 export function BottomNav() {

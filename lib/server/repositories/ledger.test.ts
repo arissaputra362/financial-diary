@@ -9,9 +9,14 @@ import type { Db } from "./types";
 */
 
 type CapturedWhere = Record<string, unknown>;
+type Captured = {
+  transactionWhere?: CapturedWhere;
+  transactionOrderBy?: unknown;
+  goalWhere?: CapturedWhere;
+};
 
 function makeDb() {
-  const captured: { transactionWhere?: CapturedWhere; goalWhere?: CapturedWhere } = {};
+  const captured: Captured = {};
   const db = {
     transaction: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
@@ -24,8 +29,9 @@ function makeDb() {
         captured.transactionWhere = where;
         return { id: "tx-1", householdId: where.householdId, deletedAt: null };
       }),
-      findMany: vi.fn(async ({ where }: { where: CapturedWhere }) => {
+      findMany: vi.fn(async ({ where, orderBy }: { where: CapturedWhere; orderBy?: unknown }) => {
         captured.transactionWhere = where;
+        captured.transactionOrderBy = orderBy;
         return [];
       }),
       aggregate: vi.fn(async ({ where }: { where: CapturedWhere }) => {
@@ -95,6 +101,16 @@ describe("TransactionRepository", () => {
       type: "MONEY_OUT",
       deletedAt: null,
     });
+  });
+
+  it("orders activity by transaction date, creation time, then id", async () => {
+    const { db, captured } = makeDb();
+    await createTransactionRepository(db).listActive(actorA);
+    expect(captured.transactionOrderBy).toEqual([
+      { occurredAt: "desc" },
+      { createdAt: "desc" },
+      { id: "desc" },
+    ]);
   });
 
   it("scopes sumByType and listByDay to the household and active rows", () => {
