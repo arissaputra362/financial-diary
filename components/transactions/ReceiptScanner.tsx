@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
+import { TextArea } from "@/components/ui/TextArea";
 import { ScopePill } from "@/components/wallets/scope";
 import { WalletFormSheet } from "@/components/wallets/WalletFormSheet";
 import { WalletPickerSheet } from "@/components/wallets/WalletPickerSheet";
@@ -50,6 +51,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
   const [duplicateNotice, setDuplicateNotice] = useState<string | null>(null);
   const [txType, setTxType] = useState<"MONEY_OUT" | "MONEY_IN">("MONEY_OUT");
   const [merchant, setMerchant] = useState("");
+  const [note, setNote] = useState("");
   const [amountDigits, setAmountDigits] = useState("");
   const [occurredAt, setOccurredAt] = useState(todayJakarta());
   const [category, setCategory] = useState<string | null>(null);
@@ -153,6 +155,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     setJob(nextJob);
     setDuplicateNotice(notice);
     setMerchant(draft.merchant ?? "");
+    setNote(draft.notes ?? "");
     setAmountDigits(draft.totalAmountMinor !== null ? String(draft.totalAmountMinor) : "");
     setOccurredAt(draft.occurredAt ?? todayJakarta());
     /*
@@ -453,6 +456,9 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     if (!wallet) {
       errors.walletId = ["Pilih dompet dulu."];
     }
+    if (note.length > 500) {
+      errors.note = ["Catatan maksimal 500 karakter."];
+    }
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -468,6 +474,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           category,
           occurredAt,
           merchant: merchant.trim() || undefined,
+          note: note.trim() || undefined,
           source: "OCR",
           receiptId: job.receiptId,
           walletId: wallet?.id,
@@ -713,6 +720,16 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           error={fieldErrors.merchant?.[0]}
           helperText={autoDetected(missingFields, "merchant", "✨ Terbaca otomatis")}
           onChange={(event) => setMerchant(event.target.value)}
+        />
+
+        <TextArea
+          id="ocr-note"
+          label="Catatan (opsional)"
+          value={note}
+          maxLength={500}
+          error={fieldErrors.note?.[0]}
+          placeholder='mis. "Belanja mingguan di pasar"'
+          onChange={(event) => setNote(event.target.value)}
         />
 
         <Field

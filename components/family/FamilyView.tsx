@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
@@ -115,6 +116,13 @@ export default function FamilyView({
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3 px-1">
           <div>
+            <Link
+              href="/profile"
+              className="mb-3 inline-flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
+            >
+              <span aria-hidden="true">←</span>
+              Kembali ke Profil
+            </Link>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
               Kelola keluarga
             </p>

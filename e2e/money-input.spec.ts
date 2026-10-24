@@ -260,7 +260,7 @@ test.describe("IDR money inputs (T-013)", () => {
       }),
     );
 
-    let posted: { amountMinor?: number; source?: string } | null = null;
+    let posted: { amountMinor?: number; source?: string; note?: string } | null = null;
     await page.route("**/api/transactions", (route) => {
       if (route.request().method() !== "POST") return route.continue();
       posted = route.request().postDataJSON() as { amountMinor?: number; source?: string };
@@ -287,6 +287,7 @@ test.describe("IDR money inputs (T-013)", () => {
     await expectSharedMoneyBehaviour(field);
 
     await typeDigits(field, DIGITS, GROUPED);
+    await page.getByLabel("Catatan (opsional)").fill("Belanja mingguan");
     await pickWallet(page, wallet.name);
     await page.getByRole("button", { name: "Sudah benar, simpan transaksi" }).click();
     await expect(page.getByText("Transaksi tersimpan.")).toBeVisible();
@@ -294,6 +295,7 @@ test.describe("IDR money inputs (T-013)", () => {
     expect(posted).not.toBeNull();
     expect(posted!.amountMinor).toBe(22_000_000);
     expect(posted!.source).toBe("OCR");
+    expect(posted!.note).toBe("Belanja mingguan");
   });
 
   test("wallet opening balance groups, filters, and saves the exact integer", async ({ page }) => {
