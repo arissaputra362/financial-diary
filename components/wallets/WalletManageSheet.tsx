@@ -35,7 +35,7 @@ export function WalletManageSheet({
   onCreate,
 }: WalletManageSheetProps) {
   const [tab, setTab] = useState<"active" | "archived">(initialTab);
-  const { wallets, loading, error, reload } = useWallets(tab);
+  const { wallets, loading, error, reload } = useWallets(tab, open);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useDialogFocusTrap(open, panelRef, onClose);

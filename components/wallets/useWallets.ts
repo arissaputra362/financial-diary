@@ -11,13 +11,15 @@ export type WalletView = "active" | "archived" | "all";
  * error / empty states the wallet UI renders (AC-F6-12). Balances are
  * server-computed; the hook never derives them (AC-F6-7).
  */
-export function useWallets(view: WalletView = "active") {
+export function useWallets(view: WalletView = "active", enabled = true) {
   const [wallets, setWallets] = useState<WalletDTO[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
+    if (!enabled) return;
+
     let active = true;
     apiRequest<{ wallets: WalletDTO[] }>(`/api/wallets?view=${view}`)
       .then((response) => {
@@ -42,7 +44,7 @@ export function useWallets(view: WalletView = "active") {
     return () => {
       active = false;
     };
-  }, [view, reloadToken]);
+  }, [enabled, view, reloadToken]);
 
   const reload = useCallback(() => {
     setLoading(true);

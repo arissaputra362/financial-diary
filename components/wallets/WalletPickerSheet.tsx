@@ -32,7 +32,7 @@ export function WalletPickerSheet({
   onCreate,
   selectedWalletId = null,
 }: WalletPickerSheetProps) {
-  const { wallets, loading, error, reload } = useWallets("active");
+  const { wallets, loading, error, reload } = useWallets("active", open);
   const panelRef = useRef<HTMLDivElement>(null);
   /*
     Roving focus: only the selected (or first) option is tabbable, then the
