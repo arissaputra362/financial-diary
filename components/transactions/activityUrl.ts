@@ -10,12 +10,16 @@ export interface ActivityHrefInput {
   view: ActivityViewMode;
   month: string;
   add?: boolean;
+  from?: string;
+  to?: string;
 }
 
-export function activityHref({ view, month, add = false }: ActivityHrefInput): string {
+export function activityHref({ view, month, add = false, from, to }: ActivityHrefInput): string {
   const params = new URLSearchParams();
   if (view === "trash") params.set("view", "trash");
   params.set("month", month);
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
   if (add) params.set("add", "1");
   return `/transactions?${params.toString()}`;
 }

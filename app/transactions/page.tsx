@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { ActivityView } from "@/components/transactions/ActivityView";
-import { resolveMonthKey } from "@/lib/dates";
+import { monthKeyRange, resolveMonthKey } from "@/lib/dates";
 
 /*
   Activity page (nav label "Activity", A-31). Trash is a tab on this page:
@@ -17,6 +17,13 @@ export default async function TransactionsPage({
   const params = await searchParams;
   const view = params.view === "trash" ? "trash" : "active";
   const month = resolveMonthKey(typeof params.month === "string" ? params.month : undefined);
+  const monthRange = monthKeyRange(month);
+  const from = typeof params.from === "string" && params.from >= monthRange.from && params.from <= monthRange.to
+    ? params.from
+    : undefined;
+  const to = typeof params.to === "string" && params.to >= monthRange.from && params.to <= monthRange.to
+    ? params.to
+    : undefined;
   /* `?add=1` opens the add sheet: nav "Tambah" and the dashboard link here (A-27). */
   const initialAdd = params.add === "1";
   return (
@@ -27,6 +34,8 @@ export default async function TransactionsPage({
         key={`${view}-${month}`}
         initialView={view}
         initialMonth={month}
+        initialFrom={from}
+        initialTo={to}
         initialAdd={initialAdd}
       />
     </AppShell>

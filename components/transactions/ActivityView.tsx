@@ -30,6 +30,8 @@ export interface ActivityViewProps {
   initialMonth?: string;
   /** `?add=1` from the nav/dashboard "Tambah" action opens the add sheet (A-27). */
   initialAdd?: boolean;
+  initialFrom?: string;
+  initialTo?: string;
   initialData?: TransactionListDTO;
 }
 
@@ -51,14 +53,16 @@ function buildListUrl(
   cursor: string | null,
   month: string,
   walletId: string,
+  from?: string,
+  to?: string,
 ): string {
   const base = view === "trash" ? "/api/transactions/trash" : "/api/transactions";
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
   if (view === "active") {
-    const { from, to } = monthKeyRange(month);
-    params.set("from", from);
-    params.set("to", to);
+    const monthRange = monthKeyRange(month);
+    params.set("from", from ?? monthRange.from);
+    params.set("to", to ?? monthRange.to);
     if (walletId) params.set("walletId", walletId);
   }
   const queryString = params.toString();
@@ -73,7 +77,14 @@ function buildListUrl(
  * The page passes a key for view + month, so URL-driven view/month changes
  * restart with fresh state; the Add intent is handled separately (AC-F3-14).
  */
-export function ActivityView({ initialView, initialMonth, initialAdd = false, initialData }: ActivityViewProps) {
+export function ActivityView({
+  initialView,
+  initialMonth,
+  initialFrom,
+  initialTo,
+  initialAdd = false,
+  initialData,
+}: ActivityViewProps) {
   const router = useRouter();
   const [view, setView] = useState<"active" | "trash">(initialView);
   const [rows, setRows] = useState<TransactionDTO[]>(initialData?.rows ?? []);
@@ -87,6 +98,10 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
   const [activeMonth, setActiveMonth] = useState<string>(() => resolveMonthKey(initialMonth));
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [monthPickerValue, setMonthPickerValue] = useState(() => resolveMonthKey(initialMonth));
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState(initialFrom ?? "");
+  const [dateTo, setDateTo] = useState(initialTo ?? "");
+  const [dateFilterError, setDateFilterError] = useState<string | null>(null);
   const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,10 +123,12 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     the month and Trash view survive whenever only the Add intent changes.
   */
   const writeUrl = useCallback(
-    (nextView: "active" | "trash", month: string, add = false) => {
-      router.replace(activityHref({ view: nextView, month, add }), { scroll: false });
+    (nextView: "active" | "trash", month: string, add = false, from = dateFrom, to = dateTo) => {
+      router.replace(activityHref({ view: nextView, month, add, from: from || undefined, to: to || undefined }), {
+        scroll: false,
+      });
     },
-    [router],
+    [dateFrom, dateTo, router],
   );
 
   /*
@@ -142,6 +159,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
       setSheetOpen(true);
       writeUrl(view, activeMonth, true);
     };
+
     window.addEventListener(TRANSACTION_ADD_EVENT, handleAddIntent);
     setTransactionAddListenerAttached(true);
     return () => {
@@ -196,7 +214,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
   useEffect(() => {
     if (initialData && reloadToken === 0) return;
     let active = true;
-    apiRequest<TransactionListDTO>(buildListUrl(view, null, activeMonth, walletId))
+    apiRequest<TransactionListDTO>(buildListUrl(view, null, activeMonth, walletId, dateFrom, dateTo))
       .then((response) => {
         if (!active) return;
         if (response.status === 401) {
@@ -229,7 +247,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     return () => {
       active = false;
     };
-  }, [activeMonth, initialData, reloadToken, router, view, walletId]);
+  }, [activeMonth, dateFrom, dateTo, initialData, reloadToken, router, view, walletId]);
 
   const reload = () => {
     setLoading(true);
@@ -242,7 +260,9 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     setDetail(null);
     setLoading(true);
     setActiveMonth(next);
-    writeUrl(view, next);
+    setDateFrom("");
+    setDateTo("");
+    writeUrl(view, next, false, "", "");
   };
 
   const openMonthPicker = () => {
@@ -261,12 +281,38 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     setMonthPickerOpen(false);
   };
 
+  const applyDateFilter = () => {
+    const range = monthKeyRange(activeMonth);
+    if ((dateFrom && dateFrom < range.from) || (dateTo && dateTo > range.to)) {
+      setDateFilterError("Rentang tanggal harus berada di bulan yang dipilih.");
+      return;
+    }
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      setDateFilterError("Tanggal mulai tidak boleh setelah tanggal akhir.");
+      return;
+    }
+    setDateFilterError(null);
+    setLoading(true);
+    setReloadToken((token) => token + 1);
+    writeUrl(view, activeMonth);
+    setDateFilterOpen(false);
+  };
+
+  const clearDateFilter = () => {
+    setDateFrom("");
+    setDateTo("");
+    setDateFilterError(null);
+    setLoading(true);
+    setReloadToken((token) => token + 1);
+    writeUrl(view, activeMonth, false, "", "");
+  };
+
   const loadMore = async () => {
     if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
     try {
       const response = await apiRequest<TransactionListDTO>(
-        buildListUrl(view, nextCursor, activeMonth, walletId),
+        buildListUrl(view, nextCursor, activeMonth, walletId, dateFrom, dateTo),
       );
       if (response.status === 401) {
         router.push("/login");
@@ -524,6 +570,71 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
+        </div>
+      ) : null}
+
+      {view === "active" ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            aria-expanded={dateFilterOpen}
+            onClick={() => setDateFilterOpen((open) => !open)}
+            className="min-h-11 rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+          >
+            {dateFrom || dateTo ? "Ubah filter tanggal" : "Filter tanggal"}
+          </button>
+          {dateFilterOpen ? (
+            <div className="rounded-2xl border border-[#D8E2EE] bg-white p-4">
+              <p className="text-sm font-semibold text-[#17304F]">Filter tanggal</p>
+              <p className="mt-1 text-xs text-[#5C7191]">
+                Pilih rentang di dalam {monthKeyLabel(activeMonth)}.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5 text-sm font-semibold text-[#46597A]">
+                  Dari
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    max={dateTo || monthKeyRange(activeMonth).to}
+                    onChange={(event) => setDateFrom(event.target.value)}
+                    className="min-h-11 rounded-2xl border border-[#C9D6E4] px-3 text-sm text-[#17304F] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5 text-sm font-semibold text-[#46597A]">
+                  Sampai
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || monthKeyRange(activeMonth).from}
+                    max={monthKeyRange(activeMonth).to}
+                    onChange={(event) => setDateTo(event.target.value)}
+                    className="min-h-11 rounded-2xl border border-[#C9D6E4] px-3 text-sm text-[#17304F] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                  />
+                </label>
+              </div>
+              {dateFilterError ? (
+                <p role="alert" className="mt-2 text-xs text-[#B91C1C]">{dateFilterError}</p>
+              ) : null}
+              <div className="mt-3 flex flex-wrap justify-end gap-2">
+                {(dateFrom || dateTo) ? (
+                  <button
+                    type="button"
+                    onClick={clearDateFilter}
+                    className="min-h-11 rounded-full border border-[#BFD3E8] px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                  >
+                    Hapus
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={applyDateFilter}
+                  className="min-h-11 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+                >
+                  Terapkan
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

@@ -28,4 +28,15 @@ describe("activityHref", () => {
     const href = activityHref({ view: "active", month: "2025-03" });
     expect(href).not.toContain("add=");
   });
+
+  it("keeps an optional date range in the deep link", () => {
+    expect(
+      activityHref({
+        view: "active",
+        month: "2025-03",
+        from: "2025-03-10",
+        to: "2025-03-20",
+      }),
+    ).toBe("/transactions?month=2025-03&from=2025-03-10&to=2025-03-20");
+  });
 });
