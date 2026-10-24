@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
@@ -44,6 +44,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<DashboardPeriodKey>("7D");
+  const hasFetchedNonInitialPeriod = useRef(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [manageOpen, setManageOpen] = useState(false);
   const [manageTab, setManageTab] = useState<"active" | "archived">("active");
@@ -52,7 +53,10 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialData && period === "7D" && reloadToken === 0) return;
+    if (initialData && period === "7D" && reloadToken === 0 && !hasFetchedNonInitialPeriod.current) {
+      return;
+    }
+    if (period !== "7D") hasFetchedNonInitialPeriod.current = true;
     let active = true;
     apiRequest<DashboardDTO>(`/api/dashboard?period=${period}`)
       .then((response) => {
@@ -194,7 +198,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
           </div>
 
           <div className="lg:col-span-12">
-            <RecentActivityCard initialRows={data.recentActivity} />
+            <RecentActivityCard initialRows={data.recentActivity} wallets={data.wallets} />
           </div>
 
           <div className="lg:col-span-5">

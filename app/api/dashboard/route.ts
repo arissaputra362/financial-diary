@@ -15,13 +15,22 @@ export const runtime = "nodejs";
   (AC-F2-6). Approved members only.
 */
 export async function GET(request: Request): Promise<NextResponse> {
+  const startedAt = performance.now();
   try {
+    const authStartedAt = performance.now();
     const session = await authenticatedRequest({ approvedOnly: true });
+    const authDuration = performance.now() - authStartedAt;
     const query = parseDashboardQuery(new URL(request.url).searchParams);
     const periodDays = DASHBOARD_PERIODS[query.period ?? "7D"];
     const actor = { userId: session.userId, householdId: session.householdId, role: session.role };
+    const dashboardStartedAt = performance.now();
     const dto = await session.dashboard.get(actor, { periodDays });
+    const dashboardDuration = performance.now() - dashboardStartedAt;
     const response = NextResponse.json(dto);
+    response.headers.set(
+      "Server-Timing",
+      `auth;dur=${authDuration.toFixed(1)},dashboard;dur=${dashboardDuration.toFixed(1)},total;dur=${(performance.now() - startedAt).toFixed(1)}`,
+    );
     await setSessionCookie(response, session.sessionId, session.userId);
     return response;
   } catch (error) {

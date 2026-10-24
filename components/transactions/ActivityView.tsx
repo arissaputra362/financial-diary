@@ -16,7 +16,7 @@ import {
 } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { TransactionDTO, TransactionListDTO } from "@/types/api";
+import type { TransactionDTO, TransactionListDTO, WalletDTO } from "@/types/api";
 import { AddTransactionSheet } from "./AddTransactionSheet";
 import { activityHref } from "./activityUrl";
 import { TransactionDetailSheet } from "./TransactionDetailSheet";
@@ -46,7 +46,12 @@ const FILTER_OPTIONS: ReadonlyArray<readonly [ListFilter, string]> = [
   selected month (server-side via from/to, one request = one month max) while
   cursor pagination keeps client state small (A-14).
 */
-function buildListUrl(view: "active" | "trash", cursor: string | null, month: string): string {
+function buildListUrl(
+  view: "active" | "trash",
+  cursor: string | null,
+  month: string,
+  walletId: string,
+): string {
   const base = view === "trash" ? "/api/transactions/trash" : "/api/transactions";
   const params = new URLSearchParams();
   if (cursor) params.set("cursor", cursor);
@@ -54,6 +59,7 @@ function buildListUrl(view: "active" | "trash", cursor: string | null, month: st
     const { from, to } = monthKeyRange(month);
     params.set("from", from);
     params.set("to", to);
+    if (walletId) params.set("walletId", walletId);
   }
   const queryString = params.toString();
   return queryString ? `${base}?${queryString}` : base;
@@ -73,8 +79,13 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
   const [rows, setRows] = useState<TransactionDTO[]>(initialData?.rows ?? []);
   const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
   const [listFilter, setListFilter] = useState<ListFilter>("all");
+  const [walletId, setWalletId] = useState("");
+  const [wallets, setWallets] = useState<WalletDTO[]>([]);
+  const [walletsError, setWalletsError] = useState<string | null>(null);
   /* Active view is fetched month by month; the month lives in `?month=YYYY-MM`. */
   const [activeMonth, setActiveMonth] = useState<string>(() => resolveMonthKey(initialMonth));
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [monthPickerValue, setMonthPickerValue] = useState(() => resolveMonthKey(initialMonth));
   const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +149,30 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     };
   }, [activeMonth, writeUrl, view]);
 
+  useEffect(() => {
+    let active = true;
+    apiRequest<{ wallets: WalletDTO[] }>("/api/wallets?view=active")
+      .then((response) => {
+        if (!active) return;
+        if (response.status === 401) {
+          router.push("/login");
+          return;
+        }
+        if (!response.ok) {
+          setWalletsError("Filter dompet belum bisa dimuat.");
+          return;
+        }
+        setWallets(response.data?.wallets ?? []);
+        setWalletsError(null);
+      })
+      .catch(() => {
+        if (active) setWalletsError("Filter dompet belum bisa dimuat.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
   const showNotice = useCallback((message: string) => {
     setNotice(message);
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
@@ -153,7 +188,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
   useEffect(() => {
     if (initialData && reloadToken === 0) return;
     let active = true;
-    apiRequest<TransactionListDTO>(buildListUrl(view, null, activeMonth))
+    apiRequest<TransactionListDTO>(buildListUrl(view, null, activeMonth, walletId))
       .then((response) => {
         if (!active) return;
         if (response.status === 401) {
@@ -182,7 +217,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     return () => {
       active = false;
     };
-  }, [activeMonth, initialData, reloadToken, router, view]);
+  }, [activeMonth, initialData, reloadToken, router, view, walletId]);
 
   const reload = () => {
     setLoading(true);
@@ -198,12 +233,28 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     writeUrl(view, next);
   };
 
+  const openMonthPicker = () => {
+    setMonthPickerValue(activeMonth);
+    setMonthPickerOpen(true);
+  };
+
+  const applyMonthPicker = () => {
+    const next = resolveMonthKey(monthPickerValue);
+    if (next !== activeMonth) {
+      setDetail(null);
+      setLoading(true);
+      setActiveMonth(next);
+      writeUrl(view, next);
+    }
+    setMonthPickerOpen(false);
+  };
+
   const loadMore = async () => {
     if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
     try {
       const response = await apiRequest<TransactionListDTO>(
-        buildListUrl(view, nextCursor, activeMonth),
+        buildListUrl(view, nextCursor, activeMonth, walletId),
       );
       if (response.status === 401) {
         router.push("/login");
@@ -230,6 +281,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     setLoading(true);
     setUndo(null);
     setListFilter("all");
+    setWalletId("");
     setDetail(null);
     setView(next);
     /*
@@ -376,7 +428,7 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
     return rows.filter((row) => row.type === listFilter && !isTransferLeg(row));
   }, [rows, listFilter]);
 
-  const showSummaryAndFilter = view === "active" && !loading && !error && rows.length > 0;
+  const showSummaryAndFilter = view === "active" && !loading && !error;
   const summaryLength = Math.max(
     formatIDR(summary.moneyIn).length,
     formatIDR(summary.moneyOut).length,
@@ -433,7 +485,14 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
           role="group"
           aria-label="Pilih bulan aktivitas"
         >
-          <p className="truncate text-sm font-bold text-[#17304F]">{monthKeyLabel(activeMonth)}</p>
+          <button
+            type="button"
+            onClick={openMonthPicker}
+            className="min-h-11 min-w-0 truncate rounded-full px-3 text-left text-sm font-bold text-[#17304F] hover:bg-[#EFF4FA] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/15"
+            aria-label={`Pilih bulan, saat ini ${monthKeyLabel(activeMonth)}`}
+          >
+            {monthKeyLabel(activeMonth)}
+          </button>
           <div className="flex shrink-0 items-center">
             <button
               type="button"
@@ -452,6 +511,56 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
             >
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {monthPickerOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#14273F]/35 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setMonthPickerOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="month-picker-title"
+          >
+            <h2 id="month-picker-title" className="text-lg font-semibold text-[#17304F]">
+              Pilih bulan aktivitas
+            </h2>
+            <p className="mt-1 text-sm text-[#5C7191]">
+              Pilih bulan dan tahun untuk melihat transaksi.
+            </p>
+            <label className="mt-5 flex flex-col gap-2 text-sm font-semibold text-[#46597A]">
+              Bulan dan tahun
+              <input
+                type="month"
+                value={monthPickerValue}
+                max={currentMonthKey()}
+                onChange={(event) => setMonthPickerValue(event.target.value)}
+                className="min-h-12 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-base text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+              />
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setMonthPickerOpen(false)}
+                className="min-h-11 rounded-full border border-[#BFD3E8] px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={applyMonthPicker}
+                className="min-h-11 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+              >
+                Terapkan
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -505,23 +614,50 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
       ) : null}
 
       {showSummaryAndFilter ? (
-        <div className="flex flex-wrap items-center gap-1 rounded-2xl bg-[#EFF4FA] p-1" role="group" aria-label="Saring transaksi">
-          {FILTER_OPTIONS.map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={listFilter === value}
-              onClick={() => setListFilter(value)}
-              className={cn(
-                "flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors",
-                listFilter === value
-                  ? "bg-white text-[#17304F] shadow-sm"
-                  : "text-[#46597A] hover:text-[#17304F]",
-              )}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-1 rounded-2xl bg-[#EFF4FA] p-1" role="group" aria-label="Saring transaksi">
+            {FILTER_OPTIONS.map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={listFilter === value}
+                onClick={() => setListFilter(value)}
+                className={cn(
+                  "flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors",
+                  listFilter === value
+                    ? "bg-white text-[#17304F] shadow-sm"
+                    : "text-[#46597A] hover:text-[#17304F]",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-[#D8E2EE] bg-white px-3 text-sm font-semibold text-[#46597A]">
+            <span className="shrink-0">Dompet</span>
+            <select
+              value={walletId}
+              onChange={(event) => {
+                setLoading(true);
+                setWalletId(event.target.value);
+                setReloadToken((token) => token + 1);
+              }}
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none"
+              aria-label="Filter berdasarkan dompet"
             >
-              {label}
-            </button>
-          ))}
+              <option value="">Semua dompet</option>
+              {wallets.map((wallet) => (
+                <option key={wallet.id} value={wallet.id}>
+                  {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
+                </option>
+              ))}
+            </select>
+          </label>
+          {walletsError ? (
+            <p role="status" className="text-xs text-[#B91C1C]">
+              {walletsError}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

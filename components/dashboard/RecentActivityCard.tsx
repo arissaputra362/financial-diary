@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, RefreshCw, SlidersHorizontal, Wallet } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { formatDateLabel } from "@/lib/dates";
 import { formatIDR, formatSignedIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { TransactionDTO, TransactionListDTO } from "@/types/api";
+import type { TransactionDTO, TransactionListDTO, WalletCardDTO } from "@/types/api";
 import { categoryEmoji, categoryLabel, categoryTone, isTransferLeg } from "@/components/transactions/categories";
 
 type Kind = "all" | "in" | "out" | "ocr";
@@ -22,6 +22,7 @@ const FILTERS: Array<{ kind: Kind; label: string }> = [
 
 export interface RecentActivityCardProps {
   initialRows: TransactionDTO[];
+  wallets?: WalletCardDTO[];
 }
 
 /**
@@ -30,9 +31,10 @@ export interface RecentActivityCardProps {
  * the balance/budget/chart cards. Every filter change either changes the rows or
  * shows a clear filtered-empty state, and from > to is rejected before any call.
  */
-export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
+export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivityCardProps) {
   const router = useRouter();
   const [kind, setKind] = useState<Kind>("all");
+  const [walletId, setWalletId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [fetchedRows, setFetchedRows] = useState<TransactionDTO[]>([]);
@@ -40,7 +42,7 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
-  const filtersActive = kind !== "all" || Boolean(from) || Boolean(to);
+  const filtersActive = kind !== "all" || Boolean(walletId) || Boolean(from) || Boolean(to);
   const dateFiltersActive = Boolean(from) || Boolean(to);
   const [showDateFilters, setShowDateFilters] = useState(dateFiltersActive);
   const dateInvalid = Boolean(from && to && from > to);
@@ -54,6 +56,7 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
     if (kind === "in") params.set("type", "MONEY_IN");
     if (kind === "out") params.set("type", "MONEY_OUT");
     if (kind === "ocr") params.set("source", "OCR");
+    if (walletId) params.set("walletId", walletId);
     if (from) params.set("from", from);
     if (to) params.set("to", to);
 
@@ -84,23 +87,29 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
     return () => {
       active = false;
     };
-  }, [filtersActive, dateInvalid, kind, from, to, reloadToken, router]);
+  }, [filtersActive, dateInvalid, kind, walletId, from, to, reloadToken, router]);
 
   const selectKind = (next: Kind) => {
     setError(null);
-    setLoading(true);
+    setLoading(next !== "all" || Boolean(walletId) || Boolean(from) || Boolean(to));
     setKind(next);
+  };
+
+  const selectWallet = (next: string) => {
+    setError(null);
+    setLoading(Boolean(next) || kind !== "all" || Boolean(from) || Boolean(to));
+    setWalletId(next);
   };
 
   const changeFrom = (value: string) => {
     setError(null);
-    setLoading(true);
+    setLoading(Boolean(value) || Boolean(to) || kind !== "all" || Boolean(walletId));
     setFrom(value);
   };
 
   const changeTo = (value: string) => {
     setError(null);
-    setLoading(true);
+    setLoading(Boolean(value) || Boolean(from) || kind !== "all" || Boolean(walletId));
     setTo(value);
   };
 
@@ -108,6 +117,7 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
     setError(null);
     setLoading(false);
     setKind("all");
+    setWalletId("");
     setFrom("");
     setTo("");
     setShowDateFilters(false);
@@ -173,6 +183,26 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
               </button>
             ))}
           </div>
+
+          {wallets.length > 0 ? (
+            <label className="mt-3 flex min-h-11 items-center gap-3 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm font-semibold text-[#46597A]">
+              <Wallet className="h-4 w-4 shrink-0 text-[#1D4F87]" aria-hidden="true" />
+              <span className="sr-only">Dompet</span>
+              <select
+                value={walletId}
+                onChange={(event) => selectWallet(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none"
+                aria-label="Filter berdasarkan dompet"
+              >
+                <option value="">Semua dompet</option>
+                {wallets.map((wallet) => (
+                  <option key={wallet.id} value={wallet.id}>
+                    {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
           <div className="mt-3 border-t border-[#D8E2EE] pt-3">
             <button
