@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { AuthRedirect } from "@/components/auth/AuthRedirect";
 import { ActivityView } from "@/components/transactions/ActivityView";
 import { resolveMonthKey } from "@/lib/dates";
 import { monthKeyRange } from "@/lib/dates";
 import { authenticatedRequest } from "@/lib/server/auth";
 import { AppError } from "@/lib/server/errors";
-import { redirect } from "next/navigation";
 import type { TransactionListDTO } from "@/types/api";
 
 /*
@@ -34,8 +34,10 @@ export default async function TransactionsPage({
         : await session.transactions.list(actor, { ...monthKeyRange(month) });
     initialData = result.body as TransactionListDTO;
   } catch (error) {
-    if (error instanceof AppError && error.statusCode === 401) redirect("/login");
-    if (error instanceof AppError && error.statusCode === 403) redirect("/waiting-for-approval");
+    if (error instanceof AppError && error.statusCode === 401) return <AuthRedirect to="/login" />;
+    if (error instanceof AppError && error.statusCode === 403) {
+      return <AuthRedirect to="/waiting-for-approval" />;
+    }
     throw error;
   }
   return (

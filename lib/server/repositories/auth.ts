@@ -10,7 +10,7 @@ import type { Db } from "./types";
 export interface UserRepository {
   findByEmail(email: string): Promise<{ id: string; email: string; passwordHash: string; displayName: string } | null>;
   create(data: { email: string; passwordHash: string; displayName: string }): Promise<{ id: string; email: string; displayName: string }>;
-  findById(id: string): Promise<{ id: string; email: string; passwordHash: string; displayName: string } | null>;
+  findById(id: string): Promise<{ id: string; email: string; displayName: string } | null>;
 }
 
 export type MembershipRecord = {
@@ -99,8 +99,14 @@ export interface InviteRepository {
 
 export interface SessionRepository {
   create(data: { id: string; userId: string; tokenVersion: string; expiresAt: Date }): Promise<void>;
-  findActiveById(id: string): Promise<{ id: string; userId: string; tokenVersion: string; expiresAt: Date } | null>;
-  touch(id: string): Promise<void>;
+  findActiveById(id: string): Promise<{
+    id: string;
+    userId: string;
+    tokenVersion: string;
+    expiresAt: Date;
+    lastSeenAt?: Date;
+  } | null>;
+  touch(id: string, lastSeenAt?: Date): Promise<void>;
   revoke(id: string): Promise<void>;
   purgeExpired(): Promise<void>;
 }
@@ -116,8 +122,10 @@ export function createUserRepository(db: Db): UserRepository {
       return { id: row.id, email: row.email, displayName: row.displayName };
     },
     async findById(id) {
-      const row = await db.user.findUnique({ where: { id } });
-      return row;
+      return db.user.findUnique({
+        where: { id },
+        select: { id: true, email: true, displayName: true },
+      });
     },
   };
 }
@@ -129,7 +137,10 @@ export function createHouseholdRepository(db: Db): HouseholdRepository {
       return { id: row.id, name: row.name, ownerUserId: row.ownerUserId };
     },
     async findById(id) {
-      return db.household.findUnique({ where: { id } });
+      return db.household.findUnique({
+        where: { id },
+        select: { id: true, name: true, ownerUserId: true },
+      });
     },
   };
 }
@@ -226,12 +237,29 @@ export function createSessionRepository(db: Db): SessionRepository {
       await db.session.create({ data });
     },
     async findActiveById(id) {
-      const row = await db.session.findUnique({ where: { id } });
+      const row = await db.session.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          userId: true,
+          tokenVersion: true,
+          expiresAt: true,
+          revokedAt: true,
+          lastSeenAt: true,
+        },
+      });
       if (!row) return null;
       if (row.revokedAt !== null || row.expiresAt <= new Date()) return null;
-      return { id: row.id, userId: row.userId, tokenVersion: row.tokenVersion, expiresAt: row.expiresAt };
+      return {
+        id: row.id,
+        userId: row.userId,
+        tokenVersion: row.tokenVersion,
+        expiresAt: row.expiresAt,
+        lastSeenAt: row.lastSeenAt,
+      };
     },
-    async touch(id) {
+    async touch(id, lastSeenAt) {
+      if (lastSeenAt && Date.now() - lastSeenAt.getTime() < 5 * 60 * 1000) return;
       await db.session.update({ where: { id }, data: { lastSeenAt: new Date() } });
     },
     async revoke(id) {

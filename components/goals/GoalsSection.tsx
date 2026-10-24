@@ -53,25 +53,32 @@ export function GoalsSection() {
   useDialogFocusTrap(adjust !== null, adjustPanelRef, () => setAdjust(null));
 
   const reload = useCallback(async () => {
-    const response = await apiRequest<GoalListDTO>("/api/goals");
-    if (response.status === 401) {
-      router.push("/login");
-      return;
-    }
-    if (!response.ok || !response.data) {
+    try {
+      const response = await apiRequest<GoalListDTO>("/api/goals");
+      if (response.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!response.ok || !response.data) {
+        setLoadError(true);
+        return;
+      }
+      setGoals(response.data.rows);
+      setLoadError(false);
+    } catch {
       setLoadError(true);
-      return;
     }
-    setGoals(response.data.rows);
-    setLoadError(false);
   }, [router]);
 
   useEffect(() => {
     let active = true;
     async function load() {
       setLoading(true);
-      await reload();
-      if (active) setLoading(false);
+      try {
+        await reload();
+      } finally {
+        if (active) setLoading(false);
+      }
     }
     void load();
     return () => {

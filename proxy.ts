@@ -9,7 +9,6 @@ import { SESSION_COOKIE, verifySession } from "./lib/server/session";
 */
 
 const PUBLIC_API_ROUTES = new Set(["/api/auth/signup", "/api/auth/login"]);
-
 function unauthorizedResponse(): NextResponse {
   return NextResponse.json(
     { error: { code: "UNAUTHORIZED", message: "Silakan masuk kembali.", fieldErrors: null } },
@@ -17,18 +16,39 @@ function unauthorizedResponse(): NextResponse {
   );
 }
 
+function isApiRequest(request: NextRequest): boolean {
+  return request.nextUrl.pathname.startsWith("/api/");
+}
+
 export async function proxy(request: NextRequest): Promise<NextResponse> {
-  if (PUBLIC_API_ROUTES.has(request.nextUrl.pathname)) return NextResponse.next();
+  const pathname = request.nextUrl.pathname;
+  if (isApiRequest(request) && PUBLIC_API_ROUTES.has(pathname)) return NextResponse.next();
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) return unauthorizedResponse();
+  if (!token) {
+    return isApiRequest(request)
+      ? unauthorizedResponse()
+      : NextResponse.redirect(new URL("/login", request.url));
+  }
 
   try {
     await verifySession(token);
     return NextResponse.next();
   } catch {
-    return unauthorizedResponse();
+    return isApiRequest(request)
+      ? unauthorizedResponse()
+      : NextResponse.redirect(new URL("/login", request.url));
   }
 }
 
-export const config = { matcher: ["/api/:path*"] };
+export const config = {
+  matcher: [
+    "/api/:path*",
+    "/home",
+    "/budget",
+    "/transactions",
+    "/family",
+    "/profile",
+    "/waiting-for-approval",
+  ],
+};

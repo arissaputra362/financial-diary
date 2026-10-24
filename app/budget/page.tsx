@@ -1,8 +1,8 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { AuthRedirect } from "@/components/auth/AuthRedirect";
 import { BudgetView } from "@/components/dashboard/BudgetView";
 import { authenticatedRequest } from "@/lib/server/auth";
 import { AppError } from "@/lib/server/errors";
-import { redirect } from "next/navigation";
 
 /*
   Budget route (feat-dashboard AC-F2-2/AC-F2-3, AC-F2-2c). `?scope=personal`
@@ -30,8 +30,10 @@ export default async function BudgetPage({
       budgets: { SHARED: shared, PERSONAL: personal },
     };
   } catch (error) {
-    if (error instanceof AppError && error.statusCode === 401) redirect("/login");
-    if (error instanceof AppError && error.statusCode === 403) redirect("/waiting-for-approval");
+    if (error instanceof AppError && error.statusCode === 401) return <AuthRedirect to="/login" />;
+    if (error instanceof AppError && error.statusCode === 403) {
+      return <AuthRedirect to="/waiting-for-approval" />;
+    }
     throw error;
   }
 

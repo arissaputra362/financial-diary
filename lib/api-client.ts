@@ -25,15 +25,36 @@ export type ApiResponse<T> = {
   data: (T & ApiErrorBody) | null;
 };
 
+const API_REQUEST_TIMEOUT_MS = 15_000;
+
 export async function apiRequest<T>(url: string, init: RequestInit = {}): Promise<ApiResponse<T>> {
-  const response = await fetch(url, { credentials: "same-origin", ...init });
-  let data: unknown = null;
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  const callerSignal = init.signal;
+  const abortFromCaller = () => controller.abort();
+
+  if (callerSignal) {
+    if (callerSignal.aborted) controller.abort();
+    else callerSignal.addEventListener("abort", abortFromCaller, { once: true });
   }
-  return { status: response.status, ok: response.ok, data: (data as T & ApiErrorBody) ?? null };
+
+  try {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      ...init,
+      signal: controller.signal,
+    });
+    let data: unknown = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+    return { status: response.status, ok: response.ok, data: (data as T & ApiErrorBody) ?? null };
+  } finally {
+    clearTimeout(timeout);
+    callerSignal?.removeEventListener("abort", abortFromCaller);
+  }
 }
 
 export function idempotencyHeaders(): Record<string, string> {

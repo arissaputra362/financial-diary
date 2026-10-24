@@ -154,8 +154,11 @@ export class AuthService {
     const membership = user ? await this.repos.membership.findLatestByUserId(user.id) : null;
     if (!user || !membership) throw unauthorized("Sesi Anda sudah berakhir. Silakan masuk kembali.");
 
-    await this.repos.session.touch(sid);
-    await this.repos.session.purgeExpired();
+    if (session.lastSeenAt) {
+      await this.repos.session.touch(sid, session.lastSeenAt);
+    } else {
+      await this.repos.session.touch(sid);
+    }
 
     const household = await this.repos.household.findById(membership.householdId);
 

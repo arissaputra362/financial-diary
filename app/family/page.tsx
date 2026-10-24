@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
+import { AuthRedirect } from "@/components/auth/AuthRedirect";
 import FamilyView from "@/components/family/FamilyView";
 import { authenticatedRequest } from "@/lib/server/auth";
 import { AppError } from "@/lib/server/errors";
@@ -11,8 +11,10 @@ export default async function FamilyPage() {
     session = await authenticatedRequest({ approvedOnly: true });
     members = await session.family.listMembers(session.userId, session.householdId);
   } catch (error) {
-    if (error instanceof AppError && error.statusCode === 401) redirect("/login");
-    if (error instanceof AppError && error.statusCode === 403) redirect("/waiting-for-approval");
+    if (error instanceof AppError && error.statusCode === 401) return <AuthRedirect to="/login" />;
+    if (error instanceof AppError && error.statusCode === 403) {
+      return <AuthRedirect to="/waiting-for-approval" />;
+    }
     throw error;
   }
 
