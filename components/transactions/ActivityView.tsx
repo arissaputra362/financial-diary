@@ -18,7 +18,7 @@ import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO, TransactionListDTO, WalletDTO } from "@/types/api";
 import { AddTransactionSheet } from "./AddTransactionSheet";
-import { activityHref } from "./activityUrl";
+import { activityHref, activityListUrl } from "./activityUrl";
 import { TransactionDetailSheet } from "./TransactionDetailSheet";
 import { TransactionList } from "./TransactionList";
 import { UndoToast } from "./UndoToast";
@@ -42,32 +42,6 @@ const FILTER_OPTIONS: ReadonlyArray<readonly [ListFilter, string]> = [
   ["MONEY_OUT", "Uang keluar"],
   ["transfer", "Transfer"],
 ];
-
-/*
-  One URL builder for every list fetch: the active view is filtered by the
-  selected month (server-side via from/to, one request = one month max) while
-  cursor pagination keeps client state small (A-14).
-*/
-function buildListUrl(
-  view: "active" | "trash",
-  cursor: string | null,
-  month: string,
-  walletId: string,
-  from?: string,
-  to?: string,
-): string {
-  const base = view === "trash" ? "/api/transactions/trash" : "/api/transactions";
-  const params = new URLSearchParams();
-  if (cursor) params.set("cursor", cursor);
-  if (view === "active") {
-    const monthRange = monthKeyRange(month);
-    params.set("from", from ?? monthRange.from);
-    params.set("to", to ?? monthRange.to);
-    if (walletId) params.set("walletId", walletId);
-  }
-  const queryString = params.toString();
-  return queryString ? `${base}?${queryString}` : base;
-}
 
 /**
  * Activity page: grouped active list with soft delete + 5-second undo, month
@@ -99,8 +73,12 @@ export function ActivityView({
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [monthPickerValue, setMonthPickerValue] = useState(() => resolveMonthKey(initialMonth));
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  /* Applied range: drives the fetch and the URL. */
   const [dateFrom, setDateFrom] = useState(initialFrom ?? "");
   const [dateTo, setDateTo] = useState(initialTo ?? "");
+  /* Draft range: bound to the inputs, committed only by "Terapkan". */
+  const [draftFrom, setDraftFrom] = useState(initialFrom ?? "");
+  const [draftTo, setDraftTo] = useState(initialTo ?? "");
   const [dateFilterError, setDateFilterError] = useState<string | null>(null);
   const [loading, setLoading] = useState(!initialData);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -214,7 +192,9 @@ export function ActivityView({
   useEffect(() => {
     if (initialData && reloadToken === 0) return;
     let active = true;
-    apiRequest<TransactionListDTO>(buildListUrl(view, null, activeMonth, walletId, dateFrom, dateTo))
+    apiRequest<TransactionListDTO>(
+      activityListUrl({ view, month: activeMonth, walletId, from: dateFrom, to: dateTo }),
+    )
       .then((response) => {
         if (!active) return;
         if (response.status === 401) {
@@ -260,8 +240,8 @@ export function ActivityView({
     setDetail(null);
     setLoading(true);
     setActiveMonth(next);
-    setDateFrom("");
-    setDateTo("");
+    resetDateFilter();
+    setDateFilterOpen(false);
     writeUrl(view, next, false, "", "");
   };
 
@@ -276,34 +256,57 @@ export function ActivityView({
       setDetail(null);
       setLoading(true);
       setActiveMonth(next);
-      writeUrl(view, next);
+      /* The date range belongs to one month, so a new month clears it. */
+      resetDateFilter();
+      setDateFilterOpen(false);
+      writeUrl(view, next, false, "", "");
     }
     setMonthPickerOpen(false);
   };
 
+  const resetDateFilter = () => {
+    setDateFrom("");
+    setDateTo("");
+    setDraftFrom("");
+    setDraftTo("");
+    setDateFilterError(null);
+  };
+
+  const openDateFilter = () => {
+    /* Reopening starts from the applied range, not an abandoned draft. */
+    setDraftFrom(dateFrom);
+    setDraftTo(dateTo);
+    setDateFilterError(null);
+    setDateFilterOpen(true);
+  };
+
   const applyDateFilter = () => {
     const range = monthKeyRange(activeMonth);
-    if ((dateFrom && dateFrom < range.from) || (dateTo && dateTo > range.to)) {
+    if (
+      (draftFrom && (draftFrom < range.from || draftFrom > range.to)) ||
+      (draftTo && (draftTo < range.from || draftTo > range.to))
+    ) {
       setDateFilterError("Rentang tanggal harus berada di bulan yang dipilih.");
       return;
     }
-    if (dateFrom && dateTo && dateFrom > dateTo) {
+    if (draftFrom && draftTo && draftFrom > draftTo) {
       setDateFilterError("Tanggal mulai tidak boleh setelah tanggal akhir.");
       return;
     }
     setDateFilterError(null);
-    setLoading(true);
-    setReloadToken((token) => token + 1);
-    writeUrl(view, activeMonth);
+    if (draftFrom !== dateFrom || draftTo !== dateTo) {
+      setLoading(true);
+      setDateFrom(draftFrom);
+      setDateTo(draftTo);
+    }
+    writeUrl(view, activeMonth, false, draftFrom, draftTo);
     setDateFilterOpen(false);
   };
 
   const clearDateFilter = () => {
-    setDateFrom("");
-    setDateTo("");
-    setDateFilterError(null);
-    setLoading(true);
-    setReloadToken((token) => token + 1);
+    const hadFilter = Boolean(dateFrom || dateTo);
+    resetDateFilter();
+    if (hadFilter) setLoading(true);
     writeUrl(view, activeMonth, false, "", "");
   };
 
@@ -312,7 +315,14 @@ export function ActivityView({
     setLoadingMore(true);
     try {
       const response = await apiRequest<TransactionListDTO>(
-        buildListUrl(view, nextCursor, activeMonth, walletId, dateFrom, dateTo),
+        activityListUrl({
+          view,
+          cursor: nextCursor,
+          month: activeMonth,
+          walletId,
+          from: dateFrom,
+          to: dateTo,
+        }),
       );
       if (response.status === 401) {
         router.push("/login");
@@ -578,7 +588,7 @@ export function ActivityView({
           <button
             type="button"
             aria-expanded={dateFilterOpen}
-            onClick={() => setDateFilterOpen((open) => !open)}
+            onClick={() => (dateFilterOpen ? setDateFilterOpen(false) : openDateFilter())}
             className="min-h-11 rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
           >
             {dateFrom || dateTo ? "Ubah filter tanggal" : "Filter tanggal"}
@@ -594,9 +604,9 @@ export function ActivityView({
                   Dari
                   <input
                     type="date"
-                    value={dateFrom}
-                    max={dateTo || monthKeyRange(activeMonth).to}
-                    onChange={(event) => setDateFrom(event.target.value)}
+                    value={draftFrom}
+                    max={draftTo || monthKeyRange(activeMonth).to}
+                    onChange={(event) => setDraftFrom(event.target.value)}
                     className="min-h-11 rounded-2xl border border-[#C9D6E4] px-3 text-sm text-[#17304F] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
                   />
                 </label>
@@ -604,10 +614,10 @@ export function ActivityView({
                   Sampai
                   <input
                     type="date"
-                    value={dateTo}
-                    min={dateFrom || monthKeyRange(activeMonth).from}
+                    value={draftTo}
+                    min={draftFrom || monthKeyRange(activeMonth).from}
                     max={monthKeyRange(activeMonth).to}
-                    onChange={(event) => setDateTo(event.target.value)}
+                    onChange={(event) => setDraftTo(event.target.value)}
                     className="min-h-11 rounded-2xl border border-[#C9D6E4] px-3 text-sm text-[#17304F] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
                   />
                 </label>
@@ -616,7 +626,7 @@ export function ActivityView({
                 <p role="alert" className="mt-2 text-xs text-[#B91C1C]">{dateFilterError}</p>
               ) : null}
               <div className="mt-3 flex flex-wrap justify-end gap-2">
-                {(dateFrom || dateTo) ? (
+                {(draftFrom || draftTo) ? (
                   <button
                     type="button"
                     onClick={clearDateFilter}
