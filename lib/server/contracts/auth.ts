@@ -26,6 +26,7 @@ export const signupSchema = z.object({
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "Masukkan kata sandi Anda."),
+  rememberSession: z.boolean().optional().default(false),
 });
 
 /** Owner decision payloads (approve/decline/revoke), reason ≤200 (A-20). */

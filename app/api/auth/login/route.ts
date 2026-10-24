@@ -10,7 +10,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     const input = parseLogin(await parseJson(request));
     const result = await createServices().auth.login(input.email, input.password);
     const response = NextResponse.json(result.state);
-    await setSessionCookie(response, result.sessionId, result.state.user.id);
+    await setSessionCookie(
+      response,
+      result.sessionId,
+      result.state.user.id,
+      input.rememberSession,
+    );
     return response;
   } catch (error) {
     return respondError(error);

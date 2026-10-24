@@ -158,6 +158,10 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
           router.push("/login");
           return;
         }
+        if (response.status === 403) {
+          router.push("/waiting-for-approval");
+          return;
+        }
         if (!response.ok) {
           setWalletsError("Filter dompet belum bisa dimuat.");
           return;
@@ -193,6 +197,10 @@ export function ActivityView({ initialView, initialMonth, initialAdd = false, in
         if (!active) return;
         if (response.status === 401) {
           router.push("/login");
+          return;
+        }
+        if (response.status === 403) {
+          router.push("/waiting-for-approval");
           return;
         }
         if (!response.ok) {

@@ -101,7 +101,7 @@ function AuthForm({ initialSignup = false }: { initialSignup?: boolean }) {
       }
       const body = isSignup
         ? { email, displayName, password, inviteCode: inviteCode || undefined }
-        : { email, password };
+        : { email, password, rememberSession: rememberEmail };
 
       const res = await fetch(endpoint, {
         method: "POST",

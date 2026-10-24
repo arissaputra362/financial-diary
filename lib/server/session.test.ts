@@ -1,19 +1,39 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { decodeJwt } from "jose";
 import { NextResponse } from "next/server";
-import { clearSessionCookie, SESSION_COOKIE, setSessionCookie, signSession, verifySession } from "./session";
+import {
+  clearSessionCookie,
+  REMEMBERED_SESSION_TTL_SECONDS,
+  SESSION_COOKIE,
+  SESSION_TTL_SECONDS,
+  setSessionCookie,
+  signSession,
+  verifySession,
+} from "./session";
 
 describe("session token + cookie (ADR-002)", () => {
   beforeAll(() => {
     process.env.AUTH_SECRET = "test-secret-please-change";
   });
 
-  it("signs claims = {sub,sid,token_version,iat,exp} with no role or household_id", async () => {
+  it("signs session claims without role or household_id", async () => {
     const token = await signSession("sid-1", "u1");
     const payload = decodeJwt(token);
 
-    expect(Object.keys(payload).sort()).toEqual(["exp", "iat", "sid", "sub", "token_version"]);
-    expect(payload).toMatchObject({ sub: "u1", sid: "sid-1", token_version: "v1" });
+    expect(Object.keys(payload).sort()).toEqual([
+      "exp",
+      "iat",
+      "remember",
+      "sid",
+      "sub",
+      "token_version",
+    ]);
+    expect(payload).toMatchObject({
+      sub: "u1",
+      sid: "sid-1",
+      token_version: "v1",
+      remember: false,
+    });
     expect(payload).not.toHaveProperty("role");
     expect(payload).not.toHaveProperty("household_id");
 
@@ -39,6 +59,16 @@ describe("session token + cookie (ADR-002)", () => {
     expect(setCookie).toContain("secure");
     expect(setCookie).toContain("samesite=lax");
     expect(setCookie).toContain("path=/");
+    expect(setCookie).toContain(`max-age=${SESSION_TTL_SECONDS}`);
+  });
+
+  it("sets a seven-day cookie and token for remembered sessions", async () => {
+    const response = NextResponse.json({ ok: true });
+    await setSessionCookie(response, "sid-1", "u1", true);
+
+    const setCookie = (response.headers.get("set-cookie") ?? "").toLowerCase();
+    expect(setCookie).toContain(`max-age=${REMEMBERED_SESSION_TTL_SECONDS}`);
+    expect((await verifySession(response.cookies.get(SESSION_COOKIE)?.value ?? "")).remember).toBe(true);
   });
 
   it("clears the cookie with Max-Age=0", () => {

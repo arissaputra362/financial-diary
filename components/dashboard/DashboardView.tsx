@@ -65,6 +65,10 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
           router.push("/login");
           return;
         }
+        if (response.status === 403) {
+          router.push("/waiting-for-approval");
+          return;
+        }
         if (!response.ok || !isDashboardPayload(response.data)) {
           setError("Ringkasan keuangan belum bisa dimuat.");
           return;
