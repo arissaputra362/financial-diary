@@ -507,7 +507,7 @@ Opsi masa depan (dicatat, bukan keputusan): kolom saldo berjalan per baris pada 
 | [ Transaksi ][ Ringkasan ][ Trash ]      kontrol bulan tetap satu baris  |
 | [ Pribadi | Bersama* ]    Dompet: [Semua dompet (3) v]                    |
 | +----------------------------------------------------------------------+ |
-| |          KARTU SISA (navy, p-8, max-w-2xl agar tidak membentang)     | |
+| |          KARTU SISA (navy, lebar penuh mengikuti kontainer)          | |
 | +----------------------------------------------------------------------+ |
 | +---------------- Jejak saldo, grid-cols-4 satu baris ----------------+ |
 | +-------------------+ +-------------------+                            |
@@ -635,7 +635,7 @@ Aturan copy: nominal selalu `Rp{n}` dari `formatIDR`, integer; tidak ada notasi 
 | :--- | :--- |
 | Mobile `< 768px` | Semua kartu bertumpuk; strip jejak 2x2; kartu grup bertumpuk; nominal hero 36px; tooltip grafik tap-driven; tab pakai varian B pada `< 480px`. |
 | Tablet `768 to 1023px` | Strip jejak naik ke `grid-cols-4` (fallback `grid-cols-2`), dua kartu grup tetap bertumpuk sampai `lg`; grafik memakai tinggi menengah; kontrol cakupan dan dompet satu baris. |
-| Desktop `>= 1024px` | Dua kartu grup berdampingan; kartu Sisa p-8 max-w-2xl; nominal hero sampai 40px; tooltip grafik hover-driven dan jalur keyboard tetap; catatan kaki tetap satu kolom kiri. |
+| Desktop `>= 1024px` | Dua kartu grup berdampingan; kartu Sisa memenuhi lebar kontainer dengan p-8; nominal hero sampai 40px; tooltip grafik hover-driven dan jalur keyboard tetap; catatan kaki tetap satu kolom kiri. |
 | Semua breakpoint | Tanpa scroll horizontal; jumlah titik grafik konstan; nominal selalu `whitespace-nowrap` sehingga tidak terpotong; nama kategori panjang boleh wrap 2 baris; touch target kontrol 44px (min-h-11), hero Tambah CTA di header halaman tetap 48px target. |
 
 ---

@@ -453,7 +453,7 @@ function BalanceCard({ report, month }: { report: MonthlyReportDTO; month: strin
   return (
     <Card
       variant="navy"
-      className="p-6 sm:max-w-2xl sm:p-8 print:max-w-none print:break-inside-avoid print:p-3"
+      className="w-full p-6 sm:p-8 print:break-inside-avoid print:p-3"
     >
       <p className="text-xs font-semibold uppercase tracking-wider text-[#D9E6F5] print:text-[8pt]">{label}</p>
       <p className="mt-2 whitespace-nowrap text-4xl font-bold tabular-nums tracking-tight text-white sm:text-[2.5rem] print:mt-0.5 print:text-2xl">
