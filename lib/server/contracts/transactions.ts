@@ -102,6 +102,32 @@ export const createTransactionSchema = z
     }
   });
 
+/** Update fields for one active, non-transfer transaction (AC-F3-15). */
+export const updateTransactionSchema = z
+  .object({
+    type: z.enum(STORED_TRANSACTION_TYPES, { message: "Pilih jenis transaksi." }),
+    amountMinor: z
+      .number({ message: "Jumlah harus berupa angka." })
+      .positive("Jumlah harus lebih dari 0.")
+      .max(INT32_MAX, "Jumlah terlalu besar.")
+      .refine(hasAtMostTwoDecimals, "Jumlah maksimal dua angka desimal."),
+    category: z.enum(CATEGORIES, { message: "Pilih kategori yang sesuai." }),
+    occurredAt: dateOnlySchema,
+    merchant: z.string().trim().max(120, "Nama toko maksimal 120 karakter.").optional(),
+    note: z.string().trim().max(500, "Catatan maksimal 500 karakter.").optional(),
+    walletId: z.string().uuid("Pilih dompet."),
+  })
+  .superRefine((value, ctx) => {
+    const allowed = value.type === "MONEY_IN" ? MONEY_IN_CATEGORIES : MONEY_OUT_CATEGORIES;
+    if (!(allowed as readonly string[]).includes(value.category)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["category"],
+        message: "Pilih kategori yang sesuai.",
+      });
+    }
+  });
+
 export const listTransactionsQuerySchema = z.object({
   type: z.enum(STORED_TRANSACTION_TYPES).optional(),
   source: z.enum(TRANSACTION_SOURCES).optional(),
@@ -121,6 +147,7 @@ export const trashListQuerySchema = z.object({
 });
 
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
+export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 /** Pre-parse request shape: `source` and `receiptId` may be absent. */
 export type CreateTransactionRequest = z.input<typeof createTransactionSchema>;
 export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;

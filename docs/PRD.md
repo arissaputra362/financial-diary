@@ -119,6 +119,7 @@ AI sebelum tersimpan, agar data keuangan akurat dan saya tetap pegang kendali.
 - [ ] AC-11 (T-012 approved 2026-10-22, revised 2026-10-23; implemented, QA pending): Bila gambar tersimpan tidak tersedia atau tidak terbaca, tidak ada job baru dan tidak ada panggilan model; server mengembalikan `OCR_IMAGE_UNAVAILABLE`. UI menampilkan salinan jujur dengan `Pilih foto struk` (upload normal baru) dan `Isi manual`, tanpa klaim bahwa pemindaian lama bisa diulang. Tidak ada recovery multipart same-job.
 - [ ] AC-12 (T-012 PM-approved 2026-10-22, implementation pending): Retry diklaim di bawah row lock `Receipt`; setelah lock, server memeriksa ulang bahwa job target masih job terbaru `FAILED`, lalu mengalokasikan `OcrJob.attempt` berikutnya. Retry yang kalah klaim mendapat respons aman `OCR_RETRY_IN_PROGRESS`/`OCR_NOT_RETRYABLE` tanpa panggilan provider. `attempt` unik per receipt dan menjadi urutan percobaan, bukan `createdAt`.
 - [ ] AC-13 (T-012 PM-approved 2026-10-22, implementation pending): Menutup sheet Add lewat X, Batal, Escape, backdrop, atau setelah simpan menghapus intent `?add=1` dengan `router.replace` tanpa history entry baru. Penutupan tanpa simpan mempertahankan bulan/tab aktif; setelah simpan, perilaku view yang ada tetap dan hanya satu pembaruan URL yang berlaku. Aksi Tambah global dapat membuka sheet lagi dalam satu klik dengan fokus yang benar.
+- [ ] AC-14 (PM-approved 2026-10-25, implemented; QA pending): Pengguna dapat mengedit transaksi aktif non-transfer dari detail. Perubahan memakai baris yang sama, mempertahankan sumber dan struk OCR, serta memperbarui saldo dan laporan dari nilai terbaru. Transaksi di trash dan transfer pasangan tidak dapat diedit.
 
 **Batasan (Out of Scope)**
 
@@ -269,7 +270,7 @@ T-011, Dev Plan, dan QA report untuk bukti dan risiko.
 
 - Sinkronisasi bank, impor otomatis, recurring transaction, dan multi-currency.
 - Menghubungkan tujuan wallet Tabungan otomatis ke SavingsGoal.
-- Reorder kartu wallet, edit transaksi historis, serta item navigasi utama Wallet.
+- Reorder kartu wallet serta item navigasi utama Wallet.
 
 ---
 

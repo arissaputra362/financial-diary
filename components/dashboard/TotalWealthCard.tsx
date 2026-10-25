@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Coins, RefreshCw, Wallet } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { formatIDR } from "@/lib/format";
+import type { MonthlyBudgetDTO } from "@/types/api";
 import type { GoldPortfolioSummaryDTO } from "@/types/gold";
 
 type WealthScope = "SHARING" | "PERSONAL";
@@ -24,32 +25,43 @@ const priceDateFormatter = new Intl.DateTimeFormat("id-ID", {
 interface TotalWealthCardProps {
   sharedBalanceMinor: number;
   personalBalanceMinor: number;
+  sharedBudget: MonthlyBudgetDTO;
+  personalBudget: MonthlyBudgetDTO;
+  sharedTodayMinor: number;
+  personalTodayMinor: number;
 }
 
-export function TotalWealthCard({ sharedBalanceMinor, personalBalanceMinor }: TotalWealthCardProps) {
+export function TotalWealthCard({
+  sharedBalanceMinor,
+  personalBalanceMinor,
+  sharedBudget,
+  personalBudget,
+  sharedTodayMinor,
+  personalTodayMinor,
+}: TotalWealthCardProps) {
   const [scope, setScope] = useState<WealthScope>("SHARING");
-  const [gold, setGold] = useState<GoldPortfolioSummaryDTO | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [goldState, setGoldState] = useState<{
+    scope: WealthScope;
+    reloadKey: number;
+    summary: GoldPortfolioSummaryDTO | null;
+    error: boolean;
+  } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError(false);
-    setGold(null);
-
     apiRequest<GoldPortfolioSummaryDTO>(`/api/gold/assets?scope=${scope}`)
       .then((response) => {
         if (!active) return;
-        if (response.ok && response.data) setGold(response.data);
-        else setError(true);
+        setGoldState({
+          scope,
+          reloadKey,
+          summary: response.ok ? response.data ?? null : null,
+          error: !response.ok || !response.data,
+        });
       })
       .catch(() => {
-        if (active) setError(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (active) setGoldState({ scope, reloadKey, summary: null, error: true });
       });
 
     return () => {
@@ -57,7 +69,12 @@ export function TotalWealthCard({ sharedBalanceMinor, personalBalanceMinor }: To
     };
   }, [scope, reloadKey]);
 
+  const loading = goldState?.scope !== scope || goldState.reloadKey !== reloadKey;
+  const error = !loading && goldState.error;
+  const gold = !loading && !error ? goldState.summary : null;
   const cashBalance = scope === "SHARING" ? sharedBalanceMinor : personalBalanceMinor;
+  const budget = scope === "SHARING" ? sharedBudget : personalBudget;
+  const todayMinor = scope === "SHARING" ? sharedTodayMinor : personalTodayMinor;
   const hasGoldItems = (gold?.itemCount ?? 0) > 0;
   const hasGoldPrice = Boolean(gold?.priceInfo.prices.length);
   const canCalculateTotal = !error && !loading && gold !== null && (!hasGoldItems || hasGoldPrice);
@@ -77,20 +94,21 @@ export function TotalWealthCard({ sharedBalanceMinor, personalBalanceMinor }: To
         <div>
           <h2 id="total-wealth-title" className="flex items-center gap-2 text-sm font-semibold text-white/90">
             <Wallet className="h-4 w-4" aria-hidden="true" />
-            Total kekayaan saat ini
+            Ringkasan keuangan
           </h2>
           <p className="mt-1 text-xs text-[#B9CDE5]">
-            Uang tersedia ditambah taksiran nilai tabungan emas.
+            Saldo, tabungan emas, dan pengeluaran sesuai pilihan.
           </p>
         </div>
-        <div role="group" aria-label="Cakupan total kekayaan" className="flex rounded-full bg-white/10 p-1">
+        <div role="group" aria-label="Pilih ringkasan keuangan" className="flex rounded-full bg-white/10 p-1">
           {SCOPE_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               aria-pressed={scope === option.value}
+              aria-label={`Tampilkan ringkasan ${option.label.toLowerCase()}`}
               onClick={() => setScope(option.value)}
-              className={`min-h-10 rounded-full px-4 text-sm font-semibold transition-colors ${scope === option.value ? "bg-white text-[#14273F] shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+              className={`min-h-11 rounded-full px-4 text-sm font-semibold transition-colors ${scope === option.value ? "bg-white text-[#14273F] shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
             >
               {option.label}
             </button>
@@ -142,6 +160,7 @@ export function TotalWealthCard({ sharedBalanceMinor, personalBalanceMinor }: To
               </p>
             </div>
           </div>
+          <p className="mt-2 text-[11px] text-[#B9CDE5]">Saldo mencakup dompet aktif dan arsip.</p>
           {hasGoldItems ? (
             <p className="mt-3 text-xs text-[#B9CDE5]">
               Nilai emas adalah taksiran berdasarkan harga acuan{priceDateLabel ? ` per ${priceDateLabel}` : " terbaru"}.
@@ -154,6 +173,24 @@ export function TotalWealthCard({ sharedBalanceMinor, personalBalanceMinor }: To
           </Link>
         </>
       )}
+      <div className="mt-5 border-t border-white/15 pt-4">
+        <p className="text-xs font-semibold text-white/90">Pengeluaran bulan ini</p>
+        <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">
+          {formatIDR(budget.spentMinor)}
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-white/10 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#B9CDE5]">Hari ini</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">{formatIDR(todayMinor)}</p>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#B9CDE5]">Sisa anggaran</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">
+              {budget.isSet && budget.remainingMinor !== null ? formatIDR(budget.remainingMinor) : "Belum diatur"}
+            </p>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

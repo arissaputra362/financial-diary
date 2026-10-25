@@ -15,9 +15,11 @@ import {
   createTransactionSchema,
   listTransactionsQuerySchema,
   trashListQuerySchema,
+  updateTransactionSchema,
   type CreateTransactionInput,
   type ListTransactionsQuery,
   type TrashListQuery,
+  type UpdateTransactionInput,
 } from "./contracts/transactions";
 import {
   budgetQuerySchema,
@@ -181,6 +183,20 @@ export function parseRequiredIdempotencyKey(request: Request): string {
  */
 export function parseCreateTransaction(input: unknown): CreateTransactionInput {
   const result = createTransactionSchema.safeParse(input);
+  if (!result.success) {
+    const tooBig = result.error.issues.some(
+      (issue) => issue.path[0] === "amountMinor" && issue.code === "too_big",
+    );
+    throw unprocessableCode(
+      tooBig ? "AMOUNT_OUT_OF_RANGE" : "VALIDATION_ERROR",
+      formatFieldErrors(result.error),
+    );
+  }
+  return result.data;
+}
+
+export function parseUpdateTransaction(input: unknown): UpdateTransactionInput {
+  const result = updateTransactionSchema.safeParse(input);
   if (!result.success) {
     const tooBig = result.error.issues.some(
       (issue) => issue.path[0] === "amountMinor" && issue.code === "too_big",

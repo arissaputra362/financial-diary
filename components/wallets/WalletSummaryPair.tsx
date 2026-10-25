@@ -1,13 +1,10 @@
 "use client";
 
-import { Plus, Users, User, Wallet } from "lucide-react";
-import { formatIDR } from "@/lib/format";
+import { Plus, Wallet } from "lucide-react";
 import type { WalletCardDTO } from "@/types/api";
 import { WalletCard } from "./WalletCard";
 
 export interface WalletSummaryPairProps {
-  sharedBalanceMinor: number;
-  personalBalanceMinor: number;
   wallets: WalletCardDTO[];
   loading: boolean;
   error: string | null;
@@ -18,15 +15,8 @@ export interface WalletSummaryPairProps {
   onOpenArchive: () => void;
 }
 
-/*
-  Two separate summaries plus the active-wallet carousel (design 06 §5, C-11;
-  R-9 placement). Shared and personal totals are never summed. The helper states
-  that archived balances are included even though only active cards are shown
-  (C-18/C-27).
-*/
+/* Active-wallet carousel. Scope balances live in the dashboard summary card. */
 export function WalletSummaryPair({
-  sharedBalanceMinor,
-  personalBalanceMinor,
   wallets: rawWallets,
   loading,
   error,
@@ -42,20 +32,9 @@ export function WalletSummaryPair({
     safer than taking the whole dashboard down.
   */
   const wallets = Array.isArray(rawWallets) ? rawWallets : [];
-  const totalLength = Math.max(
-    formatIDR(sharedBalanceMinor).length,
-    formatIDR(personalBalanceMinor).length,
-  );
-  const veryLongTotals = totalLength > 16;
-  const longTotals = totalLength > 13;
-
   if (loading) {
     return (
       <section className="space-y-4" aria-busy="true" aria-label="Memuat dompet">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="h-28 animate-pulse rounded-3xl bg-[#E5EDF5] motion-reduce:animate-none" />
-          <div className="h-28 animate-pulse rounded-3xl bg-[#E5EDF5] motion-reduce:animate-none" />
-        </div>
         <div className="h-40 animate-pulse rounded-3xl bg-[#E5EDF5] motion-reduce:animate-none" />
       </section>
     );
@@ -82,62 +61,25 @@ export function WalletSummaryPair({
         Dompet
       </h2>
 
-      <div
-        className={
-          veryLongTotals
-            ? "grid grid-cols-1 gap-3 sm:gap-4"
-            : longTotals
-              ? "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4"
-              : "grid grid-cols-2 gap-3 sm:gap-4"
-        }
-      >
-        <article className="min-w-0 rounded-3xl border border-[#BCD6EF] bg-[#DCEBFA] p-4 shadow-bento sm:p-5">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#46597A]">
-            <Users className="h-4 w-4 shrink-0" aria-hidden="true" />
-            Uang tersedia bersama
-          </p>
-          <p className="mt-2 whitespace-nowrap text-[clamp(1rem,4.4vw,1.5rem)] font-semibold tabular-nums text-[#17304F]">
-            {formatIDR(sharedBalanceMinor)}
-          </p>
-          <button
-            type="button"
-            onClick={onOpenArchive}
-            className="-my-1.5 inline-flex min-h-11 items-center text-xs font-medium text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
-          >
-            Termasuk saldo dompet arsip
-          </button>
-        </article>
-
-        <article className="min-w-0 rounded-3xl border border-[#D8E2EE] bg-white p-4 shadow-bento sm:p-5">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#46597A]">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EFF4FA]">
-              <User className="h-3.5 w-3.5" aria-hidden="true" />
-            </span>
-            Uang tersedia pribadi
-          </p>
-          <p className="mt-2 whitespace-nowrap text-[clamp(1rem,4.4vw,1.5rem)] font-semibold tabular-nums text-[#17304F]">
-            {formatIDR(personalBalanceMinor)}
-          </p>
-          <button
-            type="button"
-            onClick={onOpenArchive}
-            className="-my-1.5 inline-flex min-h-11 items-center text-xs font-medium text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
-          >
-            Termasuk saldo dompet arsip
-          </button>
-        </article>
-      </div>
-
       <div className="flex items-center justify-between gap-3 px-1">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-[#17304F]">
           <Wallet className="h-5 w-5 text-[#1D4F87]" aria-hidden="true" />
           Dompetmu
         </h3>
-        {wallets.length > 0 ? (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenArchive}
+            className="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-semibold text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
+          >
+            Dompet arsip
+          </button>
+          {wallets.length > 0 ? (
           <span className="rounded-full bg-[#E6ECF4] px-3 py-1 text-xs font-semibold text-[#46597A]">
             {wallets.length} dompet aktif
           </span>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
       {wallets.length === 0 ? (

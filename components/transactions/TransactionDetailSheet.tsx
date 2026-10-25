@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   ArrowDownLeft,
   ArrowUpRight,
+  PenLine,
   ReceiptText,
   Trash2,
   Undo2,
@@ -18,6 +19,7 @@ import { formatSignedIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
 import { categoryEmoji, categoryLabel, categoryTone, isTransferLeg, TYPE_LABELS } from "./categories";
+import { ManualEntryForm } from "./ManualEntryForm";
 
 export interface TransactionDetailSheetProps {
   /** A non-null row opens the dialog; null renders nothing. */
@@ -26,6 +28,7 @@ export interface TransactionDetailSheetProps {
   /** True while a trash/restore request for this row is in flight. */
   busy: boolean;
   onClose: () => void;
+  onUpdate: (row: TransactionDTO) => void;
   onDelete: (row: TransactionDTO) => void;
   onRestore: (row: TransactionDTO) => void;
 }
@@ -33,31 +36,45 @@ export interface TransactionDetailSheetProps {
 /*
   Detail for one transaction (design 03 extends §4): same dialog mechanics as
   AddTransactionSheet, bottom sheet on mobile and a centered modal on desktop.
-  Read-only facts plus a single primary action per mode; no edit exists in the
-  MVP (A-08/D-15), so there is no fake edit control.
+  Detail facts and a single edit form share one dialog so focus remains scoped
+  while correcting an active non-transfer transaction.
 */
 export function TransactionDetailSheet({
   row,
   mode,
   busy,
   onClose,
+  onUpdate,
   onDelete,
   onRestore,
 }: TransactionDetailSheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const editTriggerRef = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(false);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const close = useCallback(() => {
+    setEditing(false);
+    setViewerOpen(false);
+    onClose();
+  }, [onClose]);
 
   /*
     Shared dialog mechanics. The hook's stack keeps this sheet closed while the
     receipt viewer is open, so Escape closes the viewer first and focus returns
     to its trigger instead of dropping to `body` (BUG-3/BUG-4).
   */
-  useDialogFocusTrap(row !== null, panelRef, onClose);
+  useDialogFocusTrap(row !== null, panelRef, close);
 
   useEffect(() => {
     if (row) closeRef.current?.focus();
   }, [row]);
+
+  useEffect(() => {
+    if (wasEditing.current && !editing && row) editTriggerRef.current?.focus();
+    wasEditing.current = editing;
+  }, [editing, row]);
 
   if (!row) return null;
 
@@ -84,7 +101,7 @@ export function TransactionDetailSheet({
     <div
       className="fixed inset-0 z-[60] flex items-end justify-center bg-[#14273F]/40 sm:items-center sm:p-4"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) close();
       }}
     >
       <div
@@ -97,12 +114,12 @@ export function TransactionDetailSheet({
       >
         <div className="flex items-center justify-between">
           <h2 id="transaction-detail-title" className="text-lg font-semibold tracking-tight text-[#17304F]">
-            Detail transaksi
+            {editing ? "Edit transaksi" : "Detail transaksi"}
           </h2>
           <button
             ref={closeRef}
             type="button"
-            onClick={onClose}
+            onClick={close}
             aria-label="Tutup detail transaksi"
             className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
           >
@@ -110,6 +127,19 @@ export function TransactionDetailSheet({
           </button>
         </div>
 
+        {editing ? (
+          <div className="mt-5">
+            <ManualEntryForm
+              key={row.id}
+              initialRow={row}
+              onUpdated={(updated) => {
+                onUpdate(updated);
+                setEditing(false);
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          </div>
+        ) : <>
         <div className={cn("mt-4 rounded-2xl border p-4", heroClass)}>
           <div className="flex items-center gap-3">
             <span
@@ -199,6 +229,12 @@ export function TransactionDetailSheet({
         <div className="mt-5 border-t border-[#EAEEF4] pt-4">
           {mode === "active" ? (
             <>
+              {!transfer ? (
+                <Button ref={editTriggerRef} className="mb-3 w-full" variant="secondary" onClick={() => setEditing(true)} disabled={busy}>
+                  <PenLine className="h-4 w-4" aria-hidden="true" />
+                  Edit transaksi
+                </Button>
+              ) : null}
               <Button
                 variant="danger"
                 className="w-full"
@@ -235,6 +271,7 @@ export function TransactionDetailSheet({
             onClose={() => setViewerOpen(false)}
           />
         ) : null}
+        </>}
       </div>
     </div>
   );

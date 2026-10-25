@@ -14,8 +14,8 @@ export const runtime = "nodejs";
 /*
   POST creates a manual transaction (money in/out/transfer) OR a transaction
   from a reviewed OCR draft (`source=OCR` + `receiptId`). It never creates
-  anything from the OCR endpoint itself (AC-F3-4). No PATCH route exists in the
-  MVP (A-08/D-15).
+  anything from the OCR endpoint itself (AC-F3-4). PATCH updates an active
+  non-transfer row through the item route (AC-F3-15).
 */
 export async function POST(request: Request): Promise<NextResponse> {
   try {

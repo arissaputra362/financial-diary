@@ -10,7 +10,8 @@ keputusan teknis: schema, interface, validasi, testing, dan task breakdown.
 - ADR terkait: ADR-001 (Prisma/Neon), ADR-003 (Gemini structured output), ADR-006 (layer), ADR-007 (free tier), ADR-008 (Blob)
 - ERD: `docs/erd/erd-database-schema.md` §3.7 (transaction), §3.9 (receipt), §3.10 (ocr_job), §3.13 (idempotency_key), §4 (D-1, D-2, D-8)
 - Flow: `docs/erd/flowcharts.md` §4, §5
-- AC (verification-matrix): AC-F3-1 … AC-F3-9; amandemen T-012: AC-F3-10 … AC-F3-14
+- AC (verification-matrix): AC-F3-1 … AC-F3-9; amandemen T-012: AC-F3-10 … AC-F3-14;
+  edit transaksi: AC-F3-15
 - Engineer: Developer · Estimasi: 4 hari · Status: Baseline plan Draft; T-012 amendment PM-approved 2026-10-22
 
 ## Ringkasan Teknis
@@ -784,3 +785,47 @@ Usulan ini tidak mengubah ADR-003 atau ADR-008 yang sudah Accepted:
   dengan keputusan PM 2026-10-22.
 - T-012 diterima PM pada 2026-10-22 sebagai task acceptance. Release tetap
   menunggu T-008.
+
+## Amendemen: Edit Transaksi
+
+**Status:** Implemented; QA pending. Amendemen dan UX direction approved by PM
+2026-10-25; release acceptance tetap memerlukan QA.
+
+### Scope Teknis
+
+- Tambah `PATCH /api/transactions/{id}` dengan validasi payload menggunakan aturan
+  create yang sama untuk jenis, nominal, tanggal, kategori, merchant, catatan, dan
+  wallet.
+- Repository memperbarui baris aktif dalam household yang benar. Perubahan wallet
+  mengunci wallet lama dan baru dalam urutan stabil; perubahan harus atomik. Receipt,
+  pembuat, dan identitas transaksi tetap.
+- Service menolak transaksi transfer, trashed, dan transaksi yang tidak dapat diakses
+  menurut scope wallet. ID di luar akses menghasilkan 404 generik.
+- UI membuka form edit dari detail transaksi, memakai data tersimpan sebagai nilai
+  awal, menangani state simpan/error, lalu memperbarui detail dan aktivitas setelah
+  sukses.
+- DTO tidak berubah. Perhitungan saldo, budget, chart, dan laporan tetap memakai
+  sumber transaksi aktif sehingga perubahan tercermin lewat query yang ada.
+
+### Verifikasi yang Direncanakan
+
+- Service/repository: validasi, isolasi household/wallet, transaksi trashed, transfer,
+  pergantian wallet, serta tidak ada perubahan saat gagal.
+- Route: 200 sukses, 404 untuk akses yang tak terlihat, dan 422 untuk payload invalid.
+- UI: nilai awal form, batal tanpa perubahan, error simpan, serta detail/list yang
+  menampilkan nilai baru.
+- Integration: satu baris yang sama diperbarui; dampak saldo/wallet terhitung ulang.
+
+### Gerbang dan Progress
+
+- 2026-10-25: PM menyetujui AC-F3-15, batas non-transfer, dan alur UX detail → edit
+  → simpan/batal/error; Dev Plan disetujui untuk implementasi.
+- Keputusan teknis: `PATCH /api/transactions/{id}` memperbarui baris aktif yang
+  terlihat dalam household; row id, pembuat, sumber OCR, dan receipt tetap.
+- Keputusan teknis: wallet lama dan tujuan dikunci dalam urutan stabil; update
+  transaksi dilakukan dalam satu transaksi database.
+- Hasil implementasi: PATCH route, validasi, repository/service update, dan edit form
+  terpasang. TipeScript, ESLint pada file terdampak, dan `bun run build` lulus.
+  Server produksi lokal merespons `/login` dengan 200 dan mengarahkan `/transactions`
+  tanpa sesi ke `/login` (307). Interaksi browser belum diperiksa karena browser
+  automation tidak tersedia; test suite tidak dijalankan.

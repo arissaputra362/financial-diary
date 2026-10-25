@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CircleDollarSign, Wallet as WalletIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
@@ -11,19 +11,21 @@ import { ScopePill } from "@/components/wallets/scope";
 import { WalletFormSheet } from "@/components/wallets/WalletFormSheet";
 import { WalletPickerSheet } from "@/components/wallets/WalletPickerSheet";
 import { apiRequest, idempotencyHeaders } from "@/lib/api-client";
-import { todayJakarta, yesterdayJakarta } from "@/lib/dates";
+import { todayJakarta, toJakartaDateOnly, yesterdayJakarta } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import { isValidMoneyAmount } from "@/lib/money-input";
 import { cn } from "@/lib/utils";
-import type { TransactionDTO, TransactionType, WalletDTO } from "@/types/api";
+import type { TransactionDTO, TransactionType, WalletDTO, WalletRefDTO } from "@/types/api";
 import { categoriesForType, CATEGORY_EMOJI, CATEGORY_LABELS } from "./categories";
 
 const INT32_MAX = 2_147_483_647;
 
 export interface ManualEntryFormProps {
-  onCreated: (rows: TransactionDTO[]) => void;
+  onCreated?: (rows: TransactionDTO[]) => void;
+  initialRow?: TransactionDTO;
+  onUpdated?: (row: TransactionDTO) => void;
   onCancel: () => void;
-  onSwitchToScan: () => void;
+  onSwitchToScan?: () => void;
 }
 
 /**
@@ -31,15 +33,20 @@ export interface ManualEntryFormProps {
  * amount once; the server creates both legs. All copy is plain Indonesian and
  * errors render per field.
  */
-export function ManualEntryForm({ onCreated, onCancel, onSwitchToScan }: ManualEntryFormProps) {
-  const [type, setType] = useState<TransactionType>("MONEY_OUT");
-  const [amountDigits, setAmountDigits] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
-  const [dateChoice, setDateChoice] = useState<"today" | "yesterday" | "custom">("today");
-  const [customDate, setCustomDate] = useState(todayJakarta());
-  const [merchant, setMerchant] = useState("");
-  const [note, setNote] = useState("");
-  const [wallet, setWallet] = useState<WalletDTO | null>(null);
+export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, onSwitchToScan }: ManualEntryFormProps) {
+  const initialRowId = initialRow?.id;
+  const formRef = useRef<HTMLFormElement>(null);
+  const initialDate = initialRow ? toJakartaDateOnly(new Date(initialRow.occurredAt)) : todayJakarta();
+  const [type, setType] = useState<TransactionType>(initialRow?.type ?? "MONEY_OUT");
+  const [amountDigits, setAmountDigits] = useState(initialRow ? String(initialRow.amountMinor) : "");
+  const [category, setCategory] = useState<string | null>(initialRow?.category ?? null);
+  const [dateChoice, setDateChoice] = useState<"today" | "yesterday" | "custom">(() =>
+    initialDate === todayJakarta() ? "today" : initialDate === yesterdayJakarta() ? "yesterday" : "custom",
+  );
+  const [customDate, setCustomDate] = useState(initialDate);
+  const [merchant, setMerchant] = useState(initialRow?.merchant ?? "");
+  const [note, setNote] = useState(initialRow?.note ?? "");
+  const [wallet, setWallet] = useState<WalletDTO | WalletRefDTO | null>(initialRow?.wallet ?? null);
   const [fromWallet, setFromWallet] = useState<WalletDTO | null>(null);
   const [toWallet, setToWallet] = useState<WalletDTO | null>(null);
   const [pickerTarget, setPickerTarget] = useState<"wallet" | "from" | "to" | null>(null);
@@ -54,6 +61,10 @@ export function ManualEntryForm({ onCreated, onCancel, onSwitchToScan }: ManualE
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (initialRowId) formRef.current?.querySelector<HTMLInputElement>("#amount")?.focus();
+  }, [initialRowId]);
 
   const occurredAt = dateChoice === "today" ? todayJakarta() : dateChoice === "yesterday" ? yesterdayJakarta() : customDate;
   const amountMinor = amountDigits ? Number(amountDigits) : 0;
@@ -134,11 +145,17 @@ export function ManualEntryForm({ onCreated, onCancel, onSwitchToScan }: ManualE
           ? { fromWalletId: fromWallet?.id, toWalletId: toWallet?.id }
           : { category, walletId: wallet?.id }),
       };
-      const response = await apiRequest<{ transactions: TransactionDTO[] }>("/api/transactions", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...idempotencyHeaders() },
-        body: JSON.stringify(payload),
-      });
+      const response = await apiRequest<{ transactions: TransactionDTO[] }>(
+        initialRow ? `/api/transactions/${initialRow.id}` : "/api/transactions",
+        {
+          method: initialRow ? "PATCH" : "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(!initialRow ? idempotencyHeaders() : {}),
+          },
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (response.status === 401) {
         setFormError("Sesi berakhir. Masuk lagi untuk menyimpan.");
@@ -149,7 +166,16 @@ export function ManualEntryForm({ onCreated, onCancel, onSwitchToScan }: ManualE
         setFormError(response.data?.error?.message ?? "Transaksi belum tersimpan. Coba lagi.");
         return;
       }
-      onCreated(response.data?.transactions ?? []);
+      if (initialRow) {
+        const updated = response.data?.transactions?.[0];
+        if (!updated) {
+          setFormError("Perubahan belum dapat ditampilkan. Muat ulang transaksi.");
+          return;
+        }
+        onUpdated?.(updated);
+      } else {
+        onCreated?.(response.data?.transactions ?? []);
+      }
     } catch {
       setFormError("Transaksi belum tersimpan. Periksa koneksimu lalu coba lagi.");
     } finally {
@@ -159,16 +185,18 @@ export function ManualEntryForm({ onCreated, onCancel, onSwitchToScan }: ManualE
 
   return (
     <>
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-5">
       <fieldset>
         <legend className="text-xs font-medium uppercase tracking-wider text-[#46597A]">Jenis transaksi</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {(
-            [
-              ["MONEY_OUT", "Uang keluar (-)"],
-              ["MONEY_IN", "Uang masuk (+)"],
-              ["TRANSFER", "Transfer"],
-            ] as const
+            initialRow
+              ? ([["MONEY_OUT", "Uang keluar (-)"], ["MONEY_IN", "Uang masuk (+)"]] as const)
+              : ([
+                  ["MONEY_OUT", "Uang keluar (-)"],
+                  ["MONEY_IN", "Uang masuk (+)"],
+                  ["TRANSFER", "Transfer"],
+                ] as const)
           ).map(([value, label]) => (
             <button
               key={value}
@@ -339,21 +367,23 @@ export function ManualEntryForm({ onCreated, onCancel, onSwitchToScan }: ManualE
       ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row-reverse">
-        <Button type="submit" size="lg" isLoading={submitting} loadingLabel="Menyimpan" className="sm:flex-1">
-          Simpan transaksi
+        <Button type="submit" size="lg" isLoading={submitting} loadingLabel={initialRow ? "Menyimpan perubahan" : "Menyimpan"} className="sm:flex-1">
+          {initialRow ? "Simpan perubahan" : "Simpan transaksi"}
         </Button>
         <Button type="button" variant="secondary" size="lg" onClick={onCancel} disabled={submitting}>
           Batal
         </Button>
       </div>
 
-      <p className="flex items-center justify-center gap-1.5 text-xs text-[#5C7191]">
-        <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" />
-        Ada struk?{" "}
-        <button type="button" onClick={onSwitchToScan} className="font-semibold text-[#1D4F87] underline">
-          Scan struk
-        </button>
-      </p>
+      {!initialRow ? (
+        <p className="flex items-center justify-center gap-1.5 text-xs text-[#5C7191]">
+          <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" />
+          Ada struk?{" "}
+          <button type="button" onClick={() => onSwitchToScan?.()} className="font-semibold text-[#1D4F87] underline">
+            Scan struk
+          </button>
+        </p>
+      ) : null}
       </form>
 
       <WalletPickerSheet
@@ -412,7 +442,7 @@ function WalletField({
   onPick,
 }: {
   label: string;
-  wallet: WalletDTO | null;
+  wallet: Pick<WalletDTO, "id" | "name" | "scope"> | null;
   error?: string;
   onPick: () => void;
 }) {

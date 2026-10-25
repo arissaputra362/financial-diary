@@ -158,6 +158,20 @@ export interface TransactionRepository {
     transferGroupId?: string | null;
     walletId: string;
   }): Promise<TransactionRecord>;
+  /** Updates one active, wallet-visible row without changing its identity/source. */
+  updateActive(
+    actor: WalletActor,
+    id: string,
+    data: {
+      type: StoredTransactionType;
+      amountMinor: number;
+      category: string;
+      merchant: string | null;
+      note: string | null;
+      occurredAt: Date;
+      walletId: string;
+    },
+  ): Promise<TransactionRecord | null>;
   /** Both legs in ONE interactive transaction (ERD §3.7 invariant). */
   createTransferPair(
     householdId: string,
@@ -404,6 +418,17 @@ export function createTransactionRepository(db: Db): TransactionRepository {
   return {
     async create(data) {
       return db.transaction.create({ data }).then(numberizeAmount);
+    },
+    async updateActive(actor, id, data) {
+      const result = await db.transaction.updateMany({
+        where: { id, householdId: actor.householdId, deletedAt: null, ...visibility(actor) },
+        data,
+      });
+      if (result.count === 0) return null;
+      const row = await db.transaction.findFirst({
+        where: { id, householdId: actor.householdId, deletedAt: null, ...visibility(actor) },
+      });
+      return row ? numberizeAmount(row) : null;
     },
     async createTransferPair(householdId, createdByUserId, outLeg, inLeg) {
       const transferGroupId = crypto.randomUUID();

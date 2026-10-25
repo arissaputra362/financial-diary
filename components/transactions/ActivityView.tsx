@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { MonthlyReport, type ReportScope } from "@/components/reports/MonthlyReport";
@@ -569,6 +568,13 @@ export function ActivityView({
     writeUrl({ view: "active", month: activeMonth });
   };
 
+  const handleUpdated = (row: TransactionDTO) => {
+    setRows((current) => current.map((item) => (item.id === row.id ? row : item)));
+    setDetail(null);
+    reload();
+    showNotice("Perubahan transaksi disimpan.");
+  };
+
   /*
     One close path for X, Batal, Escape, and backdrop. It only removes the Add
     intent and keeps the current month or Trash view; a save already wrote the
@@ -1047,6 +1053,7 @@ export function ActivityView({
           (detail !== null && (deletingId === detail.id || restoringId === detail.id)) || false
         }
         onClose={() => setDetail(null)}
+        onUpdate={handleUpdated}
         onDelete={(row) => void handleDelete(row)}
         onRestore={(row) => void handleRestore(row)}
       />

@@ -12,7 +12,6 @@ import { WalletFormSheet } from "@/components/wallets/WalletFormSheet";
 import { WalletManageSheet } from "@/components/wallets/WalletManageSheet";
 import { WalletSummaryPair } from "@/components/wallets/WalletSummaryPair";
 import { BudgetCard } from "./BudgetCard";
-import { ExpenseHeroCard } from "./ExpenseHeroCard";
 import { GoalsSummaryCard } from "./GoalsSummaryCard";
 import { RecentActivityCard } from "./RecentActivityCard";
 import { SpendingChart } from "./SpendingChart";
@@ -177,21 +176,15 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
             <TotalWealthCard
               sharedBalanceMinor={data.sharedBalanceMinor}
               personalBalanceMinor={data.personalBalanceMinor}
-            />
-          </div>
-
-          <div className="lg:col-span-12">
-            <ExpenseHeroCard
-              spentMinor={data.monthlyBudget.spentMinor}
-              todayMinor={todayMinor}
-              remainingMinor={data.monthlyBudget.isSet ? data.monthlyBudget.remainingMinor : null}
+              sharedBudget={data.monthlyBudget}
+              personalBudget={data.personalMonthlyBudget}
+              sharedTodayMinor={todayMinor}
+              personalTodayMinor={data.personalSpending.byDay.find((day) => day.date === todayJakarta())?.amountMinor ?? 0}
             />
           </div>
 
           <div className="lg:col-span-12">
             <WalletSummaryPair
-              sharedBalanceMinor={data.sharedBalanceMinor}
-              personalBalanceMinor={data.personalBalanceMinor}
               wallets={data.wallets}
               loading={false}
               error={null}

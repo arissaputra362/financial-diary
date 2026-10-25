@@ -3,7 +3,7 @@
 **Penulis:** PM / System Analyst · **Tanggal:** 2026-09-30 · **Status:** Baseline Draft; T-012 amendment PM-approved 2026-10-22
 **PRD:** `docs/PRD.md#fitur-3-transaksi-manual-ocr-review`
 **AC yang di-cover:** AC-1 s.d. AC-8 (Fitur 3) = AC-F3-1..AC-F3-9;
-amandemen T-012 = AC-F3-10..AC-F3-14
+amandemen T-012 = AC-F3-10..AC-F3-14; edit transaksi = AC-F3-15
 **Flow referensi:** `docs/erd/flowcharts.md` §4, §5
 
 > **Amandemen T-012 (PM-approved 2026-10-22): Retry OCR dan Add intent.**
@@ -307,8 +307,32 @@ Semua POST mutation mendukung Idempotency-Key. Tidak ada penyimpanan otomatis da
   view mengikuti perilaku simpan yang ada (active) dan hanya satu penulis URL yang
   berlaku.
 - Transfer via OCR → tidak didukung di MVP (OCR hanya money in/out); UI menyembunyikan opsi.
-- PATCH /api/transactions/{id} → DITUNDA pasca-MVP (D-15): salah input diperbaiki lewat
-  trash + entry ulang; route tidak ada di MVP.
+- PATCH /api/transactions/{id} memperbarui baris transaksi aktif non-transfer
+  mengikuti AC-F3-15.
+
+### AC-F3-15 (amendemen PM-approved 2026-10-25): Edit transaksi tercatat
+
+- Pengguna dapat mengedit transaksi aktif non-transfer dari detail transaksi. Form
+  dibuka dengan nilai tersimpan dan dapat mengubah jenis (uang masuk/keluar), nominal,
+  tanggal, kategori, merchant, catatan, dan dompet yang sesuai jenisnya.
+- Sumber MANUAL maupun OCR dapat diedit. Receipt yang terhubung tetap terhubung;
+  edit tidak mengganti gambar, membuat transaksi baru, atau mengubah identitas baris,
+  `created_by_user_id`, maupun `created_at`. `updated_at` diperbarui.
+- Validasi mengikuti AC-F3-1 dan aturan wallet AC-F6-4. Simpan memperbarui saldo,
+  anggaran, grafik, dan laporan melalui data transaksi terbaru. Error validasi
+  mengembalikan 422 field errors dan tidak mengubah data.
+- Hanya transaksi aktif yang dapat diedit. Transfer berpasangan dan transaksi di trash
+  tidak dapat diedit pada MVP ini. Transfer memerlukan alur edit kedua kaki secara
+  atomik di masa mendatang.
+- Akses mengikuti scope wallet yang berlaku: wallet Pribadi hanya dapat diubah
+  pemiliknya dan wallet Sharing mengikuti aturan otorisasi transaksi. Akses di luar
+  household atau wallet privat yang tidak terlihat menghasilkan 404 generik.
+- Yang tidak boleh terjadi: membuat row duplikat, mengubah receipt, mengedit transfer
+  satu sisi, atau menyimpan input yang tidak valid.
+
+Keputusan lama D-15 yang menunda `PATCH /api/transactions/{id}` diganti oleh
+amendemen ini. Aksi edit memakai dialog detail yang sudah ada; form edit memakai
+komponen dan pola validasi form transaksi manual.
 
 ## Constraint Bisnis
 

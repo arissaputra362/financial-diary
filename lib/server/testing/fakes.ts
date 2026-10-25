@@ -117,6 +117,18 @@ function transactionApis(store: FakeStore): TransactionRepository {
 
   return {
     create,
+    async updateActive(actor, id, data) {
+      const row = store.transactions.find(
+        (item) =>
+          item.id === id &&
+          item.householdId === actor.householdId &&
+          item.deletedAt === null &&
+          walletVisible(store, actor, item.walletId),
+      );
+      if (!row) return null;
+      Object.assign(row, data, { updatedAt: new Date() });
+      return row;
+    },
     async createTransferPair(householdId, createdByUserId, outLeg, inLeg) {
       const transferGroupId = randomUUID();
       const out = await create({ ...outLeg, householdId, createdByUserId, type: "MONEY_OUT", source: "MANUAL", transferGroupId });

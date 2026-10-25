@@ -5,8 +5,8 @@
   validation, wallet binding (MONEY_IN/OUT walletId, TRANSFER from/to wallets),
   the future-WIB check, transfer pairing (two legs, one shared
   transfer_group_id, one transaction), atomic pair trash/restore (A-40/A-41),
-  and cross-scope generic redaction (A-39). Every POST mutation supports the
-  Idempotency-Key precedence via IdempotencyService.
+  and cross-scope generic redaction (A-39). POST mutations support the
+  Idempotency-Key precedence via IdempotencyService; PATCH edits one active row.
 */
 
 import { randomUUID } from "node:crypto";
@@ -16,6 +16,7 @@ import {
   MONEY_IN_CATEGORIES,
   type CreateTransactionRequest,
   type ListTransactionsQuery,
+  type UpdateTransactionInput,
 } from "../contracts/transactions";
 import { forbidden, notFound, unprocessable, unprocessableCode, walletUnavailable } from "../errors";
 import { dateOnlyToNoonJakarta, endOfJakartaDay, isFutureDateOnly, startOfJakartaDay } from "../jakarta";
@@ -228,6 +229,59 @@ export class TransactionService {
         nextCursor: page.nextCursor,
       },
     };
+  }
+
+  async update(actor: TransactionActor, id: string, input: UpdateTransactionInput): Promise<ServiceResult> {
+    if (!hasAtMostTwoDecimals(input.amountMinor) || input.amountMinor <= 0) {
+      throw unprocessable({ amountMinor: ["Jumlah harus lebih dari 0."] });
+    }
+    if (input.amountMinor > INT32_MAX) {
+      throw unprocessableCode("AMOUNT_OUT_OF_RANGE", { amountMinor: ["Jumlah terlalu besar."] });
+    }
+    if (isFutureDateOnly(input.occurredAt)) {
+      throw unprocessable({ occurredAt: ["Tanggal tidak boleh di masa depan."] });
+    }
+    const allowed = input.type === "MONEY_IN" ? MONEY_IN_CATEGORIES : CATEGORIES.filter((c) => c !== "income");
+    if (!(allowed as readonly string[]).includes(input.category)) {
+      throw unprocessable({ category: ["Pilih kategori yang sesuai."] });
+    }
+
+    return this.transaction(async (repos) => {
+      const current = await repos.transaction.findById(actor, id);
+      if (!current || current.deletedAt) throw notFound("Transaksi tidak ditemukan.");
+      if (current.transferGroupId) {
+        throw unprocessable({ type: ["Transfer belum bisa diedit."] });
+      }
+
+      const nextWallet =
+        input.walletId === current.walletId
+          ? await repos.wallet.findByIdAnyWallet(actor.householdId, current.walletId)
+          : await this.resolveActiveWallet(repos, actor, input.walletId);
+      if (!nextWallet) throw notFound("Dompet tidak ditemukan.");
+
+      const walletIds = [...new Set([current.walletId, nextWallet.id])].sort();
+      for (const walletId of walletIds) {
+        const locked = await repos.wallet.lockWallet(walletId);
+        if (!locked) throw notFound("Dompet tidak ditemukan.");
+        if (walletId === nextWallet.id && walletId !== current.walletId && locked.archivedAt) {
+          throw walletUnavailable();
+        }
+      }
+
+      const updated = await repos.transaction.updateActive(actor, id, {
+        type: input.type,
+        amountMinor: input.amountMinor,
+        category: input.category,
+        merchant: input.merchant || null,
+        note: input.note || null,
+        occurredAt: dateOnlyToNoonJakarta(input.occurredAt),
+        walletId: nextWallet.id,
+      });
+      if (!updated) throw notFound("Transaksi tidak ditemukan.");
+
+      const [transaction] = await decorateTransactionRows(repos, actor, [updated]);
+      return { status: 200, body: { transactions: transaction ? [transaction] : [] } };
+    });
   }
 
   async listTrash(actor: TransactionActor, cursor?: string | null, limit?: number): Promise<ServiceResult> {

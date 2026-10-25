@@ -113,6 +113,7 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
 
   const transaction: TransactionRepository = {
     create: notUsed,
+    updateActive: notUsed,
     createTransferPair: notUsed,
     async findById(actor, id) {
       const row = store.transactions.find((item) => item.id === id && item.householdId === actor.householdId);
