@@ -293,7 +293,7 @@ export function AdvisorPanel() {
                           data-testid="advisor-cache-label"
                           className="rounded-full bg-[#E6ECF4] px-3 py-1 text-[11px] font-semibold text-[#46597A]"
                         >
-                          Menampilkan insight tersimpan
+                          Menggunakan analisis sebelumnya
                         </span>
                       ) : (
                         <span

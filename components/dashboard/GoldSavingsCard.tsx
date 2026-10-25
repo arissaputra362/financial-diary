@@ -134,7 +134,9 @@ export function GoldSavingsCard() {
               ) : null}
               {data?.priceInfo?.isStale ? (
                 <span className="text-amber-700">
-                  Cache {data.priceInfo.prices[0]?.sourceDate ?? "kosong"}
+                  {data.priceInfo.prices[0]
+                    ? `Harga terakhir ${data.priceInfo.prices[0].sourceDate}`
+                    : "Harga emas belum tersedia"}
                 </span>
               ) : null}
             </div>

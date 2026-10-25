@@ -161,8 +161,8 @@ export function GoldPageView() {
             <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700">
               <span>⚠</span>{" "}
               {data.priceInfo.prices.length > 0
-                ? `Harga terakhir ${data.priceInfo.prices[0].sourceDate} (cache)`
-                : "Harga belum tersedia; belum ada cache"}
+                ? `Harga terakhir ${data.priceInfo.prices[0].sourceDate}`
+                : "Harga emas belum tersedia"}
             </span>
           ) : null}
         </div>
