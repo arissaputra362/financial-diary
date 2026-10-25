@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
-import { Trash2, X } from "lucide-react";
+import { ImageIcon, Pencil, Trash2, X } from "lucide-react";
+import { useState } from "react";
 import { formatGrams } from "@/lib/gold";
 import { formatIDR } from "@/lib/format";
 import { getGoldBrandLabel, GoldAssetArtwork } from "@/components/gold/GoldAssetArtwork";
@@ -11,18 +12,24 @@ interface GoldAssetDetailModalProps {
   asset: GoldAssetDTO | null;
   deleting: boolean;
   onClose: () => void;
+  onEdit: (asset: GoldAssetDTO) => void;
   onDelete: (asset: GoldAssetDTO) => void;
 }
 
-export function GoldAssetDetailModal({ asset, deleting, onClose, onDelete }: GoldAssetDetailModalProps) {
+export function GoldAssetDetailModal({ asset, deleting, onClose, onEdit, onDelete }: GoldAssetDetailModalProps) {
+  const [scanOpen, setScanOpen] = useState(false);
+
   useEffect(() => {
     if (!asset) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        if (scanOpen) setScanOpen(false);
+        else onClose();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [asset, onClose]);
+  }, [asset, onClose, scanOpen]);
 
   if (!asset) return null;
 
@@ -87,17 +94,51 @@ export function GoldAssetDetailModal({ asset, deleting, onClose, onDelete }: Gol
             </div>
           </dl>
 
+          {asset.receiptId ? (
+            <div className="mt-4">
+              <button
+                type="button"
+                aria-expanded={scanOpen}
+                onClick={() => setScanOpen((open) => !open)}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#BFD3E8] text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+              >
+                <ImageIcon className="h-4 w-4" aria-hidden="true" />
+                {scanOpen ? "Tutup hasil scan" : "Lihat hasil scan"}
+              </button>
+              {scanOpen ? (
+                <div className="mt-3 overflow-hidden rounded-2xl border border-[#D8E2EE] bg-[#F4F7FB] p-2">
+                  <img
+                    src={`/api/gold/assets/${asset.id}/image`}
+                    alt={`Foto hasil pindai untuk ${asset.name}`}
+                    className="mx-auto max-h-[55dvh] w-full rounded-xl object-contain"
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {asset.notes ? <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-[#5C7191]">{asset.notes}</p> : null}
 
-          <button
-            type="button"
-            disabled={deleting}
-            onClick={() => onDelete(asset)}
-            className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-red-200 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-          >
-            <Trash2 className="h-4 w-4" />
-            {deleting ? "Menghapus…" : "Hapus catatan emas"}
-          </button>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => onEdit(asset)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#BFD3E8] text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] disabled:opacity-50"
+            >
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              Edit
+            </button>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => onDelete(asset)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-red-200 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              {deleting ? "Menghapus..." : "Hapus"}
+            </button>
+          </div>
         </div>
       </section>
     </div>

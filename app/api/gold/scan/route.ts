@@ -5,10 +5,13 @@ import { respondError } from "@/lib/server/http";
 import { setSessionCookie } from "@/lib/server/session";
 import { GoldVisionProvider } from "@/lib/server/providers/gold-vision";
 import { GoldBrand } from "@/lib/generated/prisma/enums";
+import { GoldService } from "@/lib/server/services/gold";
 import type { GoldScanResultDTO } from "@/types/gold";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
+const MAX_SCAN_FILE_BYTES = 4_194_304;
+const ALLOWED_SCAN_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -19,9 +22,21 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!isFile(file)) {
       throw fileInvalid("Pilih foto certicard atau nota emas terlebih dahulu.");
     }
+    if (!ALLOWED_SCAN_MIME.has(file.type)) {
+      throw fileInvalid("Format foto harus JPG, PNG, atau WebP.");
+    }
+    if (file.size > MAX_SCAN_FILE_BYTES) {
+      throw fileInvalid("Ukuran foto maksimal 4 MB.");
+    }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
     const mimeType = file.type || "image/jpeg";
+    const receiptId = await GoldService.saveScannedImage(
+      session.householdId,
+      session.userId,
+      bytes,
+      mimeType,
+    );
 
     let scanResult: GoldScanResultDTO;
     try {
@@ -38,6 +53,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         confidence: 0.2,
       };
     }
+    scanResult.receiptId = receiptId;
 
     const response = NextResponse.json(scanResult, { status: 200 });
     await setSessionCookie(response, session.sessionId, session.userId);

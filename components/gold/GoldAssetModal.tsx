@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, Coins, Gem, ImageIcon, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { GoldAssetType, GoldBrand, WalletScope } from "@/lib/generated/prisma/enums";
@@ -10,39 +10,78 @@ import { compressCameraImage } from "@/lib/compress-image";
 import { normalizeMoneyValue, parseMoneyInputValue } from "@/lib/money-input";
 import { formatGrams, parsePurityPermille } from "@/lib/gold";
 import { MoneyInput } from "@/components/ui/MoneyInput";
-import type { CreateGoldAssetInput, GoldScanResultDTO } from "@/types/gold";
+import type { CreateGoldAssetInput, GoldAssetDTO, GoldScanResultDTO } from "@/types/gold";
 
 const MAX_SCAN_FILE_BYTES = 4_194_304;
 const ALLOWED_SCAN_MIME = ["image/jpeg", "image/png", "image/webp"];
+const PURITY_OPTIONS = ["24K", "22K", "18K", "17K", "16K", "10K", "9K"] as const;
+
+function purityInputFromPermille(value: number): string {
+  return [...PURITY_OPTIONS].sort(
+    (left, right) => Math.abs(parsePurityPermille(left) - value) - Math.abs(parsePurityPermille(right) - value),
+  )[0] ?? "24K";
+}
+
+function todayDate(): string {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 
 interface GoldAssetModalProps {
   open: boolean;
+  initialAsset?: GoldAssetDTO | null;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps) {
+export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }: GoldAssetModalProps) {
   const [activeTab, setActiveTab] = useState<"manual" | "scan">("manual");
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewingScan, setReviewingScan] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [type, setType] = useState<GoldAssetType>(GoldAssetType.BULLION);
   const [brand, setBrand] = useState<GoldBrand>(GoldBrand.ANTAM);
+  const [brandCustomName, setBrandCustomName] = useState("");
   const [name, setName] = useState("");
   const [weightGrams, setWeightGrams] = useState<string>("");
   const [purityInput, setPurityInput] = useState<string>("24K");
   const [buyPriceMinor, setBuyPriceMinor] = useState<string>("");
-  const [purchaseDate, setPurchaseDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const [purchaseDate, setPurchaseDate] = useState<string>(todayDate());
   const [scope, setScope] = useState<WalletScope>(WalletScope.PERSONAL);
   const [serialNumber, setSerialNumber] = useState("");
   const [notes, setNotes] = useState("");
+  const [receiptId, setReceiptId] = useState<string | undefined>(undefined);
+
+  const resetForm = useCallback((asset: GoldAssetDTO | null) => {
+    setActiveTab("manual");
+    setLoading(false);
+    setScanning(false);
+    setDragActive(false);
+    setError(null);
+    setReviewingScan(false);
+    setType(asset?.type ?? GoldAssetType.BULLION);
+    setBrand(asset?.brand ?? GoldBrand.ANTAM);
+    setBrandCustomName(asset?.brandCustomName ?? "");
+    setName(asset?.name ?? "");
+    setWeightGrams(asset ? String(asset.weightGrams) : "");
+    setPurityInput(asset ? purityInputFromPermille(asset.purityPermille) : "24K");
+    setBuyPriceMinor(asset ? normalizeMoneyValue(String(asset.buyPriceMinor)) : "");
+    setPurchaseDate(asset?.purchaseDate ?? todayDate());
+    setScope(asset?.scope ?? WalletScope.PERSONAL);
+    setSerialNumber(asset?.serialNumber ?? "");
+    setNotes(asset?.notes ?? "");
+    setReceiptId(asset?.receiptId ?? undefined);
+  }, []);
+
+  useEffect(() => {
+    if (open) resetForm(initialAsset);
+  }, [open, initialAsset?.id, resetForm]);
 
   if (!open) return null;
 
@@ -92,12 +131,16 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
       }
 
       setBrand(data.brand || GoldBrand.ANTAM);
+      setBrandCustomName(data.brandCustomName || "");
       setName(data.name || "");
       setWeightGrams(data.weightGrams ? String(data.weightGrams) : "");
-      setPurityInput(data.purityPermille >= 990 ? "24K" : data.purityPermille >= 750 ? "18K" : "17K");
-      if (data.buyPriceMinor) setBuyPriceMinor(normalizeMoneyValue(String(data.buyPriceMinor)));
-      if (data.purchaseDate) setPurchaseDate(data.purchaseDate);
-      if (data.serialNumber) setSerialNumber(data.serialNumber);
+      setPurityInput(purityInputFromPermille(data.purityPermille));
+      setBuyPriceMinor(data.buyPriceMinor != null ? normalizeMoneyValue(String(data.buyPriceMinor)) : "");
+      setPurchaseDate(data.purchaseDate || todayDate());
+      setSerialNumber(data.serialNumber || "");
+      setNotes("");
+      setReceiptId(data.receiptId);
+      setReviewingScan(true);
 
       // Switch to manual tab for review
       setActiveTab("manual");
@@ -168,6 +211,7 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
         name: name.trim(),
         type,
         brand,
+        brandCustomName: brandCustomName.trim() || undefined,
         scope,
         weightGrams: grams,
         purityPermille: parsePurityPermille(purityInput),
@@ -175,10 +219,11 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
         purchaseDate,
         serialNumber: serialNumber.trim() || undefined,
         notes: notes.trim() || undefined,
+        receiptId,
       };
 
-      const res = await apiRequest("/api/gold/assets", {
-        method: "POST",
+      const res = await apiRequest(initialAsset ? `/api/gold/assets/${initialAsset.id}` : "/api/gold/assets", {
+        method: initialAsset ? "PATCH" : "POST",
         body: JSON.stringify(payload),
       });
 
@@ -213,14 +258,14 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
         </button>
 
         <h2 id="gold-modal-title" className="text-xl font-bold text-[#17304F]">
-          Catat Tabungan Emas
+          {initialAsset ? "Edit Tabungan Emas" : "Catat Tabungan Emas"}
         </h2>
         <p className="mt-1 text-sm text-[#46597A]">
           Simpan catatan logam mulia batangan atau emas perhiasan keluargamu.
         </p>
 
         {/* Tab switch */}
-        <div className="mt-5 grid grid-cols-2 rounded-2xl bg-[#F1F5FA] p-1">
+        {!initialAsset ? <div className="mt-5 grid grid-cols-2 rounded-2xl bg-[#F1F5FA] p-1">
           <button
             type="button"
             onClick={() => setActiveTab("manual")}
@@ -245,7 +290,7 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
             <Sparkles className="h-4 w-4 text-amber-500" />
             Pindai AI
           </button>
-        </div>
+        </div> : null}
 
         {error ? (
           <div className="mt-4 rounded-2xl bg-[#FDECEC] p-3 text-sm font-medium text-[#B91C1C]">
@@ -328,6 +373,11 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+            {reviewingScan ? (
+              <p role="status" className="rounded-2xl bg-[#EFF4FA] px-4 py-3 text-sm font-medium text-[#1D4F87]">
+                Periksa kembali data hasil pindai sebelum disimpan.
+              </p>
+            ) : null}
             {/* Tipe Emas */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
@@ -378,6 +428,22 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
                   <option value={GoldBrand.LOTUS_ARCHI}>Lotus Archi</option>
                   <option value={GoldBrand.OTHER}>Brand Lainnya</option>
                 </select>
+              </div>
+            ) : null}
+
+            {type === GoldAssetType.BULLION && brand === GoldBrand.OTHER ? (
+              <div>
+                <label htmlFor="gold-custom-brand" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                  Nama merek
+                </label>
+                <input
+                  id="gold-custom-brand"
+                  type="text"
+                  maxLength={100}
+                  value={brandCustomName}
+                  onChange={(event) => setBrandCustomName(event.target.value)}
+                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                />
               </div>
             ) : null}
 
@@ -501,17 +567,32 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
               </div>
             </div>
 
-            {/* Nomor Seri / Catatan */}
+            {/* Nomor Seri & Catatan */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
-                Nomor Seri / Catatan Tempat Simpan (Opsional)
+              <label htmlFor="gold-serial-number" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                Nomor Seri (Opsional)
               </label>
               <input
+                id="gold-serial-number"
                 type="text"
+                maxLength={100}
+                value={serialNumber}
+                onChange={(e) => setSerialNumber(e.target.value)}
+                placeholder="Nomor pada certicard atau nota"
+                className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+              />
+            </div>
+            <div>
+              <label htmlFor="gold-notes" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                Catatan (Opsional)
+              </label>
+              <textarea
+                id="gold-notes"
+                rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Misal: Disimpan di brankas kamar, nomor seri A12893"
-                className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                placeholder="Contoh: disimpan di brankas"
+                className="mt-1.5 w-full resize-y rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
               />
             </div>
 
@@ -528,7 +609,7 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
                 disabled={loading}
                 className="rounded-full bg-[#166534] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#155C30] disabled:opacity-50"
               >
-                {loading ? "Menyimpan..." : "Simpan Aset Emas"}
+                {loading ? "Menyimpan..." : initialAsset ? "Simpan Perubahan" : "Simpan Aset Emas"}
               </button>
             </div>
           </form>

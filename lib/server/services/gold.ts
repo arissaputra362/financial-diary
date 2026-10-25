@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { GoldAssetType, WalletScope } from "@/lib/generated/prisma/enums";
 import { roundMoneyValue } from "@/lib/money-input";
 import {
@@ -8,6 +9,8 @@ import {
 } from "@/lib/gold";
 import { GoldRepository } from "@/lib/server/repositories/gold";
 import { GoldPriceService } from "@/lib/server/services/gold-price";
+import { conflict, forbidden, notFound } from "@/lib/server/errors";
+import { createVercelBlobStore } from "@/lib/server/providers/blob";
 import type {
   CreateGoldAssetInput,
   GoldAssetDTO,
@@ -15,6 +18,49 @@ import type {
 } from "@/types/gold";
 
 export class GoldService {
+  static async saveScannedImage(
+    householdId: string,
+    userId: string,
+    bytes: Uint8Array,
+    mimeType: string,
+  ): Promise<string> {
+    const contentSha256 = createHash("sha256").update(bytes).digest("hex");
+    const existing = await GoldRepository.findReceiptByHash(householdId, contentSha256);
+    if (existing) {
+      if (existing.uploadedByUserId !== userId) {
+        throw conflict("GOLD_SCAN_ALREADY_EXISTS", "Foto ini sudah tersimpan pada akun keluarga lain.");
+      }
+      return existing.id;
+    }
+
+    const storageKey = `receipts/${householdId}/${contentSha256}`;
+    await createVercelBlobStore().put(bytes, storageKey, mimeType);
+    try {
+      const created = await GoldRepository.createScanReceipt({
+        householdId,
+        uploadedByUserId: userId,
+        contentSha256,
+        mimeType,
+        sizeBytes: bytes.byteLength,
+        storageKey,
+      });
+      return created.id;
+    } catch (error) {
+      /* The household/hash unique key also serializes a concurrent duplicate. */
+      const winner = await GoldRepository.findReceiptByHash(householdId, contentSha256);
+      if (winner?.uploadedByUserId === userId) return winner.id;
+      if (winner) throw conflict("GOLD_SCAN_ALREADY_EXISTS", "Foto ini sudah tersimpan pada akun keluarga lain.");
+      throw error;
+    }
+  }
+
+  static async getAssetImage(householdId: string, userId: string, assetId: string) {
+    const receipt = await GoldRepository.findImageForAsset(householdId, assetId, userId);
+    if (!receipt) return null;
+    const image = await createVercelBlobStore().get(receipt.storageKey);
+    return image ? { mimeType: receipt.mimeType, stream: image.stream } : null;
+  }
+
   /**
    * Mengambil ringkasan tabungan emas dan rincian portofolio
    */
@@ -106,7 +152,39 @@ export class GoldService {
     userId: string,
     input: CreateGoldAssetInput
   ) {
+    await this.assertReceiptOwner(householdId, userId, input.receiptId);
     return GoldRepository.create(householdId, userId, input);
+  }
+
+  static async updateAsset(
+    householdId: string,
+    assetId: string,
+    userId: string,
+    input: CreateGoldAssetInput,
+  ) {
+    const existing = await GoldRepository.findById(householdId, assetId);
+    if (!existing || existing.deletedAt) throw notFound("Catatan emas tidak ditemukan.");
+    if (existing.scope === WalletScope.PERSONAL && existing.createdByUserId !== userId) {
+      throw forbidden("GOLD_ASSET_ACCESS_DENIED", "Kamu tidak dapat mengubah catatan emas pribadi ini.");
+    }
+    if (input.receiptId !== existing.receiptId) {
+      await this.assertReceiptOwner(householdId, userId, input.receiptId);
+    }
+    const updated = await GoldRepository.update(householdId, assetId, input);
+    if (!updated) throw notFound("Catatan emas tidak ditemukan.");
+    return updated;
+  }
+
+  private static async assertReceiptOwner(
+    householdId: string,
+    userId: string,
+    receiptId?: string,
+  ): Promise<void> {
+    if (!receiptId) return;
+    const receipt = await GoldRepository.findReceiptById(householdId, receiptId);
+    if (!receipt || receipt.uploadedByUserId !== userId) {
+      throw notFound("Foto hasil pindai tidak tersedia.");
+    }
   }
 
   static async deleteAsset(

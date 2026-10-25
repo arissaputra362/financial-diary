@@ -28,6 +28,7 @@ export function GoldPageView() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<GoldPortfolioSummaryDTO["assets"][number] | null>(null);
+  const [editingAsset, setEditingAsset] = useState<GoldPortfolioSummaryDTO["assets"][number] | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [undoItem, setUndoItem] = useState<{ id: string; name: string } | null>(null);
 
@@ -331,14 +332,25 @@ export function GoldPageView() {
       ) : null}
 
       <GoldAssetModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSuccess={() => loadData()}
+        open={modalOpen || editingAsset !== null}
+        initialAsset={editingAsset}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingAsset(null);
+        }}
+        onSuccess={() => {
+          setEditingAsset(null);
+          void loadData();
+        }}
       />
       <GoldAssetDetailModal
         asset={selectedAsset}
         deleting={selectedAsset ? deletingId === selectedAsset.id : false}
         onClose={() => setSelectedAsset(null)}
+        onEdit={(asset) => {
+          setSelectedAsset(null);
+          setEditingAsset(asset);
+        }}
         onDelete={(asset) => handleDelete(asset.id, asset.name)}
       />
     </div>

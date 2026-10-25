@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 import { updateHouseholdSchema, type UpdateHouseholdInput } from "./contracts/family";
+import { goldAssetInputSchema, type GoldAssetInput } from "./contracts/gold-assets";
 import { changePasswordSchema, decisionSchema, loginSchema, signupSchema, updateProfileSchema, type ChangePasswordInput, type DecisionInput, type LoginInput, type SignupInput, type UpdateProfileInput } from "./contracts/auth";
 import { formatFieldErrors } from "./contracts/common";
 import { idempotencyKeyHeaderSchema } from "./contracts/common";
@@ -124,6 +125,12 @@ export function parseDecision(input: unknown): DecisionInput {
 
 export function parseUpdateHousehold(input: unknown): UpdateHouseholdInput {
   const result = updateHouseholdSchema.safeParse(input);
+  if (!result.success) throw validationError(result.error);
+  return result.data;
+}
+
+export function parseGoldAssetInput(input: unknown): GoldAssetInput {
+  const result = goldAssetInputSchema.safeParse(input);
   if (!result.success) throw validationError(result.error);
   return result.data;
 }

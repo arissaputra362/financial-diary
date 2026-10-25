@@ -50,6 +50,49 @@ export class GoldRepository {
     });
   }
 
+  static async findReceiptByHash(householdId: string, contentSha256: string) {
+    return prisma.receipt.findUnique({
+      where: { householdId_contentSha256: { householdId, contentSha256 } },
+      select: { id: true, uploadedByUserId: true },
+    });
+  }
+
+  static async findReceiptById(householdId: string, receiptId: string) {
+    return prisma.receipt.findFirst({
+      where: { id: receiptId, householdId },
+      select: { id: true, uploadedByUserId: true },
+    });
+  }
+
+  static async createScanReceipt(data: {
+    householdId: string;
+    uploadedByUserId: string;
+    contentSha256: string;
+    mimeType: string;
+    sizeBytes: number;
+    storageKey: string;
+  }) {
+    return prisma.receipt.create({ data, select: { id: true } });
+  }
+
+  static async findImageForAsset(householdId: string, assetId: string, userId: string) {
+    const asset = await prisma.goldAsset.findFirst({
+      where: {
+        id: assetId,
+        householdId,
+        deletedAt: null,
+        OR: [
+          { scope: WalletScope.SHARING },
+          { scope: WalletScope.PERSONAL, createdByUserId: userId },
+        ],
+      },
+      select: {
+        receipt: { select: { id: true, mimeType: true, storageKey: true } },
+      },
+    });
+    return asset?.receipt ?? null;
+  }
+
   static async create(
     householdId: string,
     userId: string,
@@ -59,20 +102,39 @@ export class GoldRepository {
       data: {
         householdId,
         createdByUserId: userId,
-        scope: input.scope,
-        type: input.type,
-        brand: input.brand ?? GoldBrand.OTHER,
-        brandCustomName: input.brandCustomName ?? null,
-        name: input.name,
-        weightMilligrams: gramsToMilligrams(input.weightGrams),
-        purityPermille: input.purityPermille ?? 999,
-        serialNumber: input.serialNumber ?? null,
-        buyPriceMinor: input.buyPriceMinor,
-        purchaseDate: new Date(input.purchaseDate),
-        notes: input.notes ?? null,
-        receiptId: input.receiptId ?? null,
+        ...this.toWriteData(input),
       },
     });
+  }
+
+  static async update(
+    householdId: string,
+    assetId: string,
+    input: CreateGoldAssetInput,
+  ) {
+    const result = await prisma.goldAsset.updateMany({
+      where: { id: assetId, householdId, deletedAt: null },
+      data: this.toWriteData(input),
+    });
+    if (result.count === 0) return null;
+    return prisma.goldAsset.findUnique({ where: { id: assetId } });
+  }
+
+  private static toWriteData(input: CreateGoldAssetInput) {
+    return {
+      scope: input.scope,
+      type: input.type,
+      brand: input.brand ?? GoldBrand.OTHER,
+      brandCustomName: input.brandCustomName ?? null,
+      name: input.name,
+      weightMilligrams: gramsToMilligrams(input.weightGrams),
+      purityPermille: input.purityPermille ?? 999,
+      serialNumber: input.serialNumber ?? null,
+      buyPriceMinor: input.buyPriceMinor,
+      purchaseDate: new Date(input.purchaseDate),
+      notes: input.notes ?? null,
+      receiptId: input.receiptId ?? null,
+    };
   }
 
   static async softDelete(

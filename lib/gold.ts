@@ -22,6 +22,7 @@ export function getPurityLabel(purityPermille: number): string {
   if (purityPermille >= 910) return "22K (91.6%)";
   if (purityPermille >= 750) return "18K (75%)";
   if (purityPermille >= 700) return "17K (70%)";
+  if (purityPermille >= 650) return "16K (65%)";
   if (purityPermille >= 420) return "10K (42%)";
   if (purityPermille >= 375) return "9K (37.5%)";
   return `${(purityPermille / 10).toFixed(1)}%`;
