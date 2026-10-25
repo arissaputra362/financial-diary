@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Catatan Keuangan Keluarga",
-    short_name: "Keuangan Keluarga",
+    name: "Financial Diary",
+    short_name: "Financial Diary",
     description: "Catat pemasukan, pengeluaran, dan tujuan menabung keluarga.",
     start_url: "/transactions",
     display: "standalone",

@@ -3,7 +3,7 @@
 > **Canonical status:** Business behavior remains PM-approved; visual refresh PM-approved for T-010 (2026-10-20). Business behavior (invite-only, waiting room, DECLINED/REVOKED, Owner management, read-only member view) is unchanged. Updated 2026-10-20 by the UI/UX Designer: backgrounds, status pill contrast, and CTA colors restyled to the blue-white-green tokens (doc 01); peach/lavender/purple references retired (amber kept as a status color only, in contrast-compliant pairs). Tickets: T-010 (visual refresh).
 
 ## 1. Invite-Only Architecture & Philosophy
-The Financial Planner operates on a **"One Big Ledger" (Invite-Only)** model. A family shares one unified record so everyone can contribute expenses and see savings goals. Random users who sign up cannot see or tamper with family data until explicitly vetted.
+The Financial Diary operates on a **"One Big Ledger" (Invite-Only)** model. A family shares one unified record so everyone can contribute expenses and see savings goals. Random users who sign up cannot see or tamper with family data until explicitly vetted.
 
 ### Roles & Access:
 1. **Pemilik keluarga (Owner):** The person who created the family. Can approve/decline pending members and manage access. Permanent deletion is deferred from the MVP.
@@ -18,7 +18,7 @@ The Financial Planner operates on a **"One Big Ledger" (Invite-Only)** model. A 
 
 ### 2.1. Login / Sign Up Card
 - **Layout:** Centered card (`max-w-md w-full rounded-3xl bg-white p-8 shadow-bento border border-slate-100`).
-- **Header:** product name as plain text (`Financial Planner`; no invented logo, icon, or mark, matching the actual auth screen and the auth mockup), with welcoming subtitle *"Keuangan keluarga jadi lebih mudah."*
+- **Header:** product name as plain text (`Financial Diary`; no invented logo, icon, or mark, matching the actual auth screen and the auth mockup), with welcoming subtitle *"Keuangan keluarga jadi lebih mudah."*
 - **Segmented Control:** `[ Masuk (pill) ]  [ Buat akun ]`.
 - **Inputs:**
   - Email (`rounded-2xl border-[#E2E8F0] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15`).
@@ -36,7 +36,7 @@ When a user signs up to join an existing family, they are placed in a friendly, 
 ### 3.1. Wireframe
 ```
 +--------------------------------------------------------+
-|                      Financial Planner                         |
+|                      Financial Diary                         |
 +--------------------------------------------------------+
 |                                                        |
 |   +------------------------------------------------+   |

@@ -1,12 +1,15 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <title>Catatan Keuangan Keluarga</title>
-  <rect width="512" height="512" rx="112" fill="#17304F"/>
-  <path d="M112 238C112 215.909 129.909 198 152 198H338C372.242 198 400 225.758 400 260V350C400 385.346 371.346 414 336 414H152C129.909 414 112 396.091 112 374V238Z" fill="#F6F9FC"/>
-  <path d="M112 252H352C378.51 252 400 273.49 400 300V351C400 385.794 371.794 414 337 414H152C129.909 414 112 396.091 112 374V252Z" fill="#E8F3EB"/>
-  <path d="M112 252V238C112 215.909 129.909 198 152 198H338C372.242 198 400 225.758 400 260V276H136C122.745 276 112 265.255 112 252Z" fill="#D3E7D8"/>
-  <path d="M178 198V178C178 155.909 195.909 138 218 138H294C316.091 138 334 155.909 334 178V198" stroke="#F6F9FC" stroke-width="24" stroke-linecap="round"/>
-  <path d="M304 276H400V360H316C293.909 360 276 342.091 276 320C276 297.909 293.909 280 316 280C329.255 280 340 290.745 340 304" stroke="#166534" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="316" cy="320" r="12" fill="#166534"/>
-  <path d="M160 326C182 337 204 337 226 326" stroke="#166534" stroke-width="16" stroke-linecap="round"/>
-  <path d="M160 358C182 369 204 369 226 358" stroke="#8BB996" stroke-width="16" stroke-linecap="round"/>
+  <title>Financial Diary</title>
+  <rect width="512" height="512" rx="112" fill="#14283F"/>
+  <rect x="30" y="30" width="452" height="452" rx="92" stroke="#C9A96E" stroke-opacity=".72" stroke-width="2"/>
+  <path d="M256 151C217 126 166 126 117 143V355C168 338 219 340 256 366V151Z" fill="#F6F3EA"/>
+  <path d="M256 151C295 126 346 126 395 143V355C344 338 293 340 256 366V151Z" fill="#E8E2D5"/>
+  <path d="M256 151V366" stroke="#C9A96E" stroke-width="8" stroke-linecap="round"/>
+  <path d="M147 190C177 183 205 185 228 195" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
+  <path d="M147 222C177 215 205 217 228 227" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
+  <path d="M365 190C335 183 307 185 284 195" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
+  <path d="M365 222C335 215 307 217 284 227" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
+  <path d="M285 303L315 276L339 286L371 249" stroke="#166534" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="371" cy="249" r="8" fill="#C9A96E"/>
+  <path d="M144 385H368" stroke="#C9A96E" stroke-opacity=".85" stroke-width="3" stroke-linecap="round"/>
 </svg>

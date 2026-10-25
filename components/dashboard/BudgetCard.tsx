@@ -56,7 +56,7 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
     >
       <div className="flex items-start justify-between gap-3">
         <h2 id="budget-title" className="text-lg font-semibold text-[#17304F]">
-          Budget bulan ini
+          Anggaran bulan ini
         </h2>
         {activeBudget.isSet ? (
           <span className="shrink-0 rounded-full bg-[#E6ECF4] px-3 py-1 text-xs font-semibold text-[#46597A]">
@@ -66,7 +66,7 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
       </div>
 
       <SegmentedControl
-        label="Mode budget"
+        label="Cakupan anggaran"
         value={scope}
         options={SCOPE_OPTIONS}
         onChange={setScope}
@@ -84,11 +84,11 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
           >
             {formatIDR(activeBudget.remainingMinor ?? 0)}
           </p>
-          <p className="mt-0.5 text-sm font-medium text-[#46597A]">masih bisa dipakai</p>
+          <p className="mt-0.5 text-sm font-medium text-[#46597A]">sisa anggaran</p>
           <div
             className="mt-4 h-3 overflow-hidden rounded-full bg-[#E5EDF5]"
             role="img"
-            aria-label={`${spentPercent} persen budget terpakai`}
+            aria-label={`${spentPercent} persen anggaran terpakai`}
           >
             <div
               className="h-full rounded-full bg-[#1D4F87]"
@@ -96,9 +96,9 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
             />
           </div>
           <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs font-semibold text-[#46597A]">
-            <span className="tabular-nums">{formatIDR(activeBudget.spentMinor)} terpakai</span>
+            <span className="tabular-nums">{formatIDR(activeBudget.spentMinor)} sudah dipakai</span>
             <span className="tabular-nums">
-              dari {formatIDR(activeBudget.budgetMinor ?? 0)} ({spentPercent}%)
+              dari {formatIDR(activeBudget.budgetMinor ?? 0)} anggaran ({spentPercent}%)
             </span>
           </div>
           <p className="mt-3 text-xs text-[#5C7191]">
@@ -110,18 +110,18 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
       ) : (
         <>
           <p className="mt-4 text-lg font-bold text-[#17304F]">
-            {isPersonal ? "Belum ada budget pribadi bulan ini" : "Belum ada budget bulan ini"}
+            {isPersonal ? "Belum ada anggaran pribadi bulan ini" : "Belum ada anggaran bulan ini"}
           </p>
           <p className="mt-1 text-sm text-[#46597A]">
             {isPersonal
-              ? "Atur budget supaya pengeluaran pribadimu lebih terkendali."
-              : "Atur budget supaya pengeluaran keluarga lebih terkendali."}
+              ? "Atur anggaran supaya pengeluaran pribadimu lebih terkendali."
+              : "Atur anggaran supaya pengeluaran keluarga lebih terkendali."}
           </p>
           <Link
             href={isPersonal ? "/budget?scope=personal" : "/budget"}
             className="mt-4 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#155C30]"
           >
-            Atur budget
+            Atur anggaran
           </Link>
           <p className="mt-3 text-xs text-[#5C7191]">
             {isPersonal

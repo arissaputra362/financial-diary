@@ -14,9 +14,9 @@ import { WalletSummaryPair } from "@/components/wallets/WalletSummaryPair";
 import { BudgetCard } from "./BudgetCard";
 import { ExpenseHeroCard } from "./ExpenseHeroCard";
 import { GoalsSummaryCard } from "./GoalsSummaryCard";
-import { GoldSummaryCard } from "./GoldSummaryCard";
 import { RecentActivityCard } from "./RecentActivityCard";
 import { SpendingChart } from "./SpendingChart";
+import { TotalWealthCard } from "./TotalWealthCard";
 
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   weekday: "long",
@@ -138,7 +138,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
     <div className="space-y-6">
       <header className="px-1">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
-          Catatan keuangan keluarga
+          Financial Diary
         </p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">Beranda</h1>
         <p suppressHydrationWarning className="mt-1 text-sm text-[#5C7191]">
@@ -174,6 +174,13 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
       ) : data ? (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="lg:col-span-12">
+            <TotalWealthCard
+              sharedBalanceMinor={data.sharedBalanceMinor}
+              personalBalanceMinor={data.personalBalanceMinor}
+            />
+          </div>
+
+          <div className="lg:col-span-12">
             <ExpenseHeroCard
               spentMinor={data.monthlyBudget.spentMinor}
               todayMinor={todayMinor}
@@ -200,10 +207,6 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
                 setManageOpen(true);
               }}
             />
-          </div>
-
-          <div className="lg:col-span-12">
-            <GoldSummaryCard />
           </div>
 
           <div className="lg:col-span-12">

@@ -1,4 +1,4 @@
-# Catatan Keuangan Keluarga
+# Financial Diary
 
 Aplikasi web untuk mencatat dan memahami keuangan keluarga. Pengguna dapat
 mengelola transaksi, dompet, anggaran, target tabungan, serta aset emas pribadi

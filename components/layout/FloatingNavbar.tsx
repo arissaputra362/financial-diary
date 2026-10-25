@@ -46,12 +46,12 @@ export function FloatingNavbar() {
       <nav
         aria-label="Navigasi utama"
         data-nav="top"
-        className="flex w-full max-w-4xl items-center justify-between gap-2 rounded-full border border-white/10 bg-[#14273F]/95 px-3 py-2 text-white shadow-floating-nav backdrop-blur-md lg:px-4"
+        className="flex w-full max-w-6xl items-center justify-between gap-2 rounded-full border border-white/10 bg-[#14273F]/95 px-3 py-2 text-white shadow-floating-nav backdrop-blur-md lg:px-4"
       >
         <Link
           href="/home"
           className="flex shrink-0 items-center gap-2 rounded-full px-1 py-1 lg:px-2"
-          aria-label="Beranda Catatan Keluarga"
+          aria-label="Beranda Financial Diary"
         >
           <span
             aria-hidden="true"
@@ -59,8 +59,8 @@ export function FloatingNavbar() {
           >
             <Wallet className="h-4 w-4" />
           </span>
-          <span className="hidden whitespace-nowrap text-base font-bold tracking-tight lg:inline">
-            Catatan Keluarga
+          <span className="hidden whitespace-nowrap text-base font-bold tracking-tight xl:inline">
+            Financial Diary
           </span>
         </Link>
 
@@ -78,7 +78,7 @@ export function FloatingNavbar() {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 items-center gap-1.5 rounded-full px-2.5 text-sm transition-colors lg:px-4",
+                  "flex min-h-11 items-center gap-1.5 rounded-full px-2.5 text-sm transition-colors lg:px-3 xl:px-4",
                   isActive
                     ? "bg-[#DCEBFA] font-medium text-[#14273F]"
                     : "text-white/60 hover:text-white",
@@ -96,7 +96,7 @@ export function FloatingNavbar() {
             href="/transactions?add=1"
             onClick={openAddIntent}
             aria-label="Tambah transaksi"
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#166534] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#155C30]"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#166534] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#155C30] xl:px-4"
           >
             <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="hidden lg:inline">Tambah transaksi</span>

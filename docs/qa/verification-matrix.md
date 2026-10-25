@@ -1,4 +1,4 @@
-# Verification Matrix — Financial Planner MVP
+# Verification Matrix — Financial Diary MVP
 
 **Owner:** QA Engineer · **Tanggal:** 2026-09-30 · **Status:** Baseline (pre-implementation)
 **Sumber AC:** `docs/spec/feat-*.md` (**54 AC**: 42 AC F1–F5 historis + 12 AC F6) · **AC ID:** 12 AC F6 memakai ID kanonik dari `docs/PRD.md` (`AC-F6-1..AC-F6-12`); 42 AC F1–F5 memakai ID usulan QA historis (snapshot pra-F6; status/bukti lama tidak diubah)

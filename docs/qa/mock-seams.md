@@ -1,4 +1,4 @@
-# Mock Seams — Financial Planner MVP
+# Mock Seams — Financial Diary MVP
 
 **Owner:** QA Engineer · **Tanggal:** 2026-09-30 · **Status:** Baseline (pre-implementation)
 **Tujuan:** Cara mem-fake Gemini, `@vercel/blob`, dan DB **tanpa mengubah kode route**,

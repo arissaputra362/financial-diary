@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-Indeks keputusan arsitektur MVP Financial Planner. Setiap ADR mengikuti
+Indeks keputusan arsitektur MVP Financial Diary. Setiap ADR mengikuti
 `docs/templates/adr-template.md` (Konteks / Keputusan / Alasan & Alternatif / Trade-off).
 Semua keputusan bersifat **FINAL** dan menutup konflik arsitektur F-1..F-4 (WO-002).
 

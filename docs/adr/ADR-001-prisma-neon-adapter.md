@@ -5,7 +5,7 @@
 
 ## Konteks
 
-MVP Financial Planner membutuhkan akses PostgreSQL di Neon (serverless) dengan
+MVP Financial Diary membutuhkan akses PostgreSQL di Neon (serverless) dengan
 constraint relasional eksplisit, migration yang dapat direview, dan boundary repository
 yang bertipe. Requirement menyediakan dua alternatif ORM: Prisma atau Drizzle. Paket
 `prisma@7.10.0`, `@prisma/client@^7.10.0`, dan `@prisma/adapter-neon@^7.10.0` sudah

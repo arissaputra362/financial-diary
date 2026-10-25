@@ -45,6 +45,7 @@ export const config = {
   matcher: [
     "/api/:path*",
     "/home",
+    "/gold",
     "/budget",
     "/transactions",
     "/family",

@@ -1,4 +1,4 @@
-# Fixtures & Seed Plan — Financial Planner MVP
+# Fixtures & Seed Plan — Financial Diary MVP
 
 **Owner:** QA Engineer · **Tanggal:** 2026-09-30 · **Status:** Baseline (pre-implementation)
 **Tujuan:** Fixture deterministik (UUID tetap) yang menutup semua invariant ERD §7 dan

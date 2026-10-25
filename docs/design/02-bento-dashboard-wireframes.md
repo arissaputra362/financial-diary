@@ -60,7 +60,7 @@ All colors, icons, typography, and shapes come from `01-design-system-tokens.md`
 ```
 +----------------------------------------------------------------------------------------------------+
 |                        [ FLOATING NAVY NAVIGATION BAR  #14273F ]                                    |
-| Financial Planner   [Beranda*] [Budget] [Aktivitas] [Keluarga]   [ + Tambah transaksi ]   (o Avatar/profil) |
+| Financial Diary   [Beranda*] [Budget] [Aktivitas] [Keluarga]   [ + Tambah transaksi ]   (o Avatar/profil) |
 | Meniru FloatingNavbar.tsx aktual: 4 tautan berlabel + pill aksi + aksi avatar ke /profile;          |
 | tidak ada tab teks "Profil".                                                                        |
 +----------------------------------------------------------------------------------------------------+

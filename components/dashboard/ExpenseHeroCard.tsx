@@ -38,6 +38,7 @@ export function ExpenseHeroCard({
           >
             Pengeluaran bulan ini
           </h2>
+          <p className="mt-1 text-xs text-[#5C7191]">Dihitung dari transaksi di dompet bersama.</p>
           {hasSpending ? (
             <p
               className={
@@ -54,7 +55,7 @@ export function ExpenseHeroCard({
                 Belum ada pengeluaran bulan ini
               </p>
               <p className="mt-1 text-sm text-[#46597A]">
-                Catat pengeluaran pertamamu lewat tombol Tambah.
+                Catat pengeluaran pertamamu lewat tombol Tambah transaksi.
               </p>
             </>
           )}
@@ -77,7 +78,7 @@ export function ExpenseHeroCard({
           </div>
           <div className="min-w-0 rounded-2xl bg-white/85 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#46597A]">
-              Sisa budget
+              Sisa anggaran
             </p>
             <p className="mt-1 whitespace-nowrap text-[clamp(1rem,4.6vw,1.125rem)] font-semibold tabular-nums text-[#17304F]">
               {remainingMinor === null ? "Belum diatur" : formatIDR(remainingMinor)}

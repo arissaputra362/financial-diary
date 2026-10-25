@@ -1,4 +1,4 @@
-# Local Development Setup — Financial Planner MVP
+# Local Development Setup — Financial Diary MVP
 
 **Tanggal:** 2026-10-06 (panduan awal; langkah dan dependensi dapat berubah)
 **Status:** Referensi setup lokal

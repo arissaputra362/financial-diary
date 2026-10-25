@@ -1,4 +1,4 @@
-# Financial Planner — Claude Guide
+# Financial Diary — Claude Guide
 
 @AGENTS.md
 

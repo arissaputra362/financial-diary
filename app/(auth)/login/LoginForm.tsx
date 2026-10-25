@@ -159,7 +159,7 @@ export function LoginForm({
         <div className="rounded-3xl border border-[#D8E2EE] bg-white p-8 shadow-bento">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-[#17304F]">
-              Financial Planner
+              Financial Diary
             </h1>
             <p className="mt-1 text-[#46597A]">Keuangan keluarga jadi lebih mudah.</p>
           </div>

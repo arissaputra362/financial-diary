@@ -659,7 +659,7 @@ export function ActivityView({
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3 px-1 print:hidden">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">Catatan keuangan keluarga</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">Financial Diary</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">Aktivitas</h1>
         </div>
         <Button

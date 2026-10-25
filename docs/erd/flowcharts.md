@@ -1,4 +1,4 @@
-# Flowchart & Skema Alur — Financial Planner MVP
+# Flowchart & Skema Alur — Financial Diary MVP
 
 **Penulis:** PM / System Analyst
 **Tanggal:** 2026-09-30

@@ -1,6 +1,6 @@
 # Panduan Build PWA dan APK
 
-Panduan ini menjelaskan cara terbaik mengemas Catatan Keuangan Keluarga sebagai
+Panduan ini menjelaskan cara terbaik mengemas Financial Diary sebagai
 PWA dan APK Android yang mengarah ke URL production.
 
 ## Rekomendasi arsitektur
@@ -105,12 +105,15 @@ Saat ditanya, gunakan nilai yang konsisten:
 
 ```text
 Package ID:    com.financialplanner.app
-App name:      Catatan Keuangan Keluarga
+App name:      Financial Diary
 Launch URL:    https://financial-planner-nu-lake.vercel.app/transactions
 Display mode:  standalone
 ```
 
 Package ID tidak boleh diubah setelah aplikasi dipublikasikan ke Play Store.
+Nama tampilan aplikasi sekarang **Financial Diary**. Untuk APK pembaruan pada
+aplikasi yang sudah terpasang, pertahankan Package ID dan signing keystore yang
+sama; keduanya adalah identitas teknis aplikasi Android.
 
 ### 3. Buat signing key secara aman
 

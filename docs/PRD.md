@@ -1,4 +1,4 @@
-# PRD: Financial Planner
+# PRD: Financial Diary
 
 **Penulis:** PM / System Analyst · **Tanggal:** 2026-09-30 · **Status:** Draft — menunggu approval PM
 **Sumber historis:** `docs/archive/requirements-2026-09-30.md` (diarsipkan per keputusan PM)

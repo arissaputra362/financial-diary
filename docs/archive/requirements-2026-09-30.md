@@ -1,4 +1,4 @@
-# Financial Planner System - MVP Requirements
+# Financial Diary System - MVP Requirements
 
 ## 1. Product Vision
 A mobile-first, responsive web application designed for families, students, and laypeople to easily track their income, expenses, and savings targets. The app removes the friction of manual data entry by using AI to read receipts and bills, and provides actionable financial advice—all while being 100% free to run for the user's trial phase.

@@ -3,7 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { GoldPageView } from "@/components/gold/GoldPageView";
 
 export const metadata: Metadata = {
-  title: "Tabungan Emas — Catatan Keluarga",
+  title: "Tabungan Emas — Financial Diary",
   description:
     "Kelola tabungan logam mulia batangan (Antam, UBS) dan emas perhiasan keluarga. Pantau nilai pasar terkini, laba/rugi, dan catat aset baru secara manual atau lewat pindai foto.",
 };

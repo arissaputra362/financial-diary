@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
-  Design tokens for the Bento financial planner.
+  Design tokens for the Bento financial diary.
   Source of truth: docs/design/01-design-system-tokens.md (PM-approved 2026-10-20).
   The app ships a single light theme, so no dark-mode override is defined.
 */

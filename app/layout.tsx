@@ -10,10 +10,10 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Catatan Keuangan Keluarga",
+  title: "Financial Diary",
   description:
     "Catat pemasukan, pengeluaran, dan tujuan menabung keluarga dalam satu tempat.",
-  applicationName: "Catatan Keuangan Keluarga",
+  applicationName: "Financial Diary",
   icons: {
     icon: "/logo.svg",
     apple: "/icon-192.png",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Keuangan Keluarga",
+    title: "Financial Diary",
   },
 };
 

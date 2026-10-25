@@ -1,4 +1,4 @@
-// Financial Planner — Prisma schema (T-003)
+// Financial Diary — Prisma schema (T-003)
 // Single source of truth for column names/types: docs/erd/erd-database-schema.md §3.
 // Constraints marked `*` in the ERD (partial unique indexes, CHECKs) are added as
 // raw SQL in the migration files — see prisma/migrations/ (latest institution

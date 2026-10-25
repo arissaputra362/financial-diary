@@ -9,7 +9,7 @@
 
 ## Overview
 
-Selaraskan presentasi seluruh layar existing Financial Planner dengan arah UI/UX terbaru: tema biru-putih-hijau, hierarki judul konsisten, kartu dompet generik bergaya ATM, ikon navigasi bermakna, dan perilaku layout yang tetap terbaca pada layar kecil serta nilai uang panjang.
+Selaraskan presentasi seluruh layar existing Financial Diary dengan arah UI/UX terbaru: tema biru-putih-hijau, hierarki judul konsisten, kartu dompet generik bergaya ATM, ikon navigasi bermakna, dan perilaku layout yang tetap terbaca pada layar kecil serta nilai uang panjang.
 
 Task ini bersifat visual. Tidak mengubah sumber data, aturan bisnis, permission, route, pagination cursor, atau state transitions existing.
 

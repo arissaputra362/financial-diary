@@ -1,4 +1,4 @@
-# Design System Tokens & Guidelines: Bento Financial Planner
+# Design System Tokens & Guidelines: Bento Financial Diary
 
 ## 0. Canonical status & change note
 
@@ -18,7 +18,7 @@
 
 ## 1. Overview & Aesthetic Philosophy
 
-The Financial Planner MVP is built around a **Modern Bento Box** dashboard layout. It reads as a real finance app: calm, trustworthy, blue-white-green. Tailored for everyday laypeople, families, and students.
+The Financial Diary MVP is built around a **Modern Bento Box** dashboard layout. It reads as a real finance app: calm, trustworthy, blue-white-green. Tailored for everyday laypeople, families, and students.
 
 ### Core Principles
 1. **Calm Yet Reassuring:** a blue-white canvas with green as the single action accent. Color is functional: blue carries money/structure identity, green carries action and positive money, yellow and red appear only as status. No decorative gradients (no generic blue-purple gradient; antislop R-01, R-29).

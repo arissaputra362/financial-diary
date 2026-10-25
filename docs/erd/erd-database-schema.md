@@ -1,4 +1,4 @@
-# ERD & Skema Database — Financial Planner MVP
+# ERD & Skema Database — Financial Diary MVP
 
 **Penulis:** PM / System Analyst
 **Tanggal:** 2026-09-30

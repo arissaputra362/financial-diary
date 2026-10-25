@@ -1,9 +1,17 @@
-# Kondisi Implementasi Saat Ini
+# Financial Diary — Kondisi Implementasi Saat Ini
 
 Dokumen ini merangkum kemampuan yang tersedia di source code saat ini. Untuk
 tujuan dan acceptance criteria produk, lihat `docs/PRD.md` dan `docs/spec/`;
 status historis atau item yang belum selesai di sana tidak otomatis berarti
 fiturnya sudah tersedia.
+
+## Nama aplikasi
+
+Nama produk dan label yang terlihat pengguna adalah **Financial Diary**.
+Identifier teknis yang sudah digunakan tetap terpisah: repository GitHub
+`financial-planner`, package `financial-planner-project`, dan domain Vercel
+production yang masih memakai slug lama. Mengubah nama produk tidak mengubah
+identifier atau alamat deployment tersebut.
 
 ## Halaman aplikasi
 

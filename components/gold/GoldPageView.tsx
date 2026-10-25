@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ChevronRight,
@@ -9,7 +10,6 @@ import {
   Gem,
   Plus,
   RefreshCw,
-  Trash2,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -17,13 +17,17 @@ import { formatIDR } from "@/lib/format";
 import { formatGrams } from "@/lib/gold";
 import { apiRequest } from "@/lib/api-client";
 import { GoldAssetModal } from "@/components/gold/GoldAssetModal";
+import { GoldAssetDetailModal } from "@/components/gold/GoldAssetDetailModal";
+import { GoldAssetArtwork } from "@/components/gold/GoldAssetArtwork";
 import type { GoldPortfolioSummaryDTO } from "@/types/gold";
 
 export function GoldPageView() {
+  const router = useRouter();
   const [data, setData] = useState<GoldPortfolioSummaryDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<GoldPortfolioSummaryDTO["assets"][number] | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [undoItem, setUndoItem] = useState<{ id: string; name: string } | null>(null);
 
@@ -31,11 +35,24 @@ export function GoldPageView() {
     setLoading(true);
     try {
       const res = await apiRequest<GoldPortfolioSummaryDTO>("/api/gold/assets");
+      if (res.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (res.status === 403) {
+        router.replace("/waiting-for-approval");
+        return;
+      }
       if (res.ok && res.data) {
         setData(res.data);
         setError(null);
       } else {
-        setError("Belum bisa memuat tabungan emas.");
+        setError(
+          res.data?.error?.message ??
+            (res.status === 401
+              ? "Sesi kamu berakhir. Silakan masuk kembali."
+              : "Belum bisa memuat tabungan emas. Coba lagi sebentar.")
+        );
       }
     } catch {
       setError("Gagal menghubungi server.");
@@ -55,6 +72,7 @@ export function GoldPageView() {
       const res = await apiRequest(`/api/gold/assets/${id}`, { method: "DELETE" });
       if (res.ok) {
         setUndoItem({ id, name });
+        setSelectedAsset(null);
         await loadData();
         setTimeout(() => {
           setUndoItem((current) => (current?.id === id ? null : current));
@@ -276,20 +294,17 @@ export function GoldPageView() {
               >
                 Daftar Aset ({data.assets.length})
               </h2>
-              <div className="space-y-2.5">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {data.assets.map((item) => (
-                  <div
+                  <button
+                    type="button"
                     key={item.id}
-                    className="flex items-center justify-between rounded-2xl border border-[#EAEEF4] bg-white p-4 text-sm shadow-xs transition hover:border-[#BCD6EF]"
+                    onClick={() => setSelectedAsset(item)}
+                    aria-label={`Lihat detail ${item.name}`}
+                    className="group cursor-pointer overflow-hidden rounded-2xl border border-[#D8E2EE] bg-white text-sm shadow-xs transition hover:-translate-y-0.5 hover:border-[#A9C8E8] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4F87]"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                        {item.type === "BULLION" ? (
-                          <Coins className="h-5 w-5" />
-                        ) : (
-                          <Gem className="h-5 w-5" />
-                        )}
-                      </div>
+                    <GoldAssetArtwork asset={item} />
+                    <div className="p-4">
                       <div>
                         <p className="font-semibold text-[#17304F]">{item.name}</p>
                         <p className="mt-0.5 text-xs text-[#5C7191]">
@@ -307,36 +322,13 @@ export function GoldPageView() {
                         <p className="mt-0.5 text-[10px] text-[#9BAFC8]">
                           Beli: {formatIDR(item.buyPriceMinor)} · {item.purchaseDate}
                         </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="font-bold tabular-nums text-[#17304F]">
+                        <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[#7D91AA]">Taksiran nilai</p>
+                        <p className="mt-0.5 text-lg font-extrabold tabular-nums text-[#17304F]">
                           {formatIDR(item.estimatedValuationMinor)}
                         </p>
-                        <p
-                          className={`text-xs tabular-nums ${
-                            item.unrealizedPnLMinor >= 0
-                              ? "text-[#166534]"
-                              : "text-[#B91C1C]"
-                          }`}
-                        >
-                          {item.unrealizedPnLMinor >= 0 ? "+" : ""}
-                          {formatIDR(item.unrealizedPnLMinor)}
-                        </p>
                       </div>
-                      <button
-                        type="button"
-                        disabled={deletingId === item.id}
-                        onClick={() => handleDelete(item.id, item.name)}
-                        aria-label={`Hapus ${item.name}`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full text-[#5C7191] hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
 
@@ -349,6 +341,12 @@ export function GoldPageView() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSuccess={() => loadData()}
+      />
+      <GoldAssetDetailModal
+        asset={selectedAsset}
+        deleting={selectedAsset ? deletingId === selectedAsset.id : false}
+        onClose={() => setSelectedAsset(null)}
+        onDelete={(asset) => handleDelete(asset.id, asset.name)}
       />
     </div>
   );

@@ -104,7 +104,7 @@ export function WalletSummaryPair({
             onClick={onOpenArchive}
             className="-my-1.5 inline-flex min-h-11 items-center text-xs font-medium text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
           >
-            Termasuk dompet di Arsip
+            Termasuk saldo dompet arsip
           </button>
         </article>
 
@@ -113,7 +113,7 @@ export function WalletSummaryPair({
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EFF4FA]">
               <User className="h-3.5 w-3.5" aria-hidden="true" />
             </span>
-            Dompet pribadiku
+            Uang tersedia pribadi
           </p>
           <p className="mt-2 whitespace-nowrap text-[clamp(1rem,4.4vw,1.5rem)] font-semibold tabular-nums text-[#17304F]">
             {formatIDR(personalBalanceMinor)}
@@ -123,7 +123,7 @@ export function WalletSummaryPair({
             onClick={onOpenArchive}
             className="-my-1.5 inline-flex min-h-11 items-center text-xs font-medium text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
           >
-            Termasuk dompet di Arsip
+            Termasuk saldo dompet arsip
           </button>
         </article>
       </div>

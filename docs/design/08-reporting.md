@@ -326,7 +326,7 @@ Yang **disembunyikan** saat print (seluruh cangkang aplikasi, spec AC-F7-16):
 | :--- | :--- |
 | Bottom nav (`components/layout/BottomNav.tsx`) | pakai selektor atribut `data-nav="bottom"` yang sudah ada |
 | Top nav desktop (`FloatingNavbar.tsx`) | pakai selektor atribut `data-nav="top"` yang sudah ada |
-| Header halaman: eyebrow `Catatan keuangan keluarga`, heading `Aktivitas`, tombol `Tambah transaksi` | tanpa heading halaman di kertas; judul laporan print-only menggantikannya (§6.9.4) |
+| Header halaman: eyebrow `Financial Diary`, heading `Aktivitas`, tombol `Tambah transaksi` | tanpa heading halaman di kertas; judul laporan print-only menggantikannya (§6.9.4) |
 | Bar tab Transaksi / Ringkasan / Trash | selektor `[role="tablist"]` halaman, atau class `print:hidden` pada bar itu |
 | Kontrol bulan (group `aria-label="Pilih bulan aktivitas"`) | class `print:hidden` pada group pil bulan |
 | Baris kontrol dropdown Cakupan + Dompet | class `print:hidden` pada baris kontrol di `MonthlyReport.tsx` |

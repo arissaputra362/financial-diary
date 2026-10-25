@@ -10,13 +10,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ---
 
-# Financial Planner — Agent Guide
+# Financial Diary — Agent Guide
 
 This document is the single source of truth for all AI coding agents (Antigravity, Claude, Codex, Copilot, Cursor) working on this project. Read it fully before writing any code.
 
 ## 1. Project Overview
 
-**Financial Planner** is a mobile-first, responsive web application for families, students, and laypeople to track income, expenses, and savings targets. The app uses Google Gemini AI to read receipt photos/screenshots and extract transaction data, and provides conversational AI financial advice.
+**Financial Diary** is a mobile-first, responsive web application for families, students, and laypeople to track income, expenses, and savings targets. The app uses Google Gemini AI to read receipt photos/screenshots and extract transaction data, and provides conversational AI financial advice.
 
 **Target users:** Non-technical family members. The UI must be intuitive for people with no accounting background.
 

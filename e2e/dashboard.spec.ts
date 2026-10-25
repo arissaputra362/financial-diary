@@ -63,7 +63,7 @@ test.describe("navigation per breakpoint (AC-F2-10, AC-VIS-3)", () => {
             { name: "Keluarga", href: "/family" },
           ]
         : [
-            { name: "Beranda Catatan Keluarga", href: "/home" },
+            { name: "Beranda Financial Diary", href: "/home" },
             { name: "Beranda", href: "/home" },
             { name: "Budget", href: "/budget" },
             { name: "Aktivitas", href: "/transactions" },
