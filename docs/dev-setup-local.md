@@ -1,7 +1,7 @@
 # Local Development Setup — Financial Planner MVP
 
-**Tanggal:** 2026-10-06  
-**Status:** Active  
+**Tanggal:** 2026-10-06 (panduan awal; langkah dan dependensi dapat berubah)
+**Status:** Referensi setup lokal
 **Tujuan:** Panduan setup PostgreSQL lokal untuk testing (tanpa Neon cloud)
 
 ---
@@ -322,7 +322,8 @@ QA engineer bisa pakai setup ini untuk testing:
 
 1. **Setup database lokal** (Step 1-4)
 2. **Seed data QA** (sesuai `docs/qa/fixtures-seed-plan.md`)
-3. **Run test scenarios** (sesuai `agent-comms/prompts/qa-t006-retroactive.md`)
+3. **Jalankan pengujian yang relevan** sesuai script di `package.json` dan
+   skenario pada `docs/qa/`.
 4. **Report bugs** (sesuai format di prompt)
 
 **Keuntungan:**
@@ -354,7 +355,7 @@ Untuk rollback ke Neon cloud (production):
 
 ## Referensi
 
-- **QA Guide:** `agent-comms/prompts/qa-t006-retroactive.md`
+- **Current implementation:** `docs/current-state.md`
 - **Fixtures Seed Plan:** `docs/qa/fixtures-seed-plan.md`
 - **ERD:** `docs/erd/erd-database-schema.md`
 - **Migration:** `prisma/migrations/`
@@ -364,4 +365,5 @@ Untuk rollback ke Neon cloud (production):
 
 **Dibuat:** 2026-10-06 (sebagai follow-up dari QA T-006 environment gap)  
 **Owner:** Developer  
-**Last Updated:** 2026-10-06
+**Last Updated:** panduan awal 2026-10-06; lihat `docs/current-state.md` untuk
+ringkasan implementasi terbaru.

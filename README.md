@@ -1,200 +1,121 @@
 # Catatan Keuangan Keluarga
 
-Aplikasi web mobile-first untuk membantu keluarga mencatat pemasukan,
-pengeluaran, anggaran, dompet, target tabungan, dan aktivitas keuangan dalam
-satu tempat. Aplikasi juga menyediakan OCR struk dan panel advisor berbasis AI
-ketika konfigurasi provider-nya tersedia.
+Aplikasi web untuk mencatat dan memahami keuangan keluarga. Pengguna dapat
+mengelola transaksi, dompet, anggaran, target tabungan, serta aset emas pribadi
+dan bersama. Laporan bulanan menyajikan ringkasan saldo dan rincian transaksi
+yang dapat dicetak atau disimpan sebagai PDF.
 
 Production: [financial-planner-nu-lake.vercel.app](https://financial-planner-nu-lake.vercel.app)
 
-## Fitur utama
+## Fitur
 
-- Autentikasi email dan password dengan bcrypt.
-- Session JWT `httpOnly` yang dipasangkan dengan session database yang dapat
-  direvoke.
-- Akun keluarga, undangan anggota, approval, dan role owner/member.
-- Pencatatan transaksi pemasukan dan pengeluaran.
-- Dompet personal dan bersama.
-- Anggaran personal dan bersama.
-- Target tabungan dan advisor keuangan.
-- Upload/OCR struk menggunakan Gemini dan Vercel Blob.
-- Katalog institusi bank dengan seed data versioned.
-- PWA installable dengan icon aplikasi dan manifest.
-- Mode nyaman: email login dapat diingat di perangkat, tetapi password tidak
-  pernah disimpan di browser.
+- Autentikasi email dan password dengan session JWT `httpOnly` yang terhubung
+  ke session database dan dapat dicabut.
+- Household keluarga, undangan anggota, persetujuan owner, serta role owner
+  dan member.
+- Transaksi pemasukan, pengeluaran, dan transfer antar dompet. Nominal
+  mendukung hingga dua angka desimal dan disimpan sebagai PostgreSQL `NUMERIC`.
+- Dompet personal/bersama, arsip dompet, serta pilihan institusi bank resmi dan
+  institusi khusus pengguna.
+- Anggaran bulanan personal dan keluarga.
+- Target tabungan dengan progres dan insight dari AI advisor.
+- Pemindaian struk transaksi serta certicard/nota emas menggunakan Gemini.
+  Hasil pindai berupa draft untuk ditinjau sebelum disimpan. Foto kamera besar
+  dikompres di browser sebelum diunggah.
+- Tabungan emas batangan dan perhiasan, estimasi nilai, serta harga pasar yang
+  diambil dari provider dan disimpan sebagai snapshot harian di database.
+- Laporan bulanan dengan filter cakupan/dompet dan print-to-PDF.
+- Trash dan pemulihan untuk data yang mendukung soft delete.
+- PWA installable.
+
+Rincian kondisi implementasi terkini ada di
+[`docs/current-state.md`](./docs/current-state.md). Spesifikasi produk dan
+riwayat keputusan ada di [`docs/`](./docs/).
 
 ## Teknologi
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS v4
-- Prisma 7 dengan driver adapter
-- PostgreSQL lokal atau Neon PostgreSQL
+- Next.js 16 App Router, React 19, TypeScript, Tailwind CSS v4
+- Prisma 7 dengan PostgreSQL; Neon atau PostgreSQL lokal
 - Bun 1.4.2
+- Gemini API untuk pemindaian gambar dan advisor (opsional)
+- Vercel Blob untuk penyimpanan gambar struk (diperlukan untuk OCR struk)
 - Vitest dan Playwright
-- Vercel Hobby sebagai target deployment
-
-## Prasyarat
-
-- Bun 1.4.2 atau versi kompatibel.
-- PostgreSQL 15+ lokal, atau database Neon PostgreSQL.
-- Node.js yang didukung oleh Next.js/Prisma untuk tooling yang dijalankan Bun.
-- Git, bila mengambil source dari repository.
-
-Untuk setup PostgreSQL lokal yang lebih rinci, lihat
-[`docs/dev-setup-local.md`](./docs/dev-setup-local.md).
 
 ## Menjalankan secara lokal
 
-### 1. Pasang dependency
+Prasyarat: Bun 1.4.2, Node.js yang kompatibel dengan Next.js, dan PostgreSQL
+15+ lokal atau database Neon.
 
 ```bash
 bun install
 ```
 
-### 2. Konfigurasi environment
-
-Salin [`.env.example`](./.env.example) menjadi `.env` atau `.env.local`, lalu
-isi nilai sebenarnya. Jangan commit file environment.
-
-Variable wajib:
-
-| Variable | Kegunaan |
-|---|---|
-| `DATABASE_URL` | Connection string PostgreSQL/Neon |
-| `AUTH_SECRET` | Secret minimal 32 karakter untuk JWT session |
-
-Variable fitur opsional:
-
-| Variable | Kegunaan |
-|---|---|
-| `GEMINI_API_KEY` | OCR struk dan advisor |
-| `GEMINI_MODEL` | Model Gemini utama |
-| `GEMINI_MODEL_FALLBACKS` | Model fallback saat provider utama gagal |
-| `BLOB_READ_WRITE_TOKEN` | Penyimpanan foto struk di Vercel Blob |
-
-Generate `AUTH_SECRET` di PowerShell:
-
-```powershell
-[Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
-```
-
-Jangan memakai prefix `NEXT_PUBLIC_` untuk secret server-side.
-
-### 3. Siapkan database
-
-Generate Prisma Client dan apply migration:
+Salin `.env.example` menjadi `.env` atau `.env.local`, lalu isi setidaknya
+`DATABASE_URL` dan `AUTH_SECRET`. Isi `GEMINI_API_KEY` dan
+`BLOB_READ_WRITE_TOKEN` bila ingin memakai fitur AI/pemindaian. Variabel harga
+emas dapat dibiarkan pada nilai default kecuali menggunakan provider lain.
 
 ```bash
 bunx prisma generate
 bunx prisma migrate deploy
-```
-
-Untuk katalog bank resmi:
-
-```bash
 bun run seed:institutions
-```
-
-Build aplikasi tidak menjalankan migration dan tidak memerlukan koneksi
-database. Migration dijalankan manual atau melalui CI/deployment job.
-
-### 4. Jalankan development server
-
-```bash
 bun run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000).
+Buka [http://localhost:3000](http://localhost:3000). Langkah rinci database
+lokal ada di [`docs/dev-setup-local.md`](./docs/dev-setup-local.md).
 
-## Perintah pengembangan
+## Perintah
 
 ```bash
-bun run dev              # development server
+bun run dev              # server development
 bun run lint             # ESLint
-bun run test             # unit test Vitest
+bun run test             # unit test
 bun run test:integration # integration test
-bun run test:e2e         # Playwright responsive smoke test
-bun run build            # prisma generate + next build
-bun run start            # jalankan hasil production build
+bun run test:e2e         # Playwright
+bun run build            # prisma generate + Next.js build
+bun run start            # server production lokal
 ```
 
-Playwright memakai port `3010` agar tidak bertabrakan dengan service lain pada
-port `3000`. E2E dapat memerlukan database dan environment test yang sesuai.
+Playwright menggunakan port `3010`. Integration test memerlukan database dan
+environment test terpisah. Build tidak menjalankan migrasi database.
 
-## Struktur direktori
+## Struktur proyek
 
-- `app/` — route, halaman, API route, layout, dan manifest PWA.
-- `components/` — komponen UI dan feature view.
-- `lib/` — database, auth, service, repository, provider, dan utility.
-- `prisma/` — schema serta migration database.
-- `public/` — logo dan icon PWA.
-- `e2e/` — test Playwright.
-- `docs/` — PRD, spesifikasi, ADR, setup, QA, dan panduan deployment.
+- `app/` — halaman, API Route Handlers, layout, dan manifest PWA.
+- `components/` — komponen UI per fitur.
+- `lib/server/` — service, repository, autentikasi, dan provider server.
+- `lib/` — utilitas dan koneksi database.
+- `prisma/` — schema, migrasi, dan seed.
+- `types/` — DTO dan tipe lintas fitur.
+- `docs/` — setup, kondisi implementasi, spesifikasi, desain, ADR, dan QA.
+- `e2e/` — skenario browser Playwright.
 
-## Deployment ke Vercel
+## Deployment
 
-Arsitektur deployment yang dipakai:
+Target deployment saat ini adalah Vercel dengan PostgreSQL (Neon didukung),
+Gemini, dan Vercel Blob sebagai layanan opsional sesuai fitur yang digunakan.
+Atur `DATABASE_URL`, `AUTH_SECRET`, dan kredensial provider melalui environment
+deployment. Jalankan `prisma migrate deploy` melalui langkah operasional/CI
+sebelum memakai schema baru; migrasi tidak dijalankan otomatis oleh build.
 
-```text
-Vercel Hobby (Next.js)
-        |
-        +-- Neon PostgreSQL
-        +-- Gemini API (opsional)
-        +-- Vercel Blob (opsional)
-```
-
-Langkah umum:
-
-1. Import repository ke Vercel.
-2. Set framework ke Next.js dan package manager ke Bun bila diperlukan.
-3. Tambahkan `DATABASE_URL`, `AUTH_SECRET`, dan variable provider yang
-   diperlukan di Vercel Project Settings.
-4. Deploy.
-5. Jalankan `prisma migrate deploy` dari environment yang memiliki akses ke
-   database sebelum fitur yang membutuhkan schema digunakan.
-6. Verifikasi login, route API, upload struk, manifest, dan PWA install.
-
-Perhatikan:
-
-- Secret hanya disimpan di Vercel Environment Variables.
-- Build production menjalankan `prisma generate && next build`.
-- Jangan menambahkan `prisma migrate deploy` ke build command tanpa memastikan
-  direct database connection dan strategi locking CI sudah benar.
-- Neon free tier, Gemini, dan Blob memiliki kuota yang dapat berubah.
-
-Detail keputusan deployment ada di
+Panduan PWA/APK ada di [`docs/BUILD-APK-PWA.md`](./docs/BUILD-APK-PWA.md), dan
+keputusan deployment di
 [`docs/adr/ADR-007-free-tier-deployment.md`](./docs/adr/ADR-007-free-tier-deployment.md).
 
-## PWA dan APK
+## Dokumentasi
 
-Aplikasi sudah menyediakan manifest di `/manifest.webmanifest` serta icon:
+- [`docs/current-state.md`](./docs/current-state.md) — peta fitur dan batas
+  integrasi yang ada di kode saat ini.
+- [`docs/PRD.md`](./docs/PRD.md) dan [`docs/spec/`](./docs/spec/) — kebutuhan
+  produk; dokumen ini menjelaskan target dan dapat memuat item yang belum
+  diimplementasikan.
+- [`docs/adr/`](./docs/adr/) — keputusan arsitektur.
+- [`docs/erd/`](./docs/erd/) — model data dan alur.
+- [`docs/qa/`](./docs/qa/) — matriks, fixture, dan laporan QA historis.
 
-- `/icon-192.png`
-- `/icon-512.png`
-- `/logo.svg`
+## Keamanan
 
-Panduan resmi untuk install PWA dan membuat APK yang membuka URL production ada
-di [`docs/BUILD-APK-PWA.md`](./docs/BUILD-APK-PWA.md).
-
-## Dokumentasi lanjutan
-
-- [`AGENTS.md`](./AGENTS.md) — aturan kontribusi dan konteks repository.
-- [`docs/PRD.md`](./docs/PRD.md) — product requirements.
-- [`docs/dev-setup-local.md`](./docs/dev-setup-local.md) — setup PostgreSQL
-  lokal.
-- [`docs/adr/ADR-002-auth-jwt-session.md`](./docs/adr/ADR-002-auth-jwt-session.md)
-  — desain session dan auth.
-- [`docs/adr/ADR-007-free-tier-deployment.md`](./docs/adr/ADR-007-free-tier-deployment.md)
-  — keputusan deployment.
-
-## Keamanan penting
-
-- Jangan menyimpan password di `localStorage`, cookie biasa, atau parameter URL.
-- Fitur “ingat email” hanya menyimpan alamat email jika pengguna memilihnya.
-- `AUTH_SECRET`, database URL, Gemini key, dan Blob token tidak boleh masuk ke
-  source control atau log.
-- Gunakan HTTPS untuk production dan APK.
-- Setelah mengganti secret atau mencurigai kebocoran, lakukan rotasi secret dan
-  revoke session sesuai prosedur operasional.
+Jangan commit `.env`, API key, secret autentikasi, atau token Blob. Secret harus
+tetap server-side dan tidak menggunakan prefix `NEXT_PUBLIC_`. Gunakan HTTPS di
+production; jangan simpan password di browser.
