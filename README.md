@@ -5,8 +5,6 @@ mengelola transaksi, dompet, anggaran, target tabungan, serta aset emas pribadi
 dan bersama. Laporan bulanan menyajikan ringkasan saldo dan rincian transaksi
 yang dapat dicetak atau disimpan sebagai PDF.
 
-Production: [financial-planner-nu-lake.vercel.app](https://financial-planner-nu-lake.vercel.app)
-
 ## Fitur
 
 - Autentikasi email dan password dengan session JWT `httpOnly` yang terhubung
