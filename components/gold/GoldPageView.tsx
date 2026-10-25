@@ -113,9 +113,9 @@ export function GoldPageView() {
             <div>
               <Link
                 href="/profile"
-                className="mb-3 inline-flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
+                className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
               >
-                <span aria-hidden="true">â†</span>
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Kembali ke Profil
               </Link>
               <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
