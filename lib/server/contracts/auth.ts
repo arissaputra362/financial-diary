@@ -29,6 +29,19 @@ export const loginSchema = z.object({
   rememberSession: z.boolean().optional().default(false),
 });
 
+export const updateProfileSchema = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .min(1, "Nama tidak boleh kosong.")
+    .max(60, "Nama maksimal 60 karakter."),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Masukkan kata sandi saat ini."),
+  newPassword: z.string().min(8, "Kata sandi baru minimal 8 karakter."),
+});
+
 /** Owner decision payloads (approve/decline/revoke), reason ≤200 (A-20). */
 export const decisionSchema = z.object({
   reason: z
@@ -40,4 +53,6 @@ export const decisionSchema = z.object({
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type DecisionInput = z.infer<typeof decisionSchema>;

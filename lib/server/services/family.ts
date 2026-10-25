@@ -7,6 +7,7 @@
 */
 
 import { createHash, randomBytes } from "node:crypto";
+import type { UpdateHouseholdInput } from "../contracts/family";
 import { conflict, forbidden, notFound } from "../errors";
 import type { AuthRepositories } from "./auth";
 
@@ -79,6 +80,15 @@ export class FamilyService {
     }
     const members = await this.repos.membership.listByHousehold(householdId);
     return members.map((m) => this.toDTO(m));
+  }
+
+  async updateHouseholdName(
+    actorUserId: string,
+    householdId: string,
+    input: UpdateHouseholdInput,
+  ): Promise<{ id: string; name: string }> {
+    await this.requireOwner(actorUserId, householdId);
+    return this.repos.household.updateName(householdId, input.name.trim());
   }
 
   async approve(actorUserId: string, membershipId: string, reason?: string): Promise<MembershipDTO> {

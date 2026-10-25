@@ -28,7 +28,7 @@ export function GoldAssetArtwork({ asset, size = "card" }: GoldAssetArtworkProps
       {asset.type === "BULLION" ? (
         <div className={`relative flex flex-col items-center justify-center rounded-2xl border border-[#C99D3D]/40 bg-linear-to-br from-[#F5D77A] via-[#D5A83E] to-[#A9751E] text-[#68470D] shadow-[0_8px_18px_rgba(137,96,22,0.2)] ${isDetail ? "h-24 w-32" : "h-20 w-28"}`}>
           <span className="text-2xl font-black tracking-[0.18em]">LM</span>
-          <span className="mt-0.5 max-w-[6rem] truncate rounded-full bg-white/50 px-2 py-0.5 text-[9px] font-extrabold tracking-wide">
+          <span className="mt-0.5 max-w-[6rem] truncate rounded-full bg-white/50 px-2 py-0.5 text-[10px] font-extrabold tracking-wide sm:text-[11px]">
             {brand}
           </span>
           <span className="absolute inset-x-2 top-2 h-px bg-white/50" />
@@ -37,7 +37,7 @@ export function GoldAssetArtwork({ asset, size = "card" }: GoldAssetArtworkProps
         <div className={`relative flex flex-col items-center justify-center rounded-full border border-[#E8D6A8] bg-white/75 text-[#B88729] shadow-sm ${isDetail ? "h-24 w-24" : "h-20 w-20"}`}>
           <Gem className={isDetail ? "h-10 w-10" : "h-8 w-8"} strokeWidth={1.5} aria-hidden="true" />
           <Sparkles className="absolute right-3 top-3 h-4 w-4 text-[#D5AC56]" aria-hidden="true" />
-          <span className="mt-1 text-[8px] font-bold tracking-[0.12em]">PERHIASAN</span>
+          <span className="mt-1 text-[9px] font-bold tracking-[0.12em] sm:text-[10px]">PERHIASAN</span>
         </div>
       )}
     </div>

@@ -30,7 +30,7 @@ function membership(overrides: Partial<MembershipRecord> = {}): MembershipRecord
 
 function buildAuth(transactionOverride?: <T>(fn: (repos: AuthRepositories) => Promise<T>) => Promise<T>) {
   const repos = {
-    user: { findByEmail: vi.fn(), create: vi.fn(), findById: vi.fn() },
+    user: { findByEmail: vi.fn(), create: vi.fn(), findById: vi.fn(), findCredentialsById: vi.fn(), updateDisplayName: vi.fn(), updatePasswordHash: vi.fn() },
     household: { create: vi.fn(), findById: vi.fn() },
     membership: {
       findActiveByUserId: vi.fn(),
@@ -42,7 +42,7 @@ function buildAuth(transactionOverride?: <T>(fn: (repos: AuthRepositories) => Pr
       listByHousehold: vi.fn(),
     },
     invite: { create: vi.fn(), findByCodeHash: vi.fn(), redeemConditional: vi.fn(), revoke: vi.fn() },
-    session: { create: vi.fn(), findActiveById: vi.fn(), touch: vi.fn(), revoke: vi.fn(), purgeExpired: vi.fn() },
+    session: { create: vi.fn(), findActiveById: vi.fn(), touch: vi.fn(), revoke: vi.fn(), revokeOthers: vi.fn(), purgeExpired: vi.fn() },
     membershipEvent: { append: vi.fn() },
   };
   const bundle = repos as unknown as AuthRepositories;

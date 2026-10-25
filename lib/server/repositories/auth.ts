@@ -11,6 +11,9 @@ export interface UserRepository {
   findByEmail(email: string): Promise<{ id: string; email: string; passwordHash: string; displayName: string } | null>;
   create(data: { email: string; passwordHash: string; displayName: string }): Promise<{ id: string; email: string; displayName: string }>;
   findById(id: string): Promise<{ id: string; email: string; displayName: string } | null>;
+  findCredentialsById(id: string): Promise<{ id: string; passwordHash: string } | null>;
+  updateDisplayName(id: string, displayName: string): Promise<{ id: string; displayName: string }>;
+  updatePasswordHash(id: string, passwordHash: string): Promise<void>;
 }
 
 export type MembershipRecord = {
@@ -36,6 +39,7 @@ export type MembershipRecord = {
 export interface HouseholdRepository {
   create(data: { name: string; ownerUserId: string }): Promise<{ id: string; name: string; ownerUserId: string }>;
   findById(id: string): Promise<{ id: string; name: string; ownerUserId: string } | null>;
+  updateName(id: string, name: string): Promise<{ id: string; name: string }>;
 }
 
 export interface MembershipRepository {
@@ -108,6 +112,7 @@ export interface SessionRepository {
   } | null>;
   touch(id: string, lastSeenAt?: Date): Promise<void>;
   revoke(id: string): Promise<void>;
+  revokeOthers(userId: string, exceptSessionId: string): Promise<void>;
   purgeExpired(): Promise<void>;
 }
 
@@ -127,6 +132,15 @@ export function createUserRepository(db: Db): UserRepository {
         select: { id: true, email: true, displayName: true },
       });
     },
+    async findCredentialsById(id) {
+      return db.user.findUnique({ where: { id }, select: { id: true, passwordHash: true } });
+    },
+    async updateDisplayName(id, displayName) {
+      return db.user.update({ where: { id }, data: { displayName }, select: { id: true, displayName: true } });
+    },
+    async updatePasswordHash(id, passwordHash) {
+      await db.user.update({ where: { id }, data: { passwordHash } });
+    },
   };
 }
 
@@ -141,6 +155,9 @@ export function createHouseholdRepository(db: Db): HouseholdRepository {
         where: { id },
         select: { id: true, name: true, ownerUserId: true },
       });
+    },
+    async updateName(id, name) {
+      return db.household.update({ where: { id }, data: { name }, select: { id: true, name: true } });
     },
   };
 }
@@ -264,6 +281,12 @@ export function createSessionRepository(db: Db): SessionRepository {
     },
     async revoke(id) {
       await db.session.updateMany({ where: { id, revokedAt: null }, data: { revokedAt: new Date() } });
+    },
+    async revokeOthers(userId, exceptSessionId) {
+      await db.session.updateMany({
+        where: { userId, id: { not: exceptSessionId }, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
     },
     async purgeExpired() {
       await db.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });

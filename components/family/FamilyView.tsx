@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, ShieldCheck, UserPlus, Users, X } from "lucide-react";
+import { Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, Pencil, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
+import { apiRequest } from "@/lib/api-client";
 
 type Member = {
   id: string;
@@ -41,8 +43,42 @@ export default function FamilyView({
   const [inviteCopyError, setInviteCopyError] = useState<string | null>(null);
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [householdName, setHouseholdName] = useState(initialMe.household?.name ?? "");
+  const [editOpen, setEditOpen] = useState(false);
+  const [householdDraft, setHouseholdDraft] = useState(initialMe.household?.name ?? "");
+  const [savingHousehold, setSavingHousehold] = useState(false);
+  const [householdError, setHouseholdError] = useState("");
+  const [householdNotice, setHouseholdNotice] = useState("");
+  const editDialogRef = useRef<HTMLDivElement>(null);
 
   const isOwner = me?.role === "OWNER";
+
+  useDialogFocusTrap(editOpen, editDialogRef, () => setEditOpen(false));
+
+  const handleSaveHousehold = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setHouseholdError("");
+    setSavingHousehold(true);
+    try {
+      const result = await apiRequest<{ id: string; name: string }>("/api/family", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: householdDraft }),
+      });
+      if (!result.ok || !result.data) {
+        setHouseholdError(result.data?.error?.message ?? "Nama keluarga belum berhasil diperbarui.");
+        return;
+      }
+      setHouseholdName(result.data.name);
+      setHouseholdDraft(result.data.name);
+      setHouseholdNotice("Informasi keluarga berhasil diperbarui.");
+      setEditOpen(false);
+    } catch {
+      setHouseholdError("Koneksi bermasalah. Coba lagi.");
+    } finally {
+      setSavingHousehold(false);
+    }
+  };
 
   const handleCreateInvite = async () => {
     setCreatingInvite(true);
@@ -127,16 +163,35 @@ export default function FamilyView({
               Kelola keluarga
             </p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">
-              {me?.household?.name || "Keluarga"}
+              {householdName || "Keluarga"}
             </h1>
           </div>
           {isOwner && (
-            <Button onClick={handleCreateInvite} isLoading={creatingInvite}>
-              <UserPlus className="h-4 w-4" aria-hidden="true" />
-              Undang anggota
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setHouseholdDraft(householdName);
+                  setHouseholdError("");
+                  setEditOpen(true);
+                }}
+              >
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+                Edit informasi
+              </Button>
+              <Button onClick={handleCreateInvite} isLoading={creatingInvite}>
+                <UserPlus className="h-4 w-4" aria-hidden="true" />
+                Undang anggota
+              </Button>
+            </div>
           )}
         </div>
+
+        {householdNotice ? (
+          <p role="status" className="rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534]">
+            {householdNotice}
+          </p>
+        ) : null}
 
         {inviteCode && (
           <Card variant="tint">
@@ -272,6 +327,64 @@ export default function FamilyView({
             </p>
           </div>
         </Card>
+
+        {editOpen ? (
+          <div
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-[#14273F]/40 p-0 sm:items-center sm:p-4"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setEditOpen(false);
+            }}
+          >
+            <div
+              ref={editDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-household-title"
+              className="w-full rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 id="edit-household-title" className="text-lg font-semibold text-[#17304F]">
+                    Edit informasi keluarga
+                  </h2>
+                  <p className="mt-1 text-sm text-[#5C7191]">Ubah nama yang tampil di halaman keluarga.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(false)}
+                  aria-label="Tutup"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+                >
+                  <X className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+              <form onSubmit={handleSaveHousehold} className="mt-5 space-y-4">
+                <label htmlFor="household-name" className="block text-sm font-semibold text-[#46597A]">
+                  Nama keluarga
+                </label>
+                <input
+                  id="household-name"
+                  autoFocus
+                  required
+                  maxLength={80}
+                  value={householdDraft}
+                  onChange={(event) => setHouseholdDraft(event.target.value)}
+                  className="min-h-12 w-full rounded-2xl border border-[#C9D6E4] bg-white px-4 text-base text-[#17304F] outline-none focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
+                />
+                {householdError ? <p role="alert" className="text-sm text-[#B91C1C]">{householdError}</p> : null}
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="secondary" onClick={() => setEditOpen(false)} disabled={savingHousehold}>
+                    Batal
+                  </Button>
+                  <Button type="submit" isLoading={savingHousehold} loadingLabel="Menyimpan">
+                    Simpan
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ) : null}
       </div>
     </AppShell>
   );

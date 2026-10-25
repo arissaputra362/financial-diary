@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -115,7 +115,7 @@ export function GoldPageView() {
                 href="/profile"
                 className="mb-3 inline-flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
               >
-                <span aria-hidden="true">←</span>
+                <span aria-hidden="true">â†</span>
                 Kembali ke Profil
               </Link>
               <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
@@ -177,7 +177,7 @@ export function GoldPageView() {
           ) : null}
           {data?.priceInfo?.isStale ? (
             <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700">
-              <span>⚠</span>{" "}
+              <span>âš </span>{" "}
               {data.priceInfo.prices.length > 0
                 ? `Harga terakhir ${data.priceInfo.prices[0].sourceDate}`
                 : "Harga emas belum tersedia"}
@@ -220,7 +220,7 @@ export function GoldPageView() {
                   {formatIDR(data.totalEstimatedValueMinor)}
                 </p>
                 <p className="mt-1 text-xs text-[#46597A]">
-                  Taksiran nilai pasar · Modal beli:{" "}
+                  Taksiran nilai pasar Â· Modal beli:{" "}
                   <span className="font-semibold tabular-nums text-[#17304F]">
                     {formatIDR(data.totalCostBasisMinor)}
                   </span>
@@ -294,39 +294,32 @@ export function GoldPageView() {
               >
                 Daftar Aset ({data.assets.length})
               </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {data.assets.map((item) => (
                   <button
                     type="button"
                     key={item.id}
                     onClick={() => setSelectedAsset(item)}
                     aria-label={`Lihat detail ${item.name}`}
-                    className="group cursor-pointer overflow-hidden rounded-2xl border border-[#D8E2EE] bg-white text-sm shadow-xs transition hover:-translate-y-0.5 hover:border-[#A9C8E8] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4F87]"
+                    className="group min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-[#D8E2EE] bg-white text-sm shadow-xs transition hover:-translate-y-0.5 hover:border-[#A9C8E8] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4F87]"
                   >
                     <GoldAssetArtwork asset={item} />
-                    <div className="p-4">
-                      <div>
-                        <p className="font-semibold text-[#17304F]">{item.name}</p>
-                        <p className="mt-0.5 text-xs text-[#5C7191]">
-                          {formatGrams(item.weightGrams)} · {item.purityLabel}
-                          {item.scope === "PERSONAL" ? (
-                            <span className="ml-1.5 rounded-sm bg-[#EFF4FA] px-1.5 py-0.5 text-[10px] font-semibold text-[#1D4F87]">
-                              Pribadi
-                            </span>
-                          ) : (
-                            <span className="ml-1.5 rounded-sm bg-[#F0FDF4] px-1.5 py-0.5 text-[10px] font-semibold text-[#166534]">
-                              Bersama
-                            </span>
-                          )}
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-[#9BAFC8]">
-                          Beli: {formatIDR(item.buyPriceMinor)} · {item.purchaseDate}
-                        </p>
-                        <p className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-[#7D91AA]">Taksiran nilai</p>
-                        <p className="mt-0.5 text-lg font-extrabold tabular-nums text-[#17304F]">
-                          {formatIDR(item.estimatedValuationMinor)}
-                        </p>
-                      </div>
+                    <div className="p-3 sm:p-4">
+                      <p className="line-clamp-2 min-h-10 text-base font-bold leading-5 text-[#17304F] sm:text-lg">
+                        {item.name}
+                      </p>
+                      <p className="mt-1 truncate text-xs font-medium text-[#5C7191] sm:text-sm">
+                        {formatGrams(item.weightGrams)} · {item.purityLabel}
+                      </p>
+                      <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold sm:text-xs ${item.scope === "PERSONAL" ? "bg-[#EFF4FA] text-[#1D4F87]" : "bg-[#F0FDF4] text-[#166534]"}`}>
+                        {item.scope === "PERSONAL" ? "Pribadi" : "Bersama"}
+                      </span>
+                      <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#7185A0] sm:text-xs">
+                        Taksiran nilai
+                      </p>
+                      <p className="mt-0.5 break-words text-base font-extrabold leading-tight tabular-nums text-[#17304F] sm:text-lg">
+                        {formatIDR(item.estimatedValuationMinor)}
+                      </p>
                     </div>
                   </button>
                 ))}

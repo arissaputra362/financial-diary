@@ -669,12 +669,13 @@ export function ActivityView({
           className="shrink-0"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
-          Tambah transaksi
+          <span className="sm:hidden">Tambah</span>
+          <span className="hidden sm:inline">Tambah transaksi</span>
         </Button>
       </div>
 
       <div
-        className="flex flex-wrap items-center gap-1.5 sm:gap-2 print:hidden"
+        className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2 print:hidden"
         role="tablist"
         aria-label="Tampilan aktivitas"
       >
@@ -694,7 +695,7 @@ export function ActivityView({
             aria-controls={`activity-panel-${value}`}
             onClick={() => changeView(value)}
             className={cn(
-              "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors sm:px-5",
+              "min-h-11 rounded-full px-2 text-center text-sm font-semibold transition-colors sm:px-5",
               view === value
                 ? "bg-[#14273F] text-white"
                 : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]",
@@ -883,24 +884,10 @@ export function ActivityView({
       ) : (
         <>
           {showFilters ? (
-            <div>
-              <Link
-                href={activityHref({
-                  view: "ringkasan",
-                  month: activeMonth,
-                  reportScope: "shared",
-                })}
-                className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
-              >
-                Lihat ringkasan bulan ini
-              </Link>
-            </div>
-          ) : null}
-
-          {showFilters ? (
             <div className="space-y-3">
+              <p className="px-1 text-sm font-semibold text-[#46597A]">Jenis transaksi</p>
               <div
-                className="flex flex-wrap items-center gap-1 rounded-2xl bg-[#EFF4FA] p-1"
+                className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1 sm:rounded-2xl sm:bg-[#EFF4FA] sm:p-1"
                 role="group"
                 aria-label="Saring transaksi"
               >
@@ -924,10 +911,10 @@ export function ActivityView({
                       });
                     }}
                     className={cn(
-                      "flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors",
+                      "flex min-h-11 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors sm:border-0 sm:px-4",
                       listFilter === value
-                        ? "bg-white text-[#17304F] shadow-sm"
-                        : "text-[#46597A] hover:text-[#17304F]",
+                        ? "border-[#14273F] bg-[#14273F] text-white shadow-sm sm:bg-white sm:text-[#17304F]"
+                        : "border-[#D8E2EE] bg-white text-[#46597A] hover:text-[#17304F] sm:bg-transparent sm:hover:bg-white",
                     )}
                   >
                     {label}

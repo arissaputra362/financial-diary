@@ -6,7 +6,8 @@
 
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
-import { decisionSchema, loginSchema, signupSchema, type DecisionInput, type LoginInput, type SignupInput } from "./contracts/auth";
+import { updateHouseholdSchema, type UpdateHouseholdInput } from "./contracts/family";
+import { changePasswordSchema, decisionSchema, loginSchema, signupSchema, updateProfileSchema, type ChangePasswordInput, type DecisionInput, type LoginInput, type SignupInput, type UpdateProfileInput } from "./contracts/auth";
 import { formatFieldErrors } from "./contracts/common";
 import { idempotencyKeyHeaderSchema } from "./contracts/common";
 import {
@@ -103,8 +104,26 @@ export function parseLogin(input: unknown): LoginInput {
   return result.data;
 }
 
+export function parseUpdateProfile(input: unknown): UpdateProfileInput {
+  const result = updateProfileSchema.safeParse(input);
+  if (!result.success) throw validationError(result.error);
+  return result.data;
+}
+
+export function parseChangePassword(input: unknown): ChangePasswordInput {
+  const result = changePasswordSchema.safeParse(input);
+  if (!result.success) throw validationError(result.error);
+  return result.data;
+}
+
 export function parseDecision(input: unknown): DecisionInput {
   const result = decisionSchema.safeParse(input);
+  if (!result.success) throw validationError(result.error);
+  return result.data;
+}
+
+export function parseUpdateHousehold(input: unknown): UpdateHouseholdInput {
+  const result = updateHouseholdSchema.safeParse(input);
   if (!result.success) throw validationError(result.error);
   return result.data;
 }

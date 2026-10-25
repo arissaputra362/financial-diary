@@ -9,7 +9,7 @@
 
 import { createHash, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
-import type { SignupInput } from "../contracts/auth";
+import type { ChangePasswordInput, SignupInput, UpdateProfileInput } from "../contracts/auth";
 import { badRequest, conflict, unauthorized } from "../errors";
 import type {
   HouseholdRepository,
@@ -126,6 +126,31 @@ export class AuthService {
 
   async logout(sid: string): Promise<void> {
     await this.repos.session.revoke(sid);
+  }
+
+  async updateProfile(userId: string, input: UpdateProfileInput): Promise<{ displayName: string }> {
+    const updated = await this.repos.user.updateDisplayName(userId, input.displayName.trim());
+    return { displayName: updated.displayName };
+  }
+
+  async changePassword(
+    userId: string,
+    sessionId: string,
+    input: ChangePasswordInput,
+  ): Promise<void> {
+    await this.transaction(async (repos) => {
+      const user = await repos.user.findCredentialsById(userId);
+      if (!user || !(await bcrypt.compare(input.currentPassword, user.passwordHash))) {
+        throw badRequest("CURRENT_PASSWORD_INVALID", "Kata sandi saat ini salah.");
+      }
+      if (await bcrypt.compare(input.newPassword, user.passwordHash)) {
+        throw badRequest("PASSWORD_UNCHANGED", "Gunakan kata sandi baru yang berbeda.");
+      }
+
+      const passwordHash = await bcrypt.hash(input.newPassword, PASSWORD_COST);
+      await repos.user.updatePasswordHash(userId, passwordHash);
+      await repos.session.revokeOthers(userId, sessionId);
+    });
   }
 
   async me(userId: string): Promise<AuthStateDTO> {

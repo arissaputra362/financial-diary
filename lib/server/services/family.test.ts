@@ -41,7 +41,7 @@ function buildFamily() {
       listByHousehold: vi.fn(),
     },
     invite: { create: vi.fn(), findByCodeHash: vi.fn(), redeemConditional: vi.fn(), revoke: vi.fn() },
-    session: { create: vi.fn(), findActiveById: vi.fn(), touch: vi.fn(), revoke: vi.fn(), purgeExpired: vi.fn() },
+    session: { create: vi.fn(), findActiveById: vi.fn(), touch: vi.fn(), revoke: vi.fn(), revokeOthers: vi.fn(), purgeExpired: vi.fn() },
     membershipEvent: { append: vi.fn() },
   };
   const service = new FamilyService(repos as unknown as AuthRepositories);
