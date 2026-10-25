@@ -123,22 +123,24 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
 
       const data: GoldScanResultDTO = await res.json();
 
-      // Populate review form with extracted data
-      if (data.scanType === "JEWELRY_RECEIPT") {
-        setType(GoldAssetType.JEWELRY);
-      } else {
-        setType(GoldAssetType.BULLION);
+      // For a new asset, use the extracted fields as a review draft. When
+      // attaching a scan to an existing asset, preserve its saved information.
+      if (!initialAsset) {
+        if (data.scanType === "JEWELRY_RECEIPT") {
+          setType(GoldAssetType.JEWELRY);
+        } else {
+          setType(GoldAssetType.BULLION);
+        }
+        setBrand(data.brand || GoldBrand.ANTAM);
+        setBrandCustomName(data.brandCustomName || "");
+        setName(data.name || "");
+        setWeightGrams(data.weightGrams ? String(data.weightGrams) : "");
+        setPurityInput(purityInputFromPermille(data.purityPermille));
+        setBuyPriceMinor(data.buyPriceMinor != null ? normalizeMoneyValue(String(data.buyPriceMinor)) : "");
+        setPurchaseDate(data.purchaseDate || todayDate());
+        setSerialNumber(data.serialNumber || "");
+        setNotes("");
       }
-
-      setBrand(data.brand || GoldBrand.ANTAM);
-      setBrandCustomName(data.brandCustomName || "");
-      setName(data.name || "");
-      setWeightGrams(data.weightGrams ? String(data.weightGrams) : "");
-      setPurityInput(purityInputFromPermille(data.purityPermille));
-      setBuyPriceMinor(data.buyPriceMinor != null ? normalizeMoneyValue(String(data.buyPriceMinor)) : "");
-      setPurchaseDate(data.purchaseDate || todayDate());
-      setSerialNumber(data.serialNumber || "");
-      setNotes("");
       setReceiptId(data.receiptId);
       setReviewingScan(true);
 
@@ -265,7 +267,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
         </p>
 
         {/* Tab switch */}
-        {!initialAsset ? <div className="mt-5 grid grid-cols-2 rounded-2xl bg-[#F1F5FA] p-1">
+        <div className="mt-5 grid grid-cols-2 rounded-2xl bg-[#F1F5FA] p-1">
           <button
             type="button"
             onClick={() => setActiveTab("manual")}
@@ -276,7 +278,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             }`}
           >
             <Coins className="h-4 w-4" />
-            Input Manual
+            {initialAsset ? "Edit Manual" : "Input Manual"}
           </button>
           <button
             type="button"
@@ -288,9 +290,9 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             }`}
           >
             <Sparkles className="h-4 w-4 text-amber-500" />
-            Pindai AI
+            {initialAsset ? (initialAsset.receiptId ? "Ganti foto" : "Tambah foto") : "Pindai AI"}
           </button>
-        </div> : null}
+        </div>
 
         {error ? (
           <div className="mt-4 rounded-2xl bg-[#FDECEC] p-3 text-sm font-medium text-[#B91C1C]">
@@ -375,7 +377,9 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             {reviewingScan ? (
               <p role="status" className="rounded-2xl bg-[#EFF4FA] px-4 py-3 text-sm font-medium text-[#1D4F87]">
-                Periksa kembali data hasil pindai sebelum disimpan.
+                {initialAsset
+                  ? "Foto hasil scan siap ditambahkan. Simpan perubahan untuk menautkannya ke catatan emas."
+                  : "Periksa kembali data hasil pindai sebelum disimpan."}
               </p>
             ) : null}
             {/* Tipe Emas */}
