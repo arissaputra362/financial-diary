@@ -83,25 +83,32 @@ export function GoldPageView() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 pb-28 sm:px-6 lg:max-w-3xl">
       {/* Page Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/home"
-            aria-label="Kembali ke Beranda"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#5C7191] shadow-xs hover:bg-[#F1F5FA]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div>
-            <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
-              <Coins className="h-5 w-5 text-amber-500" aria-hidden="true" />
-              Tabungan Emas
-            </h1>
-            <p className="mt-0.5 text-xs text-[#5C7191]">
-              Logam mulia batangan &amp; emas perhiasan keluarga
-            </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Link
+              href="/home"
+              aria-label="Kembali ke Beranda"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#5C7191] shadow-xs hover:bg-[#F1F5FA] md:flex"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+            <div>
+              <Link
+                href="/profile"
+                className="mb-3 inline-flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
+              >
+                <span aria-hidden="true">←</span>
+                Kembali ke Profil
+              </Link>
+              <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
+                <Coins className="h-5 w-5 text-amber-500" aria-hidden="true" />
+                Tabungan Emas
+              </h1>
+              <p className="mt-0.5 text-xs text-[#5C7191]">
+                Logam mulia batangan &amp; emas perhiasan keluarga
+              </p>
+            </div>
           </div>
-        </div>
 
         <div className="flex shrink-0 items-center gap-2">
           <button

@@ -1,14 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { Camera, Coins, Gem, Sparkles, Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Camera, Coins, Gem, ImageIcon, Sparkles, X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { GoldAssetType, GoldBrand, WalletScope } from "@/lib/generated/prisma/enums";
 import { apiRequest } from "@/lib/api-client";
 import { formatIDR } from "@/lib/format";
+import { compressCameraImage } from "@/lib/compress-image";
 import { normalizeMoneyValue, parseMoneyInputValue } from "@/lib/money-input";
 import { formatGrams, parsePurityPermille } from "@/lib/gold";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import type { CreateGoldAssetInput, GoldScanResultDTO } from "@/types/gold";
+
+const MAX_SCAN_FILE_BYTES = 4_194_304;
+const ALLOWED_SCAN_MIME = ["image/jpeg", "image/png", "image/webp"];
 
 interface GoldAssetModalProps {
   open: boolean;
@@ -20,7 +25,10 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
   const [activeTab, setActiveTab] = useState<"manual" | "scan">("manual");
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [type, setType] = useState<GoldAssetType>(GoldAssetType.BULLION);
@@ -38,13 +46,32 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
 
   if (!open) return null;
 
-  async function handleScanUpload(file: File) {
+  async function handleScanUpload(file: File, fromCamera = false) {
     setError(null);
+    if (!ALLOWED_SCAN_MIME.includes(file.type)) {
+      setError("Format foto harus JPG, PNG, atau WebP.");
+      return;
+    }
+
+    let uploadFile = file;
+    if (fromCamera && file.size > MAX_SCAN_FILE_BYTES) {
+      try {
+        uploadFile = await compressCameraImage(file);
+      } catch {
+        setError("Foto dari kamera tidak dapat diperkecil. Coba ambil ulang atau pilih dari galeri.");
+        return;
+      }
+    }
+
+    if (uploadFile.size > MAX_SCAN_FILE_BYTES) {
+      setError("Ukuran foto maksimal 4 MB.");
+      return;
+    }
     setScanning(true);
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadFile);
 
       const res = await fetch("/api/gold/scan", {
         method: "POST",
@@ -79,6 +106,38 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
     } finally {
       setScanning(false);
     }
+  }
+
+  function openPicker(source: "camera" | "gallery") {
+    const input = source === "camera" ? cameraInputRef.current : galleryInputRef.current;
+    if (!input) return;
+    input.value = "";
+    input.click();
+  }
+
+  function handleDragOver(event: React.DragEvent<HTMLDivElement>) {
+    if (!Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    if (scanning) {
+      event.dataTransfer.dropEffect = "none";
+      return;
+    }
+    event.dataTransfer.dropEffect = "copy";
+    setDragActive(true);
+  }
+
+  function handleDragLeave(event: React.DragEvent<HTMLDivElement>) {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    setDragActive(false);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragActive(false);
+    if (scanning) return;
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    void handleScanUpload(file);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -195,7 +254,16 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
         ) : null}
 
         {activeTab === "scan" ? (
-          <div className="mt-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[#BCD6EF] bg-[#F8FAFC] p-8 text-center">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`mt-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-colors ${
+              dragActive
+                ? "border-[#1D4F87] bg-[#DCEBFA] ring-4 ring-[#1D4F87]/10"
+                : "border-[#BCD6EF] bg-[#F8FAFC]"
+            }`}
+          >
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]">
               {scanning ? (
                 <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#1D4F87] border-t-transparent" />
@@ -209,22 +277,54 @@ export function GoldAssetModal({ open, onClose, onSuccess }: GoldAssetModalProps
             <p className="mt-1 text-xs text-[#5C7191]">
               Foto kemasan certicard (Antam/UBS) atau nota pembelian toko perhiasan fisik.
             </p>
+            <p className="mt-1 text-xs text-[#5C7191]">Seret dan lepaskan foto ke area ini, atau pilih sumber foto.</p>
 
-            <label className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#1D4F87] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#153D6B]">
-              <Upload className="h-4 w-4" />
-              Pilih Foto
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
+            <div className="mt-5 grid w-full gap-2 sm:grid-cols-2">
+              <Button
+                type="button"
+                onClick={() => openPicker("camera")}
+                className="w-full"
                 disabled={scanning}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleScanUpload(file);
-                }}
-              />
-            </label>
+              >
+                <Camera className="h-4 w-4" aria-hidden="true" />
+                Ambil foto dengan kamera
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => openPicker("gallery")}
+                className="w-full"
+                disabled={scanning}
+              >
+                <ImageIcon className="h-4 w-4" aria-hidden="true" />
+                Pilih dari galeri
+              </Button>
+            </div>
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              className="sr-only"
+              aria-label="Ambil foto certicard atau nota dengan kamera"
+              disabled={scanning}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handleScanUpload(file, true);
+              }}
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              aria-label="Pilih foto certicard atau nota dari galeri"
+              disabled={scanning}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handleScanUpload(file);
+              }}
+            />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">

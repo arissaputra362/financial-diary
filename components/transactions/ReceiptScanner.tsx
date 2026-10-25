@@ -8,6 +8,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { isValidMoneyAmount } from "@/lib/money-input";
+import { compressCameraImage } from "@/lib/compress-image";
 import { TextArea } from "@/components/ui/TextArea";
 import { ScopePill } from "@/components/wallets/scope";
 import { WalletFormSheet } from "@/components/wallets/WalletFormSheet";
@@ -47,6 +48,7 @@ export interface ReceiptScannerProps {
  */
 export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: ReceiptScannerProps) {
   const [step, setStep] = useState<Step>("pick");
+  const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [job, setJob] = useState<OcrJobDTO | null>(null);
   const [duplicateNotice, setDuplicateNotice] = useState<string | null>(null);
@@ -117,6 +119,24 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     if (!input) return;
     input.value = "";
     input.click();
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    setDragActive(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    handleFile(event.dataTransfer.files[0]);
   };
 
   /*
@@ -255,7 +275,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     }
   };
 
-  const handleFile = (file: File | undefined) => {
+  const handleFile = async (file: File | undefined, fromCamera = false) => {
     if (!file) return;
     if (!ALLOWED_MIME.includes(file.type)) {
       /* Generic validation error: no failed job to retry, so no retry claim. */
@@ -263,13 +283,25 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
       fail(null, "Format foto harus JPG, PNG, atau WebP.");
       return;
     }
-    if (file.size > MAX_BYTES) {
+
+    let uploadFile = file;
+    if (fromCamera && file.size > MAX_BYTES) {
+      try {
+        uploadFile = await compressCameraImage(file);
+      } catch {
+        setFailedJob(null);
+        fail(null, "Foto dari kamera tidak dapat diperkecil. Coba ambil ulang atau pilih dari galeri.");
+        return;
+      }
+    }
+
+    if (uploadFile.size > MAX_BYTES) {
       setFailedJob(null);
       fail(null, "Ukuran foto maksimal 4 MB.");
       return;
     }
-    showPreview(file);
-    void upload(file);
+    showPreview(uploadFile);
+    void upload(uploadFile);
   };
 
   /*
@@ -508,7 +540,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         capture="environment"
         className="sr-only"
         aria-label="Ambil foto struk dengan kamera"
-        onChange={(event) => handleFile(event.target.files?.[0])}
+        onChange={(event) => void handleFile(event.target.files?.[0], true)}
       />
       <input
         ref={galleryRef}
@@ -516,7 +548,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
         aria-label="Pilih foto struk dari galeri"
-        onChange={(event) => handleFile(event.target.files?.[0])}
+        onChange={(event) => void handleFile(event.target.files?.[0])}
       />
     </>
   );
@@ -935,12 +967,22 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
 
   return (
     <div className="space-y-4">
-      <div className="rounded-3xl border-2 border-dashed border-[#BFD3E8] bg-[#EFF4FA]/60 p-6 text-center">
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`rounded-3xl border-2 border-dashed p-6 text-center transition-colors ${
+          dragActive
+            ? "border-[#1D4F87] bg-[#DCEBFA] ring-4 ring-[#1D4F87]/10"
+            : "border-[#BFD3E8] bg-[#EFF4FA]/60"
+        }`}
+      >
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]">
           <Camera className="h-6 w-6" aria-hidden="true" />
         </span>
         <span className="mt-3 block text-[15px] font-semibold text-[#17304F]">Tambahkan foto struk</span>
         <span className="mt-1 block text-xs text-[#46597A]">JPG, PNG, atau WebP. Maksimal 4 MB.</span>
+        <span className="mt-1 block text-xs text-[#5C7191]">Seret dan lepaskan foto ke area ini, atau pilih sumber foto.</span>
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <Button type="button" onClick={() => openPicker("camera")} className="w-full">
             <Camera className="h-4 w-4" aria-hidden="true" />
