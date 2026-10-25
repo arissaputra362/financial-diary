@@ -5,7 +5,7 @@ import {
   ArrowLeftRight,
   ArrowDownLeft,
   ArrowUpRight,
-  PenLine,
+  Pencil,
   ReceiptText,
   Trash2,
   Undo2,
@@ -229,23 +229,31 @@ export function TransactionDetailSheet({
         <div className="mt-5 border-t border-[#EAEEF4] pt-4">
           {mode === "active" ? (
             <>
-              {!transfer ? (
-                <Button ref={editTriggerRef} className="mb-3 w-full" variant="secondary" onClick={() => setEditing(true)} disabled={busy}>
-                  <PenLine className="h-4 w-4" aria-hidden="true" />
-                  Edit transaksi
+              <div className={transfer ? "" : "grid grid-cols-2 gap-2"}>
+                {!transfer ? (
+                  <Button
+                    ref={editTriggerRef}
+                    className="w-full"
+                    variant="secondary"
+                    onClick={() => setEditing(true)}
+                    disabled={busy}
+                  >
+                    <Pencil className="h-4 w-4" aria-hidden="true" />
+                    Edit
+                  </Button>
+                ) : null}
+                <Button
+                  variant="danger"
+                  className="w-full"
+                  onClick={() => onDelete(row)}
+                  disabled={busy}
+                  isLoading={busy}
+                  loadingLabel="Memproses"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Hapus
                 </Button>
-              ) : null}
-              <Button
-                variant="danger"
-                className="w-full"
-                onClick={() => onDelete(row)}
-                disabled={busy}
-                isLoading={busy}
-                loadingLabel="Memproses"
-              >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-                Pindahkan ke Trash
-              </Button>
+              </div>
               <p className="mt-2 text-center text-xs text-[#5C7191]">
                 Masih bisa dipulihkan lewat Undo atau tab Trash.
               </p>

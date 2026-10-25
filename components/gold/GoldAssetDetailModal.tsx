@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { ImageIcon, Pencil, Trash2, X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { useState } from "react";
 import { formatGrams } from "@/lib/gold";
 import { formatIDR } from "@/lib/format";
@@ -120,24 +121,26 @@ export function GoldAssetDetailModal({ asset, deleting, onClose, onEdit, onDelet
           {asset.notes ? <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-[#5C7191]">{asset.notes}</p> : null}
 
           <div className="mt-5 grid grid-cols-2 gap-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              className="w-full"
               disabled={deleting}
               onClick={() => onEdit(asset)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#BFD3E8] text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] disabled:opacity-50"
             >
               <Pencil className="h-4 w-4" aria-hidden="true" />
               Edit
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="danger"
+              className="w-full"
               disabled={deleting}
+              isLoading={deleting}
+              loadingLabel="Menghapus"
               onClick={() => onDelete(asset)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-red-200 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
-              {deleting ? "Menghapus..." : "Hapus"}
-            </button>
+              Hapus
+            </Button>
           </div>
         </div>
       </section>
