@@ -10,6 +10,7 @@
 */
 
 import { computeRequestHash, IdempotencyService } from "./idempotency";
+import { hasAtMostTwoDecimals, roundMoneyValue } from "@/lib/money-input";
 import { notFound, unprocessableCode } from "../errors";
 import type { PlanningRepositories } from "../repositories/ledger";
 import type { GoalRecord } from "../repositories/ledger";
@@ -103,7 +104,7 @@ export class GoalService {
       enforces shape); the service guards the stored value range so a huge delta
       dies as 422 instead of an int overflow inside PostgreSQL (spec edge case).
     */
-    if (!Number.isInteger(savedDelta) || savedDelta === 0 || Math.abs(savedDelta) > INT32_MAX) {
+    if (!hasAtMostTwoDecimals(savedDelta) || savedDelta === 0 || Math.abs(savedDelta) > INT32_MAX) {
       throw unprocessableCode("SAVED_AMOUNT_INVALID", { savedDelta: ["Jumlah perubahan tidak valid."] });
     }
 
@@ -112,7 +113,7 @@ export class GoalService {
     /* Trashed goals are invisible to the API: increment on one is a 404 (AC-F4-3). */
     if (!before || before.deletedAt !== null) throw notFound("Target tidak ditemukan.");
 
-    if (before.savedAmountMinor + savedDelta > INT32_MAX) {
+    if (roundMoneyValue(before.savedAmountMinor + savedDelta) > INT32_MAX) {
       throw unprocessableCode("SAVED_AMOUNT_INVALID", { savedDelta: ["Jumlah terlalu besar."] });
     }
 

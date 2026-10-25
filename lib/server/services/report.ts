@@ -8,6 +8,7 @@
 */
 
 import { shiftMonthKey } from "@/lib/dates";
+import { roundMoneyValue } from "@/lib/money-input";
 import type { MonthlyReportDTO, ReportBreakdownDTO, ReportCategoryDTO } from "@/types/api";
 import { notFound, reportScopeUnavailable } from "../errors";
 import { jakartaDateOnly } from "../jakarta";
@@ -39,10 +40,10 @@ function toBreakdown(
     if (row.type !== type) continue;
     const name = categoryName(row.category);
     if (name === null) {
-      uncategorizedMinor += row.amountMinor;
+      uncategorizedMinor = roundMoneyValue(uncategorizedMinor + row.amountMinor);
       continue;
     }
-    named.push({ name, amountMinor: row.amountMinor });
+    named.push({ name, amountMinor: roundMoneyValue(row.amountMinor) });
   }
 
   named.sort((a, b) => {
@@ -59,7 +60,7 @@ function toBreakdown(
     categories,
     uncategorizedMinor,
     otherCategoryCount: rest.length,
-    otherAmountMinor: rest.reduce((total, row) => total + row.amountMinor, 0),
+    otherAmountMinor: roundMoneyValue(rest.reduce((total, row) => total + row.amountMinor, 0)),
   };
 }
 
@@ -90,13 +91,14 @@ export class ReportService {
       previous,
     });
 
-    const closingMinor =
+    const closingMinor = roundMoneyValue(
       aggregate.openingMinor +
       aggregate.newWalletOpeningMinor +
       aggregate.moneyInMinor -
       aggregate.moneyOutMinor +
       aggregate.transferInMinor -
-      aggregate.transferOutMinor;
+      aggregate.transferOutMinor,
+    );
     const selectedWallet = options.walletId ? wallets[0] : undefined;
 
     return {
@@ -112,15 +114,15 @@ export class ReportService {
       moneyOutMinor: aggregate.moneyOutMinor,
       transferInMinor: aggregate.transferInMinor,
       transferOutMinor: aggregate.transferOutMinor,
-      transferNetMinor: aggregate.transferInMinor - aggregate.transferOutMinor,
+      transferNetMinor: roundMoneyValue(aggregate.transferInMinor - aggregate.transferOutMinor),
       closingMinor,
       transactionCount: aggregate.transactionCount,
       hasBackdatedNewWallet: aggregate.hasBackdatedNewWallet,
       delta: aggregate.previous.hasData
         ? {
-            closingMinor: closingMinor - aggregate.previous.closingMinor,
-            moneyInMinor: aggregate.moneyInMinor - aggregate.previous.moneyInMinor,
-            moneyOutMinor: aggregate.moneyOutMinor - aggregate.previous.moneyOutMinor,
+            closingMinor: roundMoneyValue(closingMinor - aggregate.previous.closingMinor),
+            moneyInMinor: roundMoneyValue(aggregate.moneyInMinor - aggregate.previous.moneyInMinor),
+            moneyOutMinor: roundMoneyValue(aggregate.moneyOutMinor - aggregate.previous.moneyOutMinor),
           }
         : { closingMinor: null, moneyInMinor: null, moneyOutMinor: null },
       income: toBreakdown(aggregate.categories, "MONEY_IN", aggregate.moneyInMinor),

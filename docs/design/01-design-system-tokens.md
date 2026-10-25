@@ -13,7 +13,7 @@
   1. **§5.2a Bottom navigation upgrade.** The mobile bottom nav keeps its five existing items and navy shell (A-27/A-31), but current labels render at 10px and the active treatment reads weak. New floor: full item touch area `min-h-[56px]`, label `text-[11px]`, and a two-signal active state (tint pill + label weight). Hierarchy rationale and the item-by-item spec live in §5.2a and doc 02 §7.
   2. **§5.3a Scope mode control (`Pribadi / Bersama`).** The budget mode and the spending-chart scope each use their own independent segmented pill, built from the existing segmented-control pattern (§5.3) plus the wallet scope language from doc 06 (C-23). No new component family.
   3. **§5.4 90D weekly buckets.** The 90D mobile chart moves from 90 daily bars to about 13 weekly bars computed client-side from the daily values the chart already receives. The weekly sum is exact; this is a display grouping, not a changed finance calculation.
-  4. **§5.8 IDR live grouping for money inputs.** Amount fields in budget targets, savings goal targets, and the add-to-savings form group digits with Indonesian thousands separators (titik) while typing, matching the behavior already documented for the manual entry amount (doc 03 §2.2). Exact integer rupiah, no decimals.
+  4. **§5.8 IDR live grouping for money inputs.** Amount fields in budget targets, savings goal targets, add-to-savings, and manual entry accept up to two decimal digits with Indonesian live formatting.
   All four are **proposed for PM review**; nothing here auto-changes business rules.
 
 ## 1. Overview & Aesthetic Philosophy
@@ -294,18 +294,18 @@ The wallet card uses a **generic ATM/debit-style card metaphor** as visual ident
 - Error inline: `border-[#B91C1C]` + plain-language message below in `text-[#B91C1C]` (5.66:1 on `#FDECEC`, 6.47:1 on white).
 
 ### 5.8. IDR live grouping in money inputs (PM-approved 2026-10-23, implementation in T-013)
-Budget target amount, savings goal target amount, and add-to-savings amount currently key in raw digits (the manual entry form already formats; doc 03 §2.2). The next three fields adopt the same surface behavior. **This is presentation of the exact stored integer: never a value change.**
+Budget target amount, savings goal target amount, and add-to-savings amount use the same live formatting as manual entry. Formatting changes only the display; values may include up to two decimal places.
 
 - **Surfaces in scope:** budget target input (`atur budget`), goal form target amount, add-to-savings amount (both the in-goal action and the contribution path, doc 02 §8). The manual entry amount already behaves this way and is the behavior reference, not a new component.
-- **Typing rule (live grouping):** digits group with Indonesian thousands separators on every keystroke with a dot: typing `2500000` displays `2.500.000`. No space after `Rp`, no decimals ever, scale 0 (money rule, AGENTS.md §5).
+- **Typing rule (live grouping):** thousands group with Indonesian dots and decimal fractions display with a comma (for example `3,000.12` and `3.000,12` display as `3.000,12`). Input accepts English and Indonesian punctuation, retaining at most two fraction digits.
 - **Value integrity:**
-  - Stored/submitted value is the exact integer rupiah parsed from the digits (strip separators, parse integer). Semantic value is always the digits; the dots exist only while displayed.
+  - Stored/submitted value is a canonical decimal rupiah value using a dot for the fraction (for example `3000.12`); display uses Indonesian punctuation.
   - **Caret:** after each reformat, the caret follows the digit the user was editing (offset by how many separators precede it), not "end of string": editing digits in the middle must not jump the caret to the end. Rule surfaces: caret position = number of digits before caret + separators before those digits.
   - **Delete/backspace:** deleting removes digits and separators gracefully; `Backspace` never leaves a group artifact (e.g. deleting `5` then `.` in `2.500.000` must not leave `2.00.00`). Select-all + delete leaves an empty, valid, disabled-submit field with the `Rp` prefix kept for the next press.
   - **Paste:** a pasted string is normalized: leading `Rp`, spaces, existing dots, and stray decimals are stripped; `12.500,00` and `12500/00`-style noise resolve to the digit string; the result is grouped again. A paste introducing anything clearly non-numeric resolves to the digits it contains and shows the existing inline-error pattern if the digits are not a valid positive integer.
-- **Input details:** `inputMode="numeric"`, `type="text"` with `aria-label` stating the unit (`Jumlah, rupiah tanpa desimal`); visible `Rp` prefix as the first inline token so the unit reads without a callout; money `tabular-nums` per §3. No keypad is invented by the design: native numeric keypad behavior is in scope of implementation.
-- **Validation (unchanged rules, exact copy):** required, positive integer `> 0`, at or below the single-entry maximum already enforced server-side (`Rp2.147.483.647`, spec feat-visual-refresh §64 precedent). Preview under the field while typing (`text-sm tabular-nums text-[#46597A]`) for the goal target: `Target: Rp3.000.000`. The preview strips to the same integer parse; the preview never rounds.
-- **Where NOT to apply:** date fields, percentage, weekly plan slider (doc 05 §6) keep their current formats. Adding grouping is scoped to pure rupiah-integer inputs only, so the motion of one field type does not reshape others.
+- **Input details:** `inputMode="decimal"`, `type="text"`; visible `Rp` prefix as the first inline token; money `tabular-nums` per §3. Decimal punctuation is retained as a fractional part, up to two digits.
+- **Validation:** required and positive; at most two fraction digits and at or below the single-entry maximum already enforced server-side (`Rp2.147.483.647`). Preview under the field preserves the same two-decimal value.
+- **Where NOT to apply:** date fields, percentage, weekly plan slider (doc 05 §6) keep their current formats.
 - **No new component family:** this spec encodes a behavior pattern for the existing form tokens of this section. Implementation may reuse the manual entry amount's formatter logic if it shares this caret/grouping behavior.
 
 ---

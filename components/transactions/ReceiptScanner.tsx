@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
+import { isValidMoneyAmount } from "@/lib/money-input";
 import { TextArea } from "@/components/ui/TextArea";
 import { ScopePill } from "@/components/wallets/scope";
 import { WalletFormSheet } from "@/components/wallets/WalletFormSheet";
@@ -440,7 +441,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     if (missingFields.includes("merchant") && !merchant.trim()) {
       errors.merchant = ["Nama toko belum terbaca. Isi dulu."];
     }
-    if (!Number.isInteger(amountMinor) || amountMinor <= 0) {
+    if (!isValidMoneyAmount(amountMinor)) {
       errors.amountMinor = ["Jumlah belum terbaca. Isi dulu."];
     } else if (amountMinor > INT32_MAX) {
       errors.amountMinor = ["Jumlah terlalu besar."];

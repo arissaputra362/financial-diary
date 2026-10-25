@@ -107,7 +107,7 @@ AI sebelum tersimpan, agar data keuangan akurat dan saya tetap pegang kendali.
 **Acceptance Criteria**
 
 - [ ] AC-1: Form manual menerima type (money in/out/transfer), amount, category, date, note; input invalid ditolak dengan pesan bahasa awam.
-- [ ] AC-2: Amount disimpan sebagai integer minor (IDR, skala 1 rupiah); tidak ada floating point.
+  - [ ] AC-2: Amount disimpan sebagai nilai rupiah eksak dengan maksimal dua angka desimal pada kolom PostgreSQL NUMERIC; tidak menggunakan floating point untuk penyimpanan.
 - [ ] AC-3: Transfer menghasilkan tepat dua record berpasangan (money out + money in) dengan group id sama, dibuat atomik.
 - [ ] AC-4: Upload struk ≤4MB (4.194.304 byte — batas platform Vercel, A-02) menghasilkan draft OCR yang bisa diedit; TIDAK ada transaction tersimpan sebelum konfirmasi eksplisit user.
 - [ ] AC-5: Struk duplikat (konten sama di household yang sama) ditolak dengan 409 DUPLICATE_RECEIPT.
@@ -311,6 +311,34 @@ memahami istilah akuntansi.
 - Rentang tanggal bebas, lintas bulan, dan perbandingan lebih dari satu bulan.
 - Integrasi `SavingsGoal`, konsep potongan pemasukan, rincian per anggota, budget vs realisasi, dan multi-currency.
 
+### Fitur 8: Tabungan Logam Mulia & Emas Perhiasan
+
+**Spec:** `docs/spec/feat-gold-assets.md`
+**Status:** Spec Ready
+
+**User Story**
+
+Sebagai anggota keluarga, saya ingin mencatat dan memantau tabungan emas batangan (Antam/UBS) dan perhiasan secara manual atau lewat foto certicard/nota toko emas, dengan taksiran nilai pasar harian otomatis, agar saya tahu perkembangan nilai aset tabungan fisik keluarga saya secara rapi dan transparan.
+
+**Acceptance Criteria**
+
+- [ ] AC-F8-1: Anggota dapat mencatat Logam Mulia (BULLION) dan Perhiasan (JEWELRY) dengan scope `Pribadi` atau `Bersama`.
+- [ ] AC-F8-2: Berat disimpan dalam satuan miligram (`weight_milligrams Int`) dan kadar dalam permille (`purity_permille Int`).
+- [ ] AC-F8-3: Integrasi harga pasar harian (Antam, UBS, dan acuan perhiasan) tersimpan di cache lokal dengan failover data historis.
+- [ ] AC-F8-4: Form input manual menerima berat gram, kadar karat, harga beli, tanggal beli, dan catatan fisik.
+- [ ] AC-F8-5: Scan foto kemasan certicard mengekstraksi brand, gramatur, dan nomor seri lewat Gemini Vision ke Review Form.
+- [ ] AC-F8-6: Scan nota toko perhiasan fisik mengekstraksi nama toko, tanggal, kadar, berat, dan harga nota ke Review Form.
+- [ ] AC-F8-7: Valuasi pasar dan keuntungan/kerugian (unrealized gain/loss) dihitung otomatis dari buyback harian.
+- [ ] AC-F8-8: Kartu Bento di Beranda menampilkan total nilai, total gram, persentase keuntungan, dan tren harga harian.
+- [ ] AC-F8-9: Tab Ringkasan (Laporan) menyajikan alokasi aset tabungan emas terpisah dari kas cair operasional.
+- [ ] AC-F8-10: Soft delete dengan undo toast 5 detik dan penegakan isolasi household/user.
+
+**Batasan (Out of Scope)**
+
+- Transaksi jual-beli fisik langsung di aplikasi.
+- Auto-debit perbankan untuk emas digital.
+- Jaminan harga beli kembali di toko fisik pihak ketiga.
+
 ---
 
 ## Status Lifecycle Fitur
@@ -327,6 +355,7 @@ memahami istilah akuntansi.
 | Dompet Pribadi & Sharing (F6 base, T-009) | QA Passed |
 | Extension F6: Label bank/penyedia + Quick Add (T-011) | Done, QA PASS WITH RISKS and PM task accepted (2026-10-22); release approval remains T-008 |
 | Laporan Bulanan (F7) | QA Passed (2026-10-25, PASS WITH RISKS; release approval belum diberikan PM) |
+| Tabungan Logam Mulia & Emas Perhiasan (F8) | In Progress |
 
 ## Ketergantungan Antar Fitur
 

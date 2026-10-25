@@ -10,6 +10,7 @@
 */
 
 import { jakartaDateOnly } from "../jakarta";
+import { roundMoneyValue } from "@/lib/money-input";
 import type { GoalRepository, TransactionRepository, WalletActor, WalletRepository } from "../repositories/ledger";
 import type { DashboardDTO, GoalSummaryDTO, SpendingDayDTO, WalletCardDTO } from "@/types/api";
 import { BudgetService } from "./budget";
@@ -88,8 +89,8 @@ export class DashboardService {
     const cards: WalletCardDTO[] = [];
     for (const wallet of wallets) {
       const balance = balanceMap.get(wallet.id) ?? wallet.openingBalanceMinor;
-      if (wallet.scope === "SHARING") sharedBalanceMinor += balance;
-      else personalBalanceMinor += balance;
+      if (wallet.scope === "SHARING") sharedBalanceMinor = roundMoneyValue(sharedBalanceMinor + balance);
+      else personalBalanceMinor = roundMoneyValue(personalBalanceMinor + balance);
       /* Carousel: active only (C-18); archived balances still counted above. */
       if (!wallet.archivedAt) {
         cards.push({
@@ -116,9 +117,9 @@ export class DashboardService {
     const dailyRows = spendingRows.filter((row) => row.scope === "SHARING");
     const personalDailyRows = spendingRows.filter((row) => row.scope === "PERSONAL");
     const byDay = bucketByJakartaDay(spendingPeriod.buckets, dailyRows);
-    const totalOutMinor = byDay.reduce((total, day) => total + day.amountMinor, 0);
+    const totalOutMinor = roundMoneyValue(byDay.reduce((total, day) => total + day.amountMinor, 0));
     const personalByDay = bucketByJakartaDay(spendingPeriod.buckets, personalDailyRows);
-    const personalTotalOutMinor = personalByDay.reduce((total, day) => total + day.amountMinor, 0);
+    const personalTotalOutMinor = roundMoneyValue(personalByDay.reduce((total, day) => total + day.amountMinor, 0));
 
     const recentActivity = await timed(
       "decorateActivity",
@@ -167,7 +168,7 @@ export function bucketByJakartaDay(
   const totals = new Map<string, number>();
   for (const row of rows) {
     const key = jakartaDateOnly(row.date);
-    totals.set(key, (totals.get(key) ?? 0) + row.amountMinor);
+    totals.set(key, roundMoneyValue((totals.get(key) ?? 0) + row.amountMinor));
   }
   return buckets.map((date) => ({ date, amountMinor: totals.get(date) ?? 0 }));
 }

@@ -13,6 +13,7 @@ import { WalletPickerSheet } from "@/components/wallets/WalletPickerSheet";
 import { apiRequest, idempotencyHeaders } from "@/lib/api-client";
 import { todayJakarta, yesterdayJakarta } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
+import { isValidMoneyAmount } from "@/lib/money-input";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO, TransactionType, WalletDTO } from "@/types/api";
 import { categoriesForType, CATEGORY_EMOJI, CATEGORY_LABELS } from "./categories";
@@ -86,7 +87,7 @@ export function ManualEntryForm({ onCreated, onCancel, onSwitchToScan }: ManualE
 
   const validate = (): boolean => {
     const errors: Record<string, string[]> = {};
-    if (!Number.isInteger(amountMinor) || amountMinor <= 0) {
+    if (!isValidMoneyAmount(amountMinor)) {
       errors.amountMinor = ["Jumlah harus lebih dari 0."];
     } else if (amountMinor > INT32_MAX) {
       errors.amountMinor = ["Jumlah terlalu besar."];

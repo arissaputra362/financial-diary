@@ -10,6 +10,7 @@
 */
 
 import { randomUUID } from "node:crypto";
+import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import {
   CATEGORIES,
   MONEY_IN_CATEGORIES,
@@ -77,7 +78,7 @@ export class TransactionService {
 
   /** Service-level validation on top of the Zod boundary (AC-F3-1, A-40). */
   private validate(input: CreateInput): void {
-    if (!Number.isInteger(input.amountMinor) || input.amountMinor <= 0) {
+    if (!hasAtMostTwoDecimals(input.amountMinor) || input.amountMinor <= 0) {
       throw unprocessable({ amountMinor: ["Jumlah harus lebih dari 0."] });
     }
     if (input.amountMinor > INT32_MAX) {

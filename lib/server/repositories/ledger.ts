@@ -1,4 +1,5 @@
 import type { Db } from "./types";
+import { roundMoneyValue } from "@/lib/money-input";
 import { notFound } from "../errors";
 import {
   createInstitutionRepository,
@@ -373,6 +374,18 @@ export interface IdempotencyRepository {
 
 const ACTIVE = { deletedAt: null } as const;
 
+function numberizeAmount<T extends { amountMinor: unknown }>(row: T): Omit<T, "amountMinor"> & { amountMinor: number } {
+  return { ...row, amountMinor: Number(row.amountMinor) };
+}
+
+function numberizeGoal<T extends { targetAmountMinor: unknown; savedAmountMinor: unknown }>(row: T) {
+  return {
+    ...row,
+    targetAmountMinor: Number(row.targetAmountMinor),
+    savedAmountMinor: Number(row.savedAmountMinor),
+  };
+}
+
 export function createTransactionRepository(db: Db): TransactionRepository {
   /* A-38 wallet visibility predicate applied at the query level. */
   const visibility = (actor: WalletActor) => ({ wallet: { is: visibleWalletWhere(actor) } });
@@ -390,7 +403,7 @@ export function createTransactionRepository(db: Db): TransactionRepository {
 
   return {
     async create(data) {
-      return db.transaction.create({ data });
+      return db.transaction.create({ data }).then(numberizeAmount);
     },
     async createTransferPair(householdId, createdByUserId, outLeg, inLeg) {
       const transferGroupId = crypto.randomUUID();
@@ -401,17 +414,19 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         const inn = await tx.transaction.create({
           data: { ...inLeg, householdId, createdByUserId, type: "MONEY_IN", source: "MANUAL", transferGroupId },
         });
-        return [out, inn];
+        return [numberizeAmount(out), numberizeAmount(inn)];
       });
     },
     async findById(actor, id) {
       /* Extended-unique where + wallet visibility: foreign/private → null → 404. */
-      return db.transaction.findFirst({
+      const row = await db.transaction.findFirst({
         where: { id, householdId: actor.householdId, ...visibility(actor) },
       });
+      return row ? numberizeAmount(row) : null;
     },
     async findByIdAnyWallet(householdId, id) {
-      return db.transaction.findFirst({ where: { id, householdId } });
+      const row = await db.transaction.findFirst({ where: { id, householdId } });
+      return row ? numberizeAmount(row) : null;
     },
     async listActive(actor, filters = {}) {
       const where = {
@@ -433,10 +448,10 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
       });
       const hasMore = rows.length > limit;
-      return { rows: rows.slice(0, limit), nextCursor: hasMore ? rows[limit - 1]?.id ?? null : null };
+      return { rows: rows.slice(0, limit).map(numberizeAmount), nextCursor: hasMore ? rows[limit - 1]?.id ?? null : null };
     },
     async findGroupLegs(householdId, transferGroupId) {
-      return db.transaction.findMany({ where: { householdId, transferGroupId } });
+      return db.transaction.findMany({ where: { householdId, transferGroupId } }).then((rows) => rows.map(numberizeAmount));
     },
     async privateGroupIdsForActor(actor, groupIds) {
       if (groupIds.length === 0) return new Set<string>();
@@ -488,7 +503,7 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
       const hasMore = rows.length > limit;
-      return { rows: rows.slice(0, limit), nextCursor: hasMore ? rows[limit - 1]?.id ?? null : null };
+      return { rows: rows.slice(0, limit).map(numberizeAmount), nextCursor: hasMore ? rows[limit - 1]?.id ?? null : null };
     },
     async sumByType(householdId, range, scope) {
       /*
@@ -508,7 +523,7 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         },
         _sum: { amountMinor: true },
       });
-      return result._sum.amountMinor ?? 0;
+      return Number(result._sum.amountMinor ?? 0);
     },
     async listByDay(householdId, range, scope) {
       /* Excludes transfer legs so the spending chart never plots a transfer (A-45). */
@@ -524,7 +539,7 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         },
         _sum: { amountMinor: true },
       });
-      return rows.map((row) => ({ date: row.occurredAt, amountMinor: row._sum.amountMinor ?? 0 }));
+      return rows.map((row) => ({ date: row.occurredAt, amountMinor: Number(row._sum.amountMinor ?? 0) }));
     },
     async listDashboardSpending(actor, range) {
       const rows = await db.transaction.findMany({
@@ -551,7 +566,7 @@ export function createTransactionRepository(db: Db): TransactionRepository {
       });
       return rows.map((row) => ({
         date: row.occurredAt,
-        amountMinor: row.amountMinor,
+        amountMinor: Number(row.amountMinor),
         scope: row.wallet.scope,
       }));
     },
@@ -566,6 +581,7 @@ const WALLET_INCLUDE = {
 } as const;
 
 type WalletRow = {
+  openingBalanceMinor: unknown;
   createdBy: { displayName: string } | null;
   officialInstitution: { id: string; displayName: string } | null;
   customInstitution: { id: string; displayName: string; userId: string } | null;
@@ -585,6 +601,7 @@ function toWalletRecord<T extends WalletRow>(row: T): WalletRecord {
       : null;
   return {
     ...(rest as unknown as WalletRecord),
+    openingBalanceMinor: Number(row.openingBalanceMinor),
     createdByDisplayName: createdBy?.displayName ?? null,
     institution,
   };
@@ -682,13 +699,15 @@ export function createWalletRepository(db: Db): WalletRepository {
       ]);
       const map = new Map<string, { balanceMinor: number; transactionCount: number }>();
       for (const wallet of wallets) {
-        map.set(wallet.id, { balanceMinor: wallet.openingBalanceMinor, transactionCount: 0 });
+        map.set(wallet.id, { balanceMinor: Number(wallet.openingBalanceMinor), transactionCount: 0 });
       }
       for (const row of grouped) {
         const entry = map.get(row.walletId);
         if (!entry) continue;
-        entry.balanceMinor +=
-          row.type === "MONEY_IN" ? row._sum.amountMinor ?? 0 : -(row._sum.amountMinor ?? 0);
+        const amount = Number(row._sum.amountMinor ?? 0);
+        entry.balanceMinor = roundMoneyValue(
+          entry.balanceMinor + (row.type === "MONEY_IN" ? amount : -amount),
+        );
       }
       for (const row of counts) {
         const entry = map.get(row.walletId);
@@ -732,16 +751,18 @@ export function createGoalRepository(db: Db): GoalRepository {
     async create(data) {
       const row = await db.savingsGoal.create({ data });
       /* Full row needed by the GoalDTO (T-007). */
-      return row;
+      return numberizeGoal(row);
     },
     async listActive(householdId) {
-      return db.savingsGoal.findMany({
+      const rows = await db.savingsGoal.findMany({
         where: { householdId, ...ACTIVE },
         orderBy: [{ deadline: "asc" }, { id: "asc" }],
       });
+      return rows.map(numberizeGoal);
     },
     async findById(householdId, id) {
-      return db.savingsGoal.findFirst({ where: { id, householdId } });
+      const row = await db.savingsGoal.findFirst({ where: { id, householdId } });
+      return row ? numberizeGoal(row) : null;
     },
     async incrementSaved(householdId, id, delta) {
       /*
@@ -776,7 +797,7 @@ export function createGoalRepository(db: Db): GoalRepository {
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
       const hasMore = rows.length > limit;
-      return { rows: rows.slice(0, limit), nextCursor: hasMore ? rows[limit - 1]?.id ?? null : null };
+      return { rows: rows.slice(0, limit).map(numberizeGoal), nextCursor: hasMore ? rows[limit - 1]?.id ?? null : null };
     },
   };
 }
@@ -908,9 +929,10 @@ export function createAdvisorInsightRepository(db: Db): AdvisorInsightRepository
 export function createBudgetRepository(db: Db): BudgetRepository {
   return {
     async findByPeriod(householdId, periodStart) {
-      return db.householdBudget.findUnique({
+      const row = await db.householdBudget.findUnique({
         where: { householdId_periodStart: { householdId, periodStart } },
       });
+      return row ? { id: row.id, amountMinor: Number(row.amountMinor), periodStart: row.periodStart } : null;
     },
     async upsert(householdId, periodStart, amountMinor, userId) {
       const row = await db.householdBudget.upsert({
@@ -918,7 +940,7 @@ export function createBudgetRepository(db: Db): BudgetRepository {
         create: { householdId, periodStart, amountMinor, createdByUserId: userId },
         update: { amountMinor },
       });
-      return { id: row.id, amountMinor: row.amountMinor };
+      return { id: row.id, amountMinor: Number(row.amountMinor) };
     },
   };
 }
@@ -926,9 +948,10 @@ export function createBudgetRepository(db: Db): BudgetRepository {
 export function createPersonalBudgetRepository(db: Db): PersonalBudgetRepository {
   return {
     async findByPeriod(householdId, userId, periodStart) {
-      return db.personalBudget.findUnique({
+      const row = await db.personalBudget.findUnique({
         where: { householdId_userId_periodStart: { householdId, userId, periodStart } },
       });
+      return row ? { id: row.id, amountMinor: Number(row.amountMinor), periodStart: row.periodStart } : null;
     },
     async upsert(householdId, userId, periodStart, amountMinor, createdByUserId) {
       const row = await db.personalBudget.upsert({
@@ -936,7 +959,7 @@ export function createPersonalBudgetRepository(db: Db): PersonalBudgetRepository
         create: { householdId, userId, periodStart, amountMinor, createdByUserId },
         update: { amountMinor },
       });
-      return { id: row.id, amountMinor: row.amountMinor };
+      return { id: row.id, amountMinor: Number(row.amountMinor) };
     },
   };
 }

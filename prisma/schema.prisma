@@ -3,7 +3,7 @@
 // Constraints marked `*` in the ERD (partial unique indexes, CHECKs) are added as
 // raw SQL in the migration files — see prisma/migrations/ (latest institution
 // constraints: 20261021120000_bank_institutions).
-// Money: Int minor units, IDR scale 0 (1 minor unit = 1 rupiah) — never Decimal/Float.
+// Money: Decimal IDR values with at most two fractional digits; never Float.
 // All timestamps are explicit @db.Timestamptz (UTC). All FKs are RESTRICT (no cascade).
 
 generator client {
@@ -60,6 +60,19 @@ enum OcrJobStatus {
   FAILED
 }
 
+enum GoldAssetType {
+  BULLION
+  JEWELRY
+}
+
+enum GoldBrand {
+  ANTAM
+  UBS
+  LOTUS_ARCHI
+  GALERI_24
+  OTHER
+}
+
 // ─── Auth & household ─────────────────────────────────────────────────────────
 
 /// ERD §3.1
@@ -94,6 +107,8 @@ model User {
   personalBudgetsCreated PersonalBudget[] @relation("PersonalBudgetCreatedBy")
   idempotencyKeys     IdempotencyKey[]
   customInstitutions  UserCustomInstitution[]
+  goldAssetsCreated   GoldAsset[]        @relation("GoldAssetCreatedBy")
+  goldAssetsDeleted   GoldAsset[]        @relation("GoldAssetDeletedBy")
 
   @@index([email])
   @@map("user")
@@ -118,6 +133,7 @@ model Household {
   advisorInsights  AdvisorInsight[]
   budgets          HouseholdBudget[]
   personalBudgets  PersonalBudget[]
+  goldAssets       GoldAsset[]
 
   @@index([ownerUserId])
   @@map("household")
@@ -227,7 +243,7 @@ model Transaction {
   householdId     String            @map("household_id") @db.Uuid
   createdByUserId String            @map("created_by_user_id") @db.Uuid
   type            TransactionType
-  amountMinor     Int               @map("amount_minor")
+  amountMinor     Decimal           @map("amount_minor") @db.Decimal(18, 2)
   currencyCode    String            @default("IDR") @map("currency_code") @db.Char(3)
   category        String?           @db.VarChar
   merchant        String?           @db.VarChar
@@ -266,7 +282,7 @@ model Wallet {
   scope               WalletScope
   name                String      @db.VarChar
   purpose             String?     @db.VarChar
-  openingBalanceMinor Int         @default(0) @map("opening_balance_minor")
+  openingBalanceMinor Decimal    @default(0) @map("opening_balance_minor") @db.Decimal(18, 2)
   officialInstitutionId String?   @map("official_institution_id") @db.Uuid
   customInstitutionId   String?   @map("custom_institution_id") @db.Uuid
   archivedAt          DateTime?   @map("archived_at") @db.Timestamptz
@@ -335,8 +351,8 @@ model SavingsGoal {
   householdId       String    @map("household_id") @db.Uuid
   createdByUserId   String    @map("created_by_user_id") @db.Uuid
   name              String    @db.VarChar
-  targetAmountMinor Int       @map("target_amount_minor")
-  savedAmountMinor  Int       @default(0) @map("saved_amount_minor")
+  targetAmountMinor Decimal   @map("target_amount_minor") @db.Decimal(18, 2)
+  savedAmountMinor  Decimal   @default(0) @map("saved_amount_minor") @db.Decimal(18, 2)
   currencyCode      String    @default("IDR") @map("currency_code") @db.Char(3)
   deadline          DateTime? @db.Date
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz
@@ -367,6 +383,7 @@ model Receipt {
   uploadedBy   User          @relation("ReceiptUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   transactions Transaction[]
   ocrJobs      OcrJob[]
+  goldAssets   GoldAsset[]
 
   @@unique([householdId, contentSha256])
   @@map("receipt")
@@ -422,7 +439,7 @@ model HouseholdBudget {
   id              String   @id @default(uuid()) @db.Uuid
   householdId     String   @map("household_id") @db.Uuid
   periodStart     DateTime @map("period_start") @db.Date
-  amountMinor     Int      @map("amount_minor")
+  amountMinor     Decimal  @map("amount_minor") @db.Decimal(18, 2)
   currencyCode    String   @default("IDR") @map("currency_code") @db.Char(3)
   createdByUserId String   @map("created_by_user_id") @db.Uuid
   createdAt       DateTime @map("created_at") @db.Timestamptz @default(now())
@@ -443,7 +460,7 @@ model PersonalBudget {
   householdId     String   @map("household_id") @db.Uuid
   userId          String   @map("user_id") @db.Uuid
   periodStart     DateTime @map("period_start") @db.Date
-  amountMinor     Int      @map("amount_minor")
+  amountMinor     Decimal  @map("amount_minor") @db.Decimal(18, 2)
   currencyCode    String   @default("IDR") @map("currency_code") @db.Char(3)
   createdByUserId String   @map("created_by_user_id") @db.Uuid
   createdAt       DateTime @map("created_at") @db.Timestamptz @default(now())
@@ -474,4 +491,59 @@ model IdempotencyKey {
   @@unique([userId, key])
   @@index([expiresAt])
   @@map("idempotency_key")
+}
+
+// ─── Precious Metals & Jewelry (Fitur 8) ──────────────────────────────────────
+
+model GoldAsset {
+  id               String        @id @default(uuid()) @db.Uuid
+  householdId      String        @map("household_id") @db.Uuid
+  createdByUserId  String        @map("created_by_user_id") @db.Uuid
+  scope            WalletScope   @default(PERSONAL)
+  type             GoldAssetType
+  brand            GoldBrand     @default(OTHER)
+  brandCustomName  String?       @map("brand_custom_name") @db.VarChar(100)
+  name             String        @db.VarChar(150)
+  weightMilligrams Int           @map("weight_milligrams")
+  purityPermille   Int           @default(999) @map("purity_permille")
+  serialNumber     String?       @map("serial_number") @db.VarChar(100)
+  buyPriceMinor    Decimal       @map("buy_price_minor") @db.Decimal(18, 2)
+  purchaseDate     DateTime      @map("purchase_date") @db.Date
+  notes            String?       @db.Text
+  receiptId        String?       @map("receipt_id") @db.Uuid
+  deletedAt        DateTime?     @map("deleted_at") @db.Timestamptz
+  deletedByUserId  String?       @map("deleted_by_user_id") @db.Uuid
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy User      @relation("GoldAssetCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  deletedBy User?     @relation("GoldAssetDeletedBy", fields: [deletedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  receipt   Receipt?  @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([householdId, scope, deletedAt])
+  @@index([createdByUserId, deletedAt])
+  @@map("gold_asset")
+}
+
+model GoldMarketPrice {
+  id                String    @id @default(uuid()) @db.Uuid
+  brand             GoldBrand
+  buyPriceMinor     Int       @map("buy_price_minor")
+  buybackPriceMinor Int       @map("buyback_price_minor")
+  sourceDate        DateTime  @map("source_date") @db.Date
+  sourceRef         String    @map("source_ref") @db.VarChar(100)
+  fetchedAt         DateTime  @default(now()) @map("fetched_at") @db.Timestamptz
+
+  @@unique([brand, sourceDate])
+  @@index([sourceDate(sort: Desc)])
+  @@map("gold_market_price")
+}
+
+model GoldPriceFetchState {
+  providerKey       String   @id @map("provider_key") @db.VarChar(80)
+  lastAttemptDate  DateTime @map("last_attempt_date") @db.Date
+  lastError         String?  @map("last_error") @db.VarChar(200)
+
+  @@map("gold_price_fetch_state")
 }

@@ -1,8 +1,8 @@
 /*
   Shared API response types (camelCase DTOs, ADR-006). This module is pure types
   (no runtime import of server code) so both route handlers and client
-  components can consume the same contract. Money fields carry the `Minor`
-  suffix and are integer rupiah (IDR scale 0, AGENTS.md §5).
+  components can consume the same contract. Money fields retain the `Minor`
+  suffix for API compatibility and are rupiah values with up to two decimals.
 */
 
 export type TransactionType = "MONEY_IN" | "MONEY_OUT" | "TRANSFER";

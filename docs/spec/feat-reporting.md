@@ -169,7 +169,7 @@ Prinsip yang mengikat seluruh fitur ini: **server adalah satu-satunya sumber ang
 
 ## Constraint Bisnis
 
-- Angka keuangan selalu integer minor (IDR, skala 1 rupiah). Tidak ada floating point di jalur agregasi.
+- Nilai uang disimpan sebagai PostgreSQL `NUMERIC(18,2)` dan dapat memiliki dua angka desimal. Agregasi SQL tetap menggunakan `NUMERIC`; hasil API dihitung dalam rupiah dengan pembulatan konsisten hingga dua desimal.
 - Batas bulan memakai kalender Asia/Jakarta (D-7), bukan timezone proses server dan bukan timezone perangkat.
 - Transaksi soft-deleted tidak pernah dihitung.
 - Transaksi bertanggal masa depan tidak mungkin ada (AC-F3-1), sehingga tidak ada aturan khusus untuk itu.

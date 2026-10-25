@@ -21,6 +21,7 @@ import type {
 } from "../repositories/ledger";
 import type { MonthlyBudgetDTO } from "@/types/api";
 import { PeriodService } from "./period";
+import { hasAtMostTwoDecimals, roundMoneyValue } from "@/lib/money-input";
 
 export type BudgetActor = { userId: string; role: string; householdId: string };
 /** Personal reads only need the session identity, never a membership role. */
@@ -61,7 +62,7 @@ export class BudgetService {
       isSet: row !== null,
       budgetMinor: row?.amountMinor ?? null,
       spentMinor,
-      remainingMinor: row ? row.amountMinor - spentMinor : null,
+      remainingMinor: row ? roundMoneyValue(row.amountMinor - spentMinor) : null,
       currencyCode: "IDR",
     };
   }
@@ -91,7 +92,7 @@ export class BudgetService {
       isSet: row !== null,
       budgetMinor: row?.amountMinor ?? null,
       spentMinor,
-      remainingMinor: row ? row.amountMinor - spentMinor : null,
+      remainingMinor: row ? roundMoneyValue(row.amountMinor - spentMinor) : null,
       currencyCode: "IDR",
     };
   }
@@ -111,7 +112,7 @@ export class BudgetService {
     if (scope !== "PERSONAL" && actor.role !== "OWNER") {
       throw forbidden("ACCESS_DENIED", OWNER_DENIED);
     }
-    if (!Number.isInteger(amountMinor) || amountMinor <= 0) {
+    if (!hasAtMostTwoDecimals(amountMinor) || amountMinor <= 0) {
       throw unprocessable({ amountMinor: ["Budget harus lebih dari 0."] });
     }
 

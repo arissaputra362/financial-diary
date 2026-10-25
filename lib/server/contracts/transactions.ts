@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import { cursorSchema, limitSchema } from "./common";
 
 /*
@@ -42,9 +43,9 @@ export const createTransactionSchema = z
     type: z.enum(TRANSACTION_TYPES, { message: "Pilih jenis transaksi." }),
     amountMinor: z
       .number({ message: "Jumlah harus berupa angka." })
-      .int("Jumlah harus berupa bilangan bulat.")
       .positive("Jumlah harus lebih dari 0.")
-      .max(INT32_MAX, "Jumlah terlalu besar."),
+      .max(INT32_MAX, "Jumlah terlalu besar.")
+      .refine(hasAtMostTwoDecimals, "Jumlah maksimal dua angka desimal."),
     /*
       Required for money in/out (enforced in superRefine). TRANSFER does not use
       a category (design 03 §2.2); the service stores null on both legs.

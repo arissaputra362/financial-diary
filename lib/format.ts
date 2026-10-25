@@ -1,7 +1,6 @@
 /**
- * Money is stored as an integer in minor units. For IDR the scale is 0:
- * 1 minor unit = 1 rupiah (see AGENTS.md §5 "Data Format" and the money ADR).
- * Do NOT divide by 100 — every display helper takes the stored integer as-is.
+ * Money is stored as exact decimal rupiah values (see AGENTS.md §5 "Data Format").
+ * DTO fields retain the historical `Minor` suffix; values are not subunits.
  */
 
 /*
@@ -11,17 +10,17 @@
 */
 const idrNumberFormatter = new Intl.NumberFormat("id-ID", {
   minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
 /** Normalize a stored amount so negative zero never leaks into output. */
 function normalizeMinor(amountMinor: number): number {
-  return amountMinor === 0 ? 0 : amountMinor;
+  const rounded = Math.round((amountMinor + Number.EPSILON) * 100) / 100;
+  return rounded === 0 ? 0 : rounded;
 }
 
 /**
- * Format a stored amount as rupiah, for example 1250000 -> "Rp1.250.000".
- * The input is minor units = rupiah directly (scale 0).
+ * Format a rupiah amount, for example 1250000.12 -> "Rp1.250.000,12".
  */
 export function formatIDR(amountMinor: number): string {
   const value = normalizeMinor(amountMinor);
@@ -30,9 +29,9 @@ export function formatIDR(amountMinor: number): string {
 }
 
 /**
- * Format a stored amount with an explicit sign, for example "+Rp1.250.000".
+ * Format a rupiah amount with an explicit sign, for example "+Rp1.250.000,12".
  * Used where the direction of money matters more than the raw value.
- * The input is minor units = rupiah directly (scale 0).
+ * The input is a rupiah value; values may have up to two decimal places.
  */
 export function formatSignedIDR(amountMinor: number): string {
   const value = normalizeMinor(amountMinor);

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import { idempotencyKeyHeaderSchema, OCR_ERROR_CODES } from "./common";
 
 /*
@@ -35,9 +36,9 @@ export const ocrDraftSchema = z.object({
   merchant: z.string().max(120).nullable(),
   totalAmountMinor: z
     .number()
-    .int()
     .positive("Jumlah harus lebih dari 0.")
     .max(2_147_483_647, "Jumlah terlalu besar.")
+    .refine(hasAtMostTwoDecimals, "Jumlah maksimal dua angka desimal.")
     .nullable(),
   currencyCode: z.enum(["IDR"]).nullable(),
   occurredAt: z
@@ -47,9 +48,9 @@ export const ocrDraftSchema = z.object({
   category: z.string().nullable(),
   taxAmountMinor: z
     .number()
-    .int()
     .min(0, "Pajak tidak boleh negatif.")
     .max(2_147_483_647, "Pajak terlalu besar.")
+    .refine(hasAtMostTwoDecimals, "Pajak maksimal dua angka desimal.")
     .nullable(),
   confidence: z.number().min(0, "Confidence harus 0 sampai 1.").max(1, "Confidence harus 0 sampai 1."),
   missingFields: z.array(z.enum(["merchant", "totalAmountMinor", "occurredAt", "category"])),

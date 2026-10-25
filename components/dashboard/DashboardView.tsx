@@ -14,6 +14,7 @@ import { WalletSummaryPair } from "@/components/wallets/WalletSummaryPair";
 import { BudgetCard } from "./BudgetCard";
 import { ExpenseHeroCard } from "./ExpenseHeroCard";
 import { GoalsSummaryCard } from "./GoalsSummaryCard";
+import { GoldSummaryCard } from "./GoldSummaryCard";
 import { RecentActivityCard } from "./RecentActivityCard";
 import { SpendingChart } from "./SpendingChart";
 
@@ -199,6 +200,10 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
                 setManageOpen(true);
               }}
             />
+          </div>
+
+          <div className="lg:col-span-12">
+            <GoldSummaryCard />
           </div>
 
           <div className="lg:col-span-12">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiRequest, idempotencyHeaders } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
 import { MoneyInput } from "@/components/ui/MoneyInput";
+import { isValidMoneyAmount } from "@/lib/money-input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { UndoToast } from "@/components/transactions/UndoToast";
 import { formatDateLabel, todayJakarta } from "@/lib/dates";
@@ -101,7 +102,7 @@ export function GoalsSection() {
 
   const parsedTarget = target ? Number(target) : 0;
   const nameValid = name.trim().length > 0 && name.trim().length <= 80;
-  const targetValid = Number.isInteger(parsedTarget) && parsedTarget > 0;
+  const targetValid = isValidMoneyAmount(parsedTarget);
 
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -154,7 +155,7 @@ export function GoalsSection() {
   const submitAdjust = async () => {
     if (!adjust) return;
     const amount = adjustAmount ? Number(adjustAmount) : 0;
-    if (!Number.isInteger(amount) || amount <= 0) {
+    if (!isValidMoneyAmount(amount)) {
       setAdjustError("Masukkan jumlah dalam rupiah, lebih dari 0.");
       return;
     }

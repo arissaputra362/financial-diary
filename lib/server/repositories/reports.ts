@@ -4,7 +4,7 @@ import type { WalletActor } from "./ledger";
 /*
   Monthly report reads (feat-reporting). One scoped wallet set feeds every
   figure, so "Bersama" and "Pribadi" can never be mixed (A-44). All sums are
-  aggregated by Postgres as bigint and transferred as text; the application
+  aggregated by Postgres as numeric and transferred as text; the application
   converts them to number only at the DTO boundary, never through int32.
 */
 
@@ -122,6 +122,7 @@ export function createReportRepository(db: Db): ReportRepository {
       });
       return rows.map((row) => ({
         ...row,
+        openingBalanceMinor: Number(row.openingBalanceMinor),
         scope: row.scope as "PERSONAL" | "SHARING",
       }));
     },
@@ -130,7 +131,7 @@ export function createReportRepository(db: Db): ReportRepository {
       const [totalsRows, categoryRows, dailyRows] = await Promise.all([
         db.$queryRaw<TotalRow[]>`
           WITH scoped_wallets AS (
-            SELECT w.id, w.opening_balance_minor::bigint AS opening_balance_minor, w.created_at
+            SELECT w.id, w.opening_balance_minor::numeric AS opening_balance_minor, w.created_at
             FROM "wallet" w
             WHERE w.household_id = ${actor.householdId}::uuid
               AND w.scope::text = ${scope}
@@ -188,59 +189,59 @@ export function createReportRepository(db: Db): ReportRepository {
           opening AS (
             SELECT
               COALESCE(SUM(CASE WHEN pw.created_at < ${period.start}::timestamptz
-                                THEN pw.opening_balance_minor ELSE 0 END), 0)::bigint
+                                THEN pw.opening_balance_minor ELSE 0 END), 0)::numeric
               + COALESCE((
                   SELECT SUM(CASE WHEN t.type::text = 'MONEY_IN'
-                                  THEN t.amount_minor ELSE -t.amount_minor END)::bigint
+                                  THEN t.amount_minor ELSE -t.amount_minor END)::numeric
                   FROM before_tx t
-                ), 0)::bigint AS amount
+                ), 0)::numeric AS amount
             FROM period_wallets pw
           ),
           new_wallet AS (
-            SELECT COALESCE(SUM(pw.opening_balance_minor), 0)::bigint AS amount
+            SELECT COALESCE(SUM(pw.opening_balance_minor), 0)::numeric AS amount
             FROM period_wallets pw
             WHERE pw.created_at >= ${period.start}::timestamptz
           ),
           period_totals AS (
             SELECT
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_IN'
-                                THEN t.amount_minor END), 0)::bigint AS money_in,
+                                THEN t.amount_minor END), 0)::numeric AS money_in,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_OUT'
-                                THEN t.amount_minor END), 0)::bigint AS money_out,
+                                THEN t.amount_minor END), 0)::numeric AS money_out,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_IN'
-                                THEN t.amount_minor END), 0)::bigint AS transfer_in,
+                                THEN t.amount_minor END), 0)::numeric AS transfer_in,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_OUT'
-                                THEN t.amount_minor END), 0)::bigint AS transfer_out,
-              COUNT(*)::bigint AS tx_count
+                                THEN t.amount_minor END), 0)::numeric AS transfer_out,
+              COUNT(*)::numeric AS tx_count
             FROM period_tx t
           ),
           prev_opening AS (
             SELECT
               COALESCE(SUM(CASE WHEN pw.created_at < ${previous.start}::timestamptz
-                                THEN pw.opening_balance_minor ELSE 0 END), 0)::bigint
+                                THEN pw.opening_balance_minor ELSE 0 END), 0)::numeric
               + COALESCE((
                   SELECT SUM(CASE WHEN t.type::text = 'MONEY_IN'
-                                  THEN t.amount_minor ELSE -t.amount_minor END)::bigint
+                                  THEN t.amount_minor ELSE -t.amount_minor END)::numeric
                   FROM prev_before_tx t
-                ), 0)::bigint AS amount
+                ), 0)::numeric AS amount
             FROM prev_wallets pw
           ),
           prev_new_wallet AS (
-            SELECT COALESCE(SUM(pw.opening_balance_minor), 0)::bigint AS amount
+            SELECT COALESCE(SUM(pw.opening_balance_minor), 0)::numeric AS amount
             FROM prev_wallets pw
             WHERE pw.created_at >= ${previous.start}::timestamptz
           ),
           prev_totals AS (
             SELECT
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_IN'
-                                THEN t.amount_minor END), 0)::bigint AS money_in,
+                                THEN t.amount_minor END), 0)::numeric AS money_in,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_OUT'
-                                THEN t.amount_minor END), 0)::bigint AS money_out,
+                                THEN t.amount_minor END), 0)::numeric AS money_out,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_IN'
-                                THEN t.amount_minor END), 0)::bigint AS transfer_in,
+                                THEN t.amount_minor END), 0)::numeric AS transfer_in,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_OUT'
-                                THEN t.amount_minor END), 0)::bigint AS transfer_out,
-              COUNT(*)::bigint AS tx_count
+                                THEN t.amount_minor END), 0)::numeric AS transfer_out,
+              COUNT(*)::numeric AS tx_count
             FROM prev_tx t
           ),
           backdate AS (
@@ -272,7 +273,7 @@ export function createReportRepository(db: Db): ReportRepository {
         `,
         db.$queryRaw<CategoryRow[]>`
           WITH scoped_wallets AS (
-            SELECT w.id, w.opening_balance_minor::bigint AS opening_balance_minor, w.created_at
+            SELECT w.id, w.opening_balance_minor::numeric AS opening_balance_minor, w.created_at
             FROM "wallet" w
             WHERE w.household_id = ${actor.householdId}::uuid
               AND w.scope::text = ${scope}
@@ -302,7 +303,7 @@ export function createReportRepository(db: Db): ReportRepository {
         `,
         db.$queryRaw<DailyRow[]>`
           WITH scoped_wallets AS (
-            SELECT w.id, w.opening_balance_minor::bigint AS opening_balance_minor, w.created_at
+            SELECT w.id, w.opening_balance_minor::numeric AS opening_balance_minor, w.created_at
             FROM "wallet" w
             WHERE w.household_id = ${actor.householdId}::uuid
               AND w.scope::text = ${scope}
@@ -329,16 +330,16 @@ export function createReportRepository(db: Db): ReportRepository {
           opening AS (
             SELECT
               COALESCE(SUM(CASE WHEN pw.created_at < ${period.start}::timestamptz
-                                THEN pw.opening_balance_minor ELSE 0 END), 0)::bigint
+                                THEN pw.opening_balance_minor ELSE 0 END), 0)::numeric
               + COALESCE((
                   SELECT SUM(CASE WHEN t.type::text = 'MONEY_IN'
-                                  THEN t.amount_minor ELSE -t.amount_minor END)::bigint
+                                  THEN t.amount_minor ELSE -t.amount_minor END)::numeric
                   FROM before_tx t
-                ), 0)::bigint AS amount
+                ), 0)::numeric AS amount
             FROM period_wallets pw
           ),
           new_wallet AS (
-            SELECT COALESCE(SUM(pw.opening_balance_minor), 0)::bigint AS amount
+            SELECT COALESCE(SUM(pw.opening_balance_minor), 0)::numeric AS amount
             FROM period_wallets pw
             WHERE pw.created_at >= ${period.start}::timestamptz
           ),
@@ -352,7 +353,7 @@ export function createReportRepository(db: Db): ReportRepository {
           daily_net AS (
             SELECT (t.occurred_at AT TIME ZONE 'Asia/Jakarta')::date AS day,
                    SUM(CASE WHEN t.type::text = 'MONEY_IN'
-                            THEN t.amount_minor ELSE -t.amount_minor END)::bigint AS net
+                            THEN t.amount_minor ELSE -t.amount_minor END)::numeric AS net
             FROM "transaction" t
             JOIN period_wallets pw ON pw.id = t.wallet_id
             WHERE t.deleted_at IS NULL

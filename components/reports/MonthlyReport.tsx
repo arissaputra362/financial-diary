@@ -22,6 +22,7 @@ import type {
 } from "@/types/api";
 import { activityHref, activityListUrl } from "../transactions/activityUrl";
 import { BalanceMovementChart } from "./BalanceMovementChart";
+import { GoldReportSection } from "./GoldReportSection";
 import {
   buildReportDetailSections,
   canOfferPrint,
@@ -420,6 +421,7 @@ export function MonthlyReport({
               monthLabel={monthLabel}
               scopeLabel={scope === "shared" ? "bersama" : "pribadi"}
             />
+            <GoldReportSection scope={scope} liquidBalanceMinor={data.closingMinor} />
             <ReportFootnotes report={data} scope={scope} />
           </div>
           {detailSections.length > 0 ? (
@@ -520,7 +522,7 @@ function TraceRow({
 }: {
   label: string;
   value: number;
-  sign?: "+" | "−";
+  sign?: "+" | "−" | "";
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-3 py-2 print:px-2 print:py-1">

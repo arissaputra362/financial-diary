@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
+import { isValidMoneyAmount } from "@/lib/money-input";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest, idempotencyHeaders } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
     if (!name.trim()) errors.name = ["Nama dompet belum diisi."];
     if (name.trim().length > 80) errors.name = ["Nama dompet maksimal 80 karakter."];
     if (purpose.trim().length > 80) errors.purpose = ["Tujuan penggunaan maksimal 80 karakter."];
-    if (openingDigits && (!Number.isInteger(openingMinor) || openingMinor < 0)) {
+    if (openingDigits && !isValidMoneyAmount(openingMinor, true)) {
       errors.openingBalanceMinor = ["Saldo awal tidak boleh negatif."];
     } else if (openingMinor > INT32_MAX) {
       errors.openingBalanceMinor = ["Saldo awal terlalu besar."];

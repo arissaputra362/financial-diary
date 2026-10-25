@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, PiggyBank, Plus, ReceiptText, User, Users, Wallet } from "lucide-react";
+import { Coins, LayoutDashboard, PiggyBank, Plus, ReceiptText, User, Users, Wallet } from "lucide-react";
 import { requestTransactionAddIntent } from "@/lib/transaction-add-intent";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/home", label: "Beranda", icon: LayoutDashboard },
   { href: "/budget", label: "Budget", icon: PiggyBank },
+  { href: "/gold", label: "Emas", icon: Coins },
   { href: "/transactions", label: "Aktivitas", icon: ReceiptText, matchPrefix: "/transactions" },
   { href: "/family", label: "Keluarga", icon: Users },
 ] as const;

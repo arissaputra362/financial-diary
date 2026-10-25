@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   applyMoneyInputEdit,
+  applyMoneyValueEdit,
   countDigitsBefore,
   extractDigits,
+  formatMoneyInputValue,
   groupDigits,
+  normalizeMoneyValue,
   MAX_IDR_DIGITS,
   normalizeDigits,
   offsetAfterDigits,
@@ -128,6 +131,35 @@ describe("extractDigits", () => {
     expect(extractDigits("Rp")).toBe("");
     expect(extractDigits("abc,.-+")).toBe("");
     expect(extractDigits("")).toBe("");
+  });
+});
+
+describe("decimal amount input", () => {
+  it.each([
+    ["3,000.12", "3000.12", "3.000,12"],
+    ["5,120.43", "5120.43", "5.120,43"],
+    ["3.000,12", "3000.12", "3.000,12"],
+    ["5120,43", "5120.43", "5.120,43"],
+  ])("normalizes %s to %s and displays %s", (input, value, display) => {
+    expect(normalizeMoneyValue(input)).toBe(value);
+    expect(formatMoneyInputValue(value)).toBe(display);
+  });
+
+  it("keeps typing commas, grouping separators, and two decimal places live", () => {
+    const states = [
+      ["3,", "3.", "3,"],
+      ["3,0", "3.0", "3,0"],
+      ["3,00", "3.00", "3,00"],
+      ["3,000", "3000", "3.000"],
+      ["3.000.", "3000.", "3.000,"],
+      ["3.000,1", "3000.1", "3.000,1"],
+      ["3.000,12", "3000.12", "3.000,12"],
+    ];
+    for (const [raw, value, display] of states) {
+      const result = applyMoneyValueEdit({ raw, caret: raw.length, previousDigits: "" });
+      expect(result.digits).toBe(value);
+      expect(result.display).toBe(display);
+    }
   });
 });
 

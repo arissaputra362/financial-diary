@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import { cursorSchema, limitSchema } from "./common";
 
 /*
@@ -16,9 +17,9 @@ export const createGoalSchema = z.object({
     .max(80, "Nama target tidak boleh kosong dan maksimal 80 karakter."),
   targetAmountMinor: z
     .number({ message: "Target harus berupa angka." })
-    .int("Target harus berupa bilangan bulat.")
     .positive("Target harus lebih dari 0.")
-    .max(INT32_MAX, "Target terlalu besar."),
+    .max(INT32_MAX, "Target terlalu besar.")
+    .refine(hasAtMostTwoDecimals, "Target maksimal dua angka desimal."),
   deadline: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak valid.")
@@ -28,7 +29,7 @@ export const createGoalSchema = z.object({
 export const adjustSavedSchema = z.object({
   savedDelta: z
     .number({ message: "Jumlah perubahan tidak valid." })
-    .int("Jumlah perubahan tidak valid.")
+    .refine(hasAtMostTwoDecimals, "Jumlah perubahan maksimal dua angka desimal.")
     .refine((value) => value !== 0, "Jumlah perubahan tidak valid."),
 });
 

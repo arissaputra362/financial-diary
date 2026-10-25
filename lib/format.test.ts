@@ -21,6 +21,11 @@ describe("formatIDR", () => {
     expect(formatIDR(1_250_000)).toBe("Rp1.250.000");
   });
 
+  it("formats two decimal digits with an Indonesian comma", () => {
+    expect(formatIDR(3_000.12)).toBe("Rp3.000,12");
+    expect(formatIDR(5_120.43)).toBe("Rp5.120,43");
+  });
+
   it("puts the minus sign before Rp", () => {
     expect(formatIDR(-1_250_000)).toBe("-Rp1.250.000");
   });

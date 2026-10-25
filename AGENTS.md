@@ -147,7 +147,7 @@ Wallets: `docs/design/06-wallets.md`
 - **Always show a review form** before saving. Never auto-save without user confirmation.
 
 ### Data Format
-- All monetary amounts stored as `INTEGER` minor units. **IDR scale = 0: 1 minor unit = 1 rupiah** (decided; do NOT divide by 100).
+- All monetary amounts stored as exact PostgreSQL `NUMERIC(18,2)` rupiah values; no binary floating-point storage. Inputs accept up to two decimal digits and display with Indonesian grouping (`3.000,12`).
 - Currency: IDR (Indonesian Rupiah) as the default.
 - Dates stored as `TIMESTAMPTZ` in UTC.
 

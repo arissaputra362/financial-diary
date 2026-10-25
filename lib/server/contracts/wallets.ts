@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import { walletInstitutionSchema } from "./institutions";
 
 /*
@@ -32,9 +33,9 @@ const walletPurposeSchema = z
 
 const openingBalanceSchema = z
   .number({ message: "Saldo awal harus berupa angka." })
-  .int("Saldo awal harus berupa bilangan bulat.")
   .min(0, "Saldo awal tidak boleh negatif.")
-  .max(INT32_MAX, "Saldo awal terlalu besar.");
+  .max(INT32_MAX, "Saldo awal terlalu besar.")
+  .refine(hasAtMostTwoDecimals, "Saldo awal maksimal dua angka desimal.");
 
 export const createWalletSchema = z.object({
   name: walletNameSchema,

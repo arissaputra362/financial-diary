@@ -48,11 +48,11 @@ Semua POST mutation mendukung Idempotency-Key. Tidak ada penyimpanan otomatis da
 - Yang tidak boleh terjadi: amount 0/negatif lolos; date masa depan (WIB) lolos;
   category di luar daftar lolos; pesan error teknis ("violates constraint", stack trace).
 
-### AC-2 (AC-F3-2): Amount integer minor
+### AC-2 (AC-F3-2): Amount rupiah dengan presisi dua desimal
 
 - Kondisi: semua penyimpanan amount.
-- Yang terjadi: amount_minor integer (IDR, skala 1 rupiah); DTO memakai suffix `Minor`.
-- Yang tidak boleh terjadi: float/decimal; pembulatan tersembunyi; kehilangan presisi.
+- Yang terjadi: `amount_minor` disimpan sebagai PostgreSQL `NUMERIC(18,2)`; input menerima maksimal dua angka desimal. DTO tetap memakai suffix `Minor` untuk kompatibilitas.
+- Yang tidak boleh terjadi: penyimpanan binary floating point; pembulatan tersembunyi; kehilangan presisi.
 
 ### AC-3 (AC-F3-3): Transfer dua kaki atomik
 

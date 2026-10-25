@@ -1,16 +1,91 @@
 /**
  * Pure helpers for Indonesian rupiah amount inputs (T-013, design 01 §5.8).
  *
- * The semantic value is always a digit string; the dots are display-only. IDR
- * scale is 0 (AGENTS.md §5), so a value never contains a decimal part.
+ * The semantic value is a canonical decimal string. Display grouping uses
+ * Indonesian punctuation while parsing also accepts English punctuation.
  */
 
 /**
- * Rupiah is stored as an int32, and the ceiling 2.147.483.647 has 10 digits, so
- * inputs cap at that digit count. The API still rejects any value above the
- * ceiling; this cap only stops the field from building one.
+ * Existing entry limits cap the integer part at 10 digits. The API still
+ * validates the maximum amount; this cap only stops the field from building
+ * an unnecessarily long value.
  */
 export const MAX_IDR_DIGITS = 10;
+
+/** Normalize common Indonesian/English rupiah notation to a decimal string. */
+export function normalizeMoneyValue(raw: string, maxIntegerDigits = MAX_IDR_DIGITS): string {
+  const text = raw.replace(/[^\d.,]/g, "");
+  const lastDot = text.lastIndexOf(".");
+  const lastComma = text.lastIndexOf(",");
+  const lastSeparator = Math.max(lastDot, lastComma);
+  const suffixLength = lastSeparator < 0 ? 0 : text.length - lastSeparator - 1;
+  const hasBoth = lastDot >= 0 && lastComma >= 0;
+  const isDecimalSeparator =
+    lastSeparator >= 0 &&
+    (hasBoth || suffixLength === 0 || suffixLength <= 2);
+
+  const integerSource = isDecimalSeparator ? text.slice(0, lastSeparator) : text;
+  const fractionSource = isDecimalSeparator ? text.slice(lastSeparator + 1) : "";
+  const integer = integerSource.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+  const cappedInteger = integer.slice(0, Math.max(0, maxIntegerDigits)) || (integer ? "0" : "");
+  const fraction = fractionSource.replace(/\D/g, "").slice(0, 2);
+
+  if (isDecimalSeparator) return `${cappedInteger}${cappedInteger ? "." : "0."}${fraction}`;
+  return cappedInteger;
+}
+
+/** Show normalized rupiah input with Indonesian grouping and decimal punctuation. */
+export function formatMoneyInputValue(value: string): string {
+  const [integer = "", fraction] = value.split(".");
+  const grouped = groupDigits(integer);
+  return fraction === undefined ? grouped : `${grouped || "0"},${fraction}`;
+}
+
+export function parseMoneyInputValue(value: string): number {
+  const normalized = normalizeMoneyValue(value);
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function isValidMoneyAmount(value: number, allowZero = false): boolean {
+  if (!Number.isFinite(value) || value < 0 || (!allowZero && value === 0)) return false;
+  return hasAtMostTwoDecimals(value);
+}
+
+export function hasAtMostTwoDecimals(value: number): boolean {
+  return Number.isFinite(value) && Math.abs(value * 100 - Math.round(value * 100)) < 1e-7;
+}
+
+export function roundMoneyValue(value: number): number {
+  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+function countNumericDigitsBefore(text: string, offset: number): number {
+  return countDigitsBefore(text, offset);
+}
+
+function offsetAfterMoneyValue(display: string, digitCount: number, decimalBefore: boolean): number {
+  const digitsOffset = offsetAfterDigits(display, digitCount);
+  const decimalOffset = display.indexOf(",");
+  return decimalBefore && decimalOffset >= 0 ? Math.max(digitsOffset, decimalOffset + 1) : digitsOffset;
+}
+
+/** Live edit helper for values that may include a two-digit fractional part. */
+export function applyMoneyValueEdit(input: MoneyInputEditInput): MoneyInputEditResult {
+  const { raw, caret, maxDigits = MAX_IDR_DIGITS } = input;
+  const digitsBeforeCaret = countNumericDigitsBefore(raw, caret);
+  const decimalIndex = Math.max(raw.lastIndexOf("."), raw.lastIndexOf(","));
+  const decimalBefore = decimalIndex >= 0 && decimalIndex < caret &&
+    normalizeMoneyValue(raw).includes(".");
+  const value = normalizeMoneyValue(raw, maxDigits);
+  const display = formatMoneyInputValue(value);
+  return {
+    digits: value,
+    display,
+    caret: offsetAfterMoneyValue(display, digitsBeforeCaret, decimalBefore),
+  };
+}
 
 /**
  * Keep the integer digits of a raw amount and drop any decimal part.
@@ -124,7 +199,11 @@ export function applyMoneyInputEdit({
 }: MoneyInputEditInput): MoneyInputEditResult {
   const previousDisplay = groupDigits(previousDigits);
 
-  if (inputType === "insertText" && data !== undefined && /[^\d.,]/.test(data)) {
+  if (
+    inputType === "insertText" &&
+    data !== undefined &&
+    /[^\d.,]/.test(data)
+  ) {
     const start = Math.min(Math.max(caret - data.length, 0), previousDisplay.length);
     const replacedLength = previousDisplay.length - raw.length + data.length;
     const end = Math.min(Math.max(start + replacedLength, start), previousDisplay.length);

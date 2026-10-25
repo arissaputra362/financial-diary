@@ -32,11 +32,11 @@ const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     merchant: { type: Type.STRING, nullable: true },
-    totalAmountMinor: { type: Type.INTEGER, nullable: true },
+    totalAmountMinor: { type: Type.NUMBER, nullable: true },
     currencyCode: { type: Type.STRING, nullable: true },
     occurredAt: { type: Type.STRING, nullable: true },
     category: { type: Type.STRING, nullable: true },
-    taxAmountMinor: { type: Type.INTEGER, nullable: true },
+    taxAmountMinor: { type: Type.NUMBER, nullable: true },
     confidence: { type: Type.NUMBER },
     missingFields: {
       type: Type.ARRAY,
@@ -50,7 +50,7 @@ const RESPONSE_SCHEMA = {
 const PROMPT = [
   "Baca foto struk atau bukti transfer ini dan isi data transaksi.",
   "Aturan penting:",
-  "- Semua jumlah dalam Rupiah utuh (IDR tanpa desimal). Contoh: Rp64.800 diisi 64800, bukan 6480000.",
+  "- Semua jumlah dalam Rupiah, maksimal dua angka desimal. Contoh Rp64.800,25 diisi 64800.25.",
   "- occurredAt hanya tanggal format YYYY-MM-DD.",
   `- category harus salah satu dari: ${CATEGORIES.join(", ")}, atau null bila tidak yakin.`,
   "- confidence angka 0 sampai 1 sesuai keyakinanmu.",

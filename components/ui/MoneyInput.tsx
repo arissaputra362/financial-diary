@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
-import { applyMoneyInputEdit, groupDigits } from "@/lib/money-input";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  applyMoneyValueEdit,
+  formatMoneyInputValue,
+} from "@/lib/money-input";
 
 export interface MoneyInputProps {
   id: string;
-  /** Digit string only (no separators). This is the value the form stores. */
+  /** Canonical rupiah value, using a dot for an optional decimal part. */
   value: string;
-  /** Receives the normalized digit string after every accepted edit. */
-  onValueChange: (digits: string) => void;
+  /** Receives a normalized rupiah value after every accepted edit. */
+  onValueChange: (value: string) => void;
   maxDigits?: number;
   disabled?: boolean;
   className?: string;
@@ -24,10 +27,9 @@ const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : us
 
 /**
  * Rupiah amount input with live Indonesian thousands grouping (design 01 §5.8).
- * The DOM shows dots; `value` and `onValueChange` stay a plain digit string, so
- * callers keep sending the exact integer rupiah. Non-digit keystrokes are
- * dropped without disturbing a selected range, and the caret follows the
- * edited digit instead of jumping to the end.
+ * The DOM uses Indonesian grouping; `value` and `onValueChange` stay a
+ * canonical decimal string. English and Indonesian
+ * separators are accepted; the visible value stays Indonesian grouped (3.000,12).
  */
 export function MoneyInput({
   id,
@@ -44,7 +46,7 @@ export function MoneyInput({
 }: MoneyInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaretRef = useRef<number | null>(null);
-  const display = groupDigits(value);
+  const display = formatMoneyInputValue(value);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
@@ -55,7 +57,7 @@ export function MoneyInput({
     const inputType = isInputEvent ? nativeEvent.inputType : undefined;
     const data = isInputEvent ? (nativeEvent.data ?? undefined) : undefined;
 
-    const result = applyMoneyInputEdit({
+    const result = applyMoneyValueEdit({
       raw,
       caret,
       previousDigits: value,
@@ -65,11 +67,6 @@ export function MoneyInput({
     });
 
     if (result.digits === value) {
-      /*
-        The edit added nothing (letter, symbol, extra digit past the cap) or
-        only touched a separator that had no digit to remove. Restore the
-        rendered text and caret without a state update.
-      */
       if (input.value !== result.display) input.value = result.display;
       input.setSelectionRange(result.caret, result.selectionEnd ?? result.caret);
       return;
@@ -94,7 +91,7 @@ export function MoneyInput({
       id={id}
       name={name}
       type="text"
-      inputMode="numeric"
+      inputMode="decimal"
       autoComplete={autoComplete}
       value={display}
       onChange={handleChange}

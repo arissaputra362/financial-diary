@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasAtMostTwoDecimals } from "@/lib/money-input";
 
 /*
   Dashboard + budget contracts (feat-dashboard §Validasi Rules, AC-F2-2, AC-F2-3,
@@ -31,9 +32,9 @@ const INT32_MAX = 2_147_483_647;
 export const budgetUpsertSchema = z.object({
   amountMinor: z
     .number({ message: "Budget harus berupa angka." })
-    .int("Budget harus berupa bilangan bulat.")
     .positive("Budget harus lebih dari 0.")
-    .max(INT32_MAX, "Budget terlalu besar."),
+    .max(INT32_MAX, "Budget terlalu besar.")
+    .refine(hasAtMostTwoDecimals, "Budget maksimal dua angka desimal."),
   scope: budgetScopeSchema.optional(),
 });
 

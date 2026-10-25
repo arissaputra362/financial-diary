@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { AdvisorPanel } from "@/components/goals/AdvisorPanel";
 import { GoalsSection } from "@/components/goals/GoalsSection";
 import { formatIDR } from "@/lib/format";
+import { isValidMoneyAmount } from "@/lib/money-input";
 import type { MonthlyBudgetDTO } from "@/types/api";
 
 export type Me = {
@@ -114,7 +115,7 @@ export function BudgetView({
   const amountInput = amountInputs[scope];
   const canEdit = scope === "PERSONAL" || isOwner;
   const parsedAmount = amountInput ? Number(amountInput) : 0;
-  const amountValid = Number.isInteger(parsedAmount) && parsedAmount > 0;
+  const amountValid = isValidMoneyAmount(parsedAmount);
 
   const retry = () => {
     setLoading(true);
