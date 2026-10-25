@@ -2,7 +2,7 @@
 
 **Penulis:** PM / System Analyst · **Tanggal:** 2026-10-25 · **Status:** Spec Ready (Termasuk Extension F7.1: ekspor print, 2026-10-25)
 **PRD:** `docs/PRD.md#fitur-7-laporan-bulanan-ringkasan`
-**AC yang di-cover:** AC-F7-1 s.d. AC-F7-15
+**AC yang di-cover:** AC-F7-1 s.d. AC-F7-18
 **Referensi desain:** `docs/design/08-reporting.md` (PM-approved 2026-10-25)
 **Referensi visual:** komposisi kartu grup + satu kartu dominan (bukan salinan; lihat §Arahan Desain)
 **Bergantung pada:** `feat-dashboard.md` (definisi saldo & scope), `feat-wallets.md` (A-44, dompet arsip), `feat-transactions-ocr.md` (transfer, tanggal)
@@ -113,9 +113,17 @@ Prinsip yang mengikat seluruh fitur ini: **server adalah satu-satunya sumber ang
 ### AC-F7-11: Grafik pergerakan saldo harian
 
 - Kondisi: laporan dimuat untuk satu periode.
-- Yang terjadi: grafik garis/area menampilkan saldo akhir setiap hari dalam periode, termasuk hari tanpa transaksi (nilai tetap, tidak putus). Tooltip menampilkan tanggal dan nominal persis.
+- Yang terjadi: grafik garis/area menampilkan saldo akhir setiap hari dalam periode, termasuk hari tanpa transaksi (nilai tetap, tidak putus). Lima garis bantu horizontal dan label sumbu nominal ringkas membantu membandingkan saldo; tooltip menampilkan tanggal dan nominal persis.
 - Grafik harus dapat dioperasikan keyboard, memiliki alternatif teks untuk pembaca layar, dan tidak menimbulkan scroll horizontal pada 390px, 768px, dan 1280px.
 - Yang tidak boleh terjadi: hari tanpa transaksi dihilangkan dari sumbu; grafik menghitung ulang dari baris yang termuat di client; label terpotong atau keluar kartu; jumlah titik berubah antar breakpoint.
+
+### AC-F7-18 (amendemen PM-approved 2026-10-25): Grafik komposisi kategori
+
+- Kondisi: laporan bulanan berhasil dimuat.
+- Yang terjadi: kartu Pemasukan dan Pengeluaran masing-masing menampilkan grafik donat komposisi kategori beserta legenda nama kategori, persentase, dan nominal. Grafik memakai breakdown server yang sama dengan kartu: empat kategori terbesar, gabungan `Lainnya (n)`, dan `Tanpa kategori` bila ada. Nilai nominal tetap penuh, bukan angka ringkas.
+- Kondisi tanpa pemasukan atau pengeluaran: tampilkan teks empty state yang sudah ada; donat kosong tidak ditampilkan.
+- Grafik tersedia untuk cakupan dan filter dompet aktif; transfer tidak masuk dalam komposisi.
+- Yang tidak boleh terjadi: client menjumlahkan transaksi mentah, kategori hilang dari subtotal/legenda, grafik donat tanpa label, atau angka yang berbeda dari total kartu.
 
 ### AC-F7-12: Perlakuan transfer
 

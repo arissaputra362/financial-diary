@@ -32,6 +32,13 @@ const dayMonthFormatter = new Intl.DateTimeFormat("id-ID", {
   month: "short",
   timeZone: "Asia/Jakarta",
 });
+const compactIDRFormatter = new Intl.NumberFormat("id-ID", {
+  style: "currency",
+  currency: "IDR",
+  currencyDisplay: "narrowSymbol",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
 
 function jakartaNoon(date: string): Date | null {
   if (!date) return null;
@@ -85,6 +92,13 @@ export function BalanceMovementChart({
     if (max === min) return 50;
     return 92 - ((value - min) / (max - min)) * 84;
   };
+  const yTicks =
+    max === min
+      ? [{ value: min, y: 50 }]
+      : Array.from({ length: 5 }, (_, index) => {
+          const value = min + ((max - min) * index) / 4;
+          return { value, y: toY(value) };
+        });
 
   const coordinates = points.map((point, index) => ({
     ...point,
@@ -177,7 +191,6 @@ export function BalanceMovementChart({
     setDismissed(false);
   };
 
-  const zeroY = min < 0 && max > 0 ? toY(0) : null;
   const labelStep = 7;
 
   return (
@@ -189,11 +202,23 @@ export function BalanceMovementChart({
         Pergerakan saldo harian
       </h2>
       <p className="mt-1 text-sm text-[#46597A] print:mt-0 print:text-[7pt]">
-        Saldo akhir tiap hari pada {monthLabel}. Tap atau gunakan panah untuk melihat nilai tiap
-        tanggal.
+        Saldo akhir tiap hari pada {monthLabel}. Gunakan sumbu untuk membandingkan nilai; tap atau
+        gunakan panah untuk melihat nominal tepat tiap tanggal.
       </p>
 
-      <div className="relative mt-8 min-w-0 print:mt-2">
+      <div className="mt-8 grid min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] gap-2 print:mt-2 print:grid-cols-[3.5rem_minmax(0,1fr)] print:gap-1">
+        <div className="relative h-40 min-w-0 sm:h-56 print:h-20" aria-hidden="true">
+          {yTicks.map((tick, index) => (
+            <span
+              key={`${tick.value}-${index}`}
+              className="absolute right-0 whitespace-nowrap text-[10px] font-semibold leading-none tabular-nums text-[#46597A] print:text-[6pt]"
+              style={{ top: `${tick.y}%`, transform: "translateY(-50%)" }}
+            >
+              {compactIDRFormatter.format(tick.value)}
+            </span>
+          ))}
+        </div>
+        <div className="relative min-w-0">
         {shownPoint ? (
           <div
             ref={pillRef}
@@ -208,7 +233,7 @@ export function BalanceMovementChart({
 
         <div
           role="group"
-          aria-label={`Grafik saldo harian ${scopeLabel}, ${monthLabel}. Gunakan panah kiri kanan untuk membaca saldo tiap tanggal.`}
+          aria-label={`Grafik saldo harian ${scopeLabel}, ${monthLabel}. Skala saldo ${formatIDR(min)} sampai ${formatIDR(max)}. Gunakan panah kiri kanan untuk membaca nominal tepat tiap tanggal.`}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           className="relative h-40 min-w-0 overflow-hidden rounded-2xl bg-[#EFF4FA] sm:h-56 print:h-20"
@@ -219,23 +244,24 @@ export function BalanceMovementChart({
             aria-hidden="true"
             className="absolute inset-0 h-full w-full"
           >
-            <path d={areaPath} fill="#DCEBFA" />
-            {zeroY !== null ? (
+            <path d={areaPath} fill="#DCEBFA" fillOpacity="0.65" />
+            {yTicks.map((tick, index) => (
               <line
+                key={`grid-${index}`}
                 x1="0"
                 x2="100"
-                y1={zeroY}
-                y2={zeroY}
-                stroke="#E5EDF5"
-                strokeWidth="1"
+                y1={tick.y}
+                y2={tick.y}
+                stroke="#C9D6E4"
+                strokeWidth="0.6"
                 vectorEffect="non-scaling-stroke"
               />
-            ) : null}
+            ))}
             <polyline
               points={linePath}
               fill="none"
               stroke="#1D4F87"
-              strokeWidth="2"
+              strokeWidth="2.5"
               strokeLinejoin="round"
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
@@ -302,6 +328,7 @@ export function BalanceMovementChart({
               </span>
             );
           })}
+        </div>
         </div>
       </div>
 

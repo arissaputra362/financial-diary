@@ -305,6 +305,7 @@ memahami istilah akuntansi.
 - [ ] AC-F7-15: Catatan kaki menyebut jumlah transaksi, periode, pengecualian transfer, dan cakupan. Tidak ada baris potongan, tabungan, atau pembanding yang dikarang.
 - [ ] AC-F7-16 (Extension F7.1): Tombol `Cetak atau simpan PDF` menampilkan dialog print yang hanya membawa isi laporan, tanpa dependency pembangkit PDF, dan nama file default mengikuti periode.
 - [ ] AC-F7-17 (Extension F7.1): Hasil cetak memuat halaman ringkasan utuh satu halaman, diikuti `Rincian transaksi` per-bagian (Uang masuk, Uang keluar, Transfer) dengan subtotal yang cocok dengan angka server, dari endpoint list yang ada.
+- [ ] AC-F7-18 (PM-approved 2026-10-25, implementation in progress): Grafik saldo harian memakai garis bantu dan label sumbu nilai agar mudah dibandingkan; kartu Pemasukan dan Pengeluaran masing-masing menampilkan donat komposisi kategori, legenda persentase, dan nominal berdasarkan breakdown server.
 
 **Batasan (Out of Scope)**
 

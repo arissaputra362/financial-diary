@@ -22,6 +22,7 @@ import type {
 } from "@/types/api";
 import { activityHref, activityListUrl } from "../transactions/activityUrl";
 import { BalanceMovementChart } from "./BalanceMovementChart";
+import { CategoryDonutChart } from "./CategoryDonutChart";
 import { GoldReportSection } from "./GoldReportSection";
 import {
   buildReportDetailSections,
@@ -590,38 +591,7 @@ function BreakdownCard({
       breakdown.otherCategoryCount === 0 ? (
         <p className="mt-4 text-sm text-[#5C7191] print:mt-2 print:text-[8pt]">{emptyCopy}</p>
       ) : (
-        <ul className="mt-4 space-y-2 print:mt-2 print:space-y-0.5">
-          {breakdown.categories.map((category) => (
-            <li key={category.name} className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 break-words text-[15px] text-[#46597A] print:text-[8pt]">
-                {category.name}
-              </span>
-              <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-[#17304F] print:text-[8pt]">
-                {formatIDR(category.amountMinor)}
-              </span>
-            </li>
-          ))}
-          {breakdown.uncategorizedMinor !== 0 ? (
-            <li className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 break-words text-[15px] text-[#46597A] print:text-[8pt]">
-                Tanpa kategori
-              </span>
-              <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-[#17304F] print:text-[8pt]">
-                {formatIDR(breakdown.uncategorizedMinor)}
-              </span>
-            </li>
-          ) : null}
-          {breakdown.otherCategoryCount > 0 ? (
-            <li className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 break-words text-[15px] text-[#46597A] print:text-[8pt]">
-                Lainnya ({breakdown.otherCategoryCount})
-              </span>
-              <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-[#17304F] print:text-[8pt]">
-                {formatIDR(breakdown.otherAmountMinor)}
-              </span>
-            </li>
-          ) : null}
-        </ul>
+        <CategoryDonutChart title={title} breakdown={breakdown} />
       )}
 
       <div className="mt-auto pt-4 print:pt-2">
