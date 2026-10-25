@@ -11,8 +11,8 @@ import type { GoldPortfolioSummaryDTO } from "@/types/gold";
 type WealthScope = "SHARING" | "PERSONAL";
 
 const SCOPE_OPTIONS = [
-  { value: "SHARING" as const, label: "Bersama" },
   { value: "PERSONAL" as const, label: "Pribadi" },
+  { value: "SHARING" as const, label: "Bersama" },
 ];
 
 const priceDateFormatter = new Intl.DateTimeFormat("id-ID", {

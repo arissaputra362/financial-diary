@@ -300,18 +300,18 @@ export function MonthlyReport({
               { value: "shared", label: "Bersama" },
             ]}
             onChange={(next) => {
-              /* The parent resets the wallet in the same URL write (AC-F7-8). */
               onScopeChange(next);
             }}
           />
-          <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-2xl border border-[#D8E2EE] bg-white px-3 text-sm font-semibold text-[#46597A] sm:flex-none sm:min-w-64">
+
+          <label className="flex min-h-11 w-full min-w-0 flex-none items-center gap-3 rounded-2xl border border-[#D8E2EE] bg-white px-3 text-sm font-semibold text-[#46597A] sm:w-auto sm:flex-1 sm:min-w-64">
             <span className="shrink-0">Dompet</span>
             <select
               value={walletId}
               disabled={walletsLoading || Boolean(walletsError)}
               onChange={(event) => onWalletChange(event.target.value)}
               aria-label="Pilih dompet"
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none disabled:text-[#46597A]"
+              className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-[#17304F] outline-none disabled:text-[#46597A]"
             >
               <option value="">
                 {walletsLoading
@@ -327,13 +327,14 @@ export function MonthlyReport({
               ))}
             </select>
           </label>
+
           {canPrint ? (
             <button
               type="button"
               onClick={() => void prepareAndPrint()}
               disabled={preparing}
               aria-busy={preparing || undefined}
-              className="ml-auto inline-flex min-h-11 min-w-52 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] disabled:cursor-not-allowed disabled:text-[#46597A] disabled:hover:bg-transparent"
+              className="ml-auto inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] disabled:cursor-not-allowed disabled:text-[#46597A] disabled:hover:bg-transparent sm:w-auto sm:min-w-52"
             >
               <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
               {preparing ? "Menyiapkan detail..." : "Cetak atau simpan PDF"}
