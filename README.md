@@ -1,57 +1,53 @@
 # Financial Diary
 
-Aplikasi web untuk mencatat dan memahami keuangan keluarga. Pengguna dapat
-mengelola transaksi, dompet, anggaran, target tabungan, serta aset emas pribadi
-dan bersama. Laporan bulanan menyajikan ringkasan saldo dan rincian transaksi
-yang dapat dicetak atau disimpan sebagai PDF.
+A web application for tracking and understanding personal and family finances. Users can manage transactions, wallets, budgets, savings goals, and personal or shared gold assets. Monthly reports provide balance summaries and transaction details that can be printed or saved as PDF.
 
-## Fitur
+## Features
 
-- Autentikasi email dan password dengan session JWT `httpOnly` yang terhubung
-  ke session database dan dapat dicabut.
-- Household keluarga, undangan anggota, persetujuan owner, serta role owner
-  dan member.
-- Transaksi pemasukan, pengeluaran, dan transfer antar dompet. Nominal
-  mendukung hingga dua angka desimal dan disimpan sebagai PostgreSQL `NUMERIC`.
-- Dompet personal/bersama, arsip dompet, serta pilihan institusi bank resmi dan
-  institusi khusus pengguna.
-- Anggaran bulanan personal dan keluarga.
-- Target tabungan dengan progres dan insight dari AI advisor.
-- Pemindaian struk transaksi serta certicard/nota emas menggunakan Gemini.
-  Hasil pindai berupa draft untuk ditinjau sebelum disimpan. Foto kamera besar
-  dikompres di browser sebelum diunggah.
-- Tabungan emas batangan dan perhiasan, estimasi nilai, serta harga pasar yang
-  diambil dari provider dan disimpan sebagai snapshot harian di database.
-- Laporan bulanan dengan filter cakupan/dompet dan print-to-PDF.
-- Trash dan pemulihan untuk data yang mendukung soft delete.
-- PWA installable.
+- **Authentication:** Email and password authentication with revocable `httpOnly` JWT sessions backed by database session records.
+- **Family households:** Household management, member invitations, owner approval, and owner/member roles.
+- **Transactions:** Income, expenses, and transfers between wallets. Amounts support up to two decimal places and are stored as PostgreSQL `NUMERIC` values.
+- **Wallets:** Personal and shared wallets, wallet archiving, official bank institutions, and user-defined institutions.
+- **Budgets:** Monthly personal and family budgets.
+- **Savings goals:** Progress tracking and AI advisor insights.
+- **Receipt scanning:** Gemini-powered scanning of transaction receipts and gold certificates or receipts. Scanned results are saved as drafts for review before submission. Large camera images are compressed in the browser before upload.
+- **Gold assets:** Bullion and jewelry tracking, estimated valuations, and market prices retrieved from providers and stored as daily database snapshots.
+- **Monthly reports:** Scope and wallet filters, with print-to-PDF support.
+- **Trash and recovery:** Soft-deleted data can be restored where supported.
+- **Progressive Web App (PWA):** Installable on supported devices.
 
-Rincian kondisi implementasi terkini ada di
-[`docs/current-state.md`](./docs/current-state.md). Spesifikasi produk dan
-riwayat keputusan ada di [`docs/`](./docs/).
+For the latest implementation status and known integration limitations, see [`docs/current-state.md`](./docs/current-state.md). Product specifications and architectural decision records are available in [`docs/`](./docs/).
 
-## Teknologi
+## Tech Stack
 
-- Next.js 16 App Router, React 19, TypeScript, Tailwind CSS v4
-- Prisma 7 dengan PostgreSQL; Neon atau PostgreSQL lokal
+- Next.js 16 App Router, React 19, TypeScript, and Tailwind CSS v4
+- Prisma 7 with PostgreSQL; supports Neon or a local PostgreSQL instance
 - Bun 1.4.2
-- Gemini API untuk pemindaian gambar dan advisor (opsional)
-- Vercel Blob untuk penyimpanan gambar struk (diperlukan untuk OCR struk)
-- Vitest dan Playwright
+- Gemini API for image scanning and the AI advisor (optional)
+- Vercel Blob for receipt image storage (required for receipt OCR)
+- Vitest and Playwright
 
-## Menjalankan secara lokal
+## Getting Started
 
-Prasyarat: Bun 1.4.2, Node.js yang kompatibel dengan Next.js, dan PostgreSQL
-15+ lokal atau database Neon.
+### Prerequisites
+
+- Bun 1.4.2
+- A Node.js version compatible with Next.js
+- PostgreSQL 15+ locally or a Neon database
+
+### Installation
+
+Install the dependencies:
 
 ```bash
 bun install
 ```
 
-Salin `.env.example` menjadi `.env` atau `.env.local`, lalu isi setidaknya
-`DATABASE_URL` dan `AUTH_SECRET`. Isi `GEMINI_API_KEY` dan
-`BLOB_READ_WRITE_TOKEN` bila ingin memakai fitur AI/pemindaian. Variabel harga
-emas dapat dibiarkan pada nilai default kecuali menggunakan provider lain.
+Copy `.env.example` to `.env` or `.env.local`, then configure at least `DATABASE_URL` and `AUTH_SECRET`.
+
+Configure `GEMINI_API_KEY` and `BLOB_READ_WRITE_TOKEN` if you want to use the AI and image-scanning features. Gold price variables can retain their default values unless you use a different provider.
+
+Run the following commands:
 
 ```bash
 bunx prisma generate
@@ -60,60 +56,73 @@ bun run seed:institutions
 bun run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000). Langkah rinci database
-lokal ada di [`docs/dev-setup-local.md`](./docs/dev-setup-local.md).
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Perintah
+For detailed local database setup instructions, see [`docs/dev-setup-local.md`](./docs/dev-setup-local.md).
+
+## Available Commands
 
 ```bash
-bun run dev              # server development
-bun run lint             # ESLint
-bun run test             # unit test
-bun run test:integration # integration test
-bun run test:e2e         # Playwright
-bun run build            # prisma generate + Next.js build
-bun run start            # server production lokal
+bun run dev               # Start the development server
+bun run lint              # Run ESLint
+bun run test               # Run unit tests
+bun run test:integration   # Run integration tests
+bun run test:e2e           # Run Playwright end-to-end tests
+bun run build              # Generate Prisma Client and build Next.js
+bun run start              # Start the local production server
 ```
 
-Playwright menggunakan port `3010`. Integration test memerlukan database dan
-environment test terpisah. Build tidak menjalankan migrasi database.
+Playwright uses port `3010`. Integration tests require a separate test database and test environment.
 
-## Struktur proyek
+The build command does not run database migrations automatically.
 
-- `app/` — halaman, API Route Handlers, layout, dan manifest PWA.
-- `components/` — komponen UI per fitur.
-- `lib/server/` — service, repository, autentikasi, dan provider server.
-- `lib/` — utilitas dan koneksi database.
-- `prisma/` — schema, migrasi, dan seed.
-- `types/` — DTO dan tipe lintas fitur.
-- `docs/` — setup, kondisi implementasi, spesifikasi, desain, ADR, dan QA.
-- `e2e/` — skenario browser Playwright.
+## Project Structure
+
+```text
+app/          Pages, API Route Handlers, layouts, and PWA manifest
+components/   Feature-specific UI components
+lib/server/   Services, repositories, authentication, and server providers
+lib/          Utilities and database connections
+prisma/       Database schema, migrations, and seed scripts
+types/        DTOs and shared types
+docs/         Setup guides, specifications, architecture, and QA documentation
+e2e/          Playwright browser test scenarios
+```
 
 ## Deployment
 
-Target deployment saat ini adalah Vercel dengan PostgreSQL (Neon didukung),
-Gemini, dan Vercel Blob sebagai layanan opsional sesuai fitur yang digunakan.
-Atur `DATABASE_URL`, `AUTH_SECRET`, dan kredensial provider melalui environment
-deployment. Jalankan `prisma migrate deploy` melalui langkah operasional/CI
-sebelum memakai schema baru; migrasi tidak dijalankan otomatis oleh build.
+The current deployment target is Vercel with PostgreSQL (Neon supported). Gemini and Vercel Blob are optional services depending on the features being used.
 
-Panduan PWA/APK ada di [`docs/BUILD-APK-PWA.md`](./docs/BUILD-APK-PWA.md), dan
-keputusan deployment di
-[`docs/adr/ADR-007-free-tier-deployment.md`](./docs/adr/ADR-007-free-tier-deployment.md).
+Configure `DATABASE_URL`, `AUTH_SECRET`, and the required provider credentials through your deployment environment.
 
-## Dokumentasi
+Run `prisma migrate deploy` through your operational workflow or CI pipeline before using a new database schema. Database migrations are not executed automatically during the build.
 
-- [`docs/current-state.md`](./docs/current-state.md) — peta fitur dan batas
-  integrasi yang ada di kode saat ini.
-- [`docs/PRD.md`](./docs/PRD.md) dan [`docs/spec/`](./docs/spec/) — kebutuhan
-  produk; dokumen ini menjelaskan target dan dapat memuat item yang belum
-  diimplementasikan.
-- [`docs/adr/`](./docs/adr/) — keputusan arsitektur.
-- [`docs/erd/`](./docs/erd/) — model data dan alur.
-- [`docs/qa/`](./docs/qa/) — matriks, fixture, dan laporan QA historis.
+For PWA/APK guidance, see [`docs/BUILD-APK-PWA.md`](./docs/BUILD-APK-PWA.md).
 
-## Keamanan
+For deployment architecture decisions, see [`docs/adr/ADR-007-free-tier-deployment.md`](./docs/adr/ADR-007-free-tier-deployment.md).
 
-Jangan commit `.env`, API key, secret autentikasi, atau token Blob. Secret harus
-tetap server-side dan tidak menggunakan prefix `NEXT_PUBLIC_`. Gunakan HTTPS di
-production; jangan simpan password di browser.
+## Documentation
+
+- [`docs/current-state.md`](./docs/current-state.md) — Current feature implementation and integration limitations.
+- [`docs/PRD.md`](./docs/PRD.md) and [`docs/spec/`](./docs/spec/) — Product requirements and specifications. These documents may describe planned features that are not yet implemented.
+- [`docs/adr/`](./docs/adr/) — Architecture Decision Records.
+- [`docs/erd/`](./docs/erd/) — Data models and workflow diagrams.
+- [`docs/qa/`](./docs/qa/) — QA matrices, fixtures, and historical QA reports.
+
+## Security
+
+- Never commit `.env` files, API keys, authentication secrets, or Blob access tokens.
+- Keep secrets server-side and never expose them through `NEXT_PUBLIC_` environment variables.
+- Use HTTPS in production.
+- Never store passwords in browser storage.
+- Use synthetic data for public demonstrations and avoid publishing personal financial information.
+
+## License
+
+**All Rights Reserved.**
+
+Unless otherwise stated in a separate written agreement, this project is provided for viewing and evaluation purposes only. No license is granted to use, copy, modify, distribute, sublicense, or create derivative works from this project's source code.
+
+For permission to use or redistribute the code, please contact the repository owner.
+
+Third-party dependencies remain subject to their respective licenses.
