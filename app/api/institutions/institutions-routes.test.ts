@@ -96,6 +96,7 @@ function buildHarness(
     institutions: new InstitutionService(repos, transaction, idempotency),
     ocr: {} as AuthenticatedContext["ocr"],
     dashboard: {} as AuthenticatedContext["dashboard"],
+    reports: {} as AuthenticatedContext["reports"],
     budget: {} as AuthenticatedContext["budget"],
     goals: {} as AuthenticatedContext["goals"],
     advisor: {} as AuthenticatedContext["advisor"],

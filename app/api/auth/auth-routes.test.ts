@@ -40,6 +40,7 @@ function context(overrides: Partial<AuthenticatedContext> = {}): AuthenticatedCo
     transactions: {} as unknown as AuthenticatedContext["transactions"],
     ocr: {} as unknown as AuthenticatedContext["ocr"],
     dashboard: {} as AuthenticatedContext["dashboard"],
+    reports: {} as AuthenticatedContext["reports"],
     budget: {} as AuthenticatedContext["budget"],
     goals: {} as AuthenticatedContext["goals"],
     wallets: {} as AuthenticatedContext["wallets"],

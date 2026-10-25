@@ -39,6 +39,7 @@ function buildHarness() {
     transactions: {} as AuthenticatedContext["transactions"],
     ocr: {} as AuthenticatedContext["ocr"],
     dashboard: {} as AuthenticatedContext["dashboard"],
+    reports: {} as AuthenticatedContext["reports"],
     budget: {} as AuthenticatedContext["budget"],
     goals: new GoalService(repos as PlanningRepositories, transaction as PlanningTransaction),
     wallets: {} as AuthenticatedContext["wallets"],

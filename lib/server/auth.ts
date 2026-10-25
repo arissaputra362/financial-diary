@@ -20,6 +20,7 @@ import {
   type LedgerRepositories,
   type PlanningRepositories,
 } from "./repositories/ledger";
+import { createReportRepository } from "./repositories/reports";
 import type { Db } from "./repositories/types";
 import { SESSION_COOKIE, verifySession } from "./session";
 import { AuthService, type AuthRepositories, type AuthStateDTO } from "./services/auth";
@@ -33,6 +34,7 @@ import { InstitutionService } from "./services/institution";
 import { OcrService } from "./services/ocr";
 import { createSharpImageNormalizer } from "./services/image-normalization";
 import { PeriodService } from "./services/period";
+import { ReportService } from "./services/report";
 import { TransactionService } from "./services/transaction";
 import { WalletService } from "./services/wallet";
 import type { LedgerTransaction, PlanningTransaction } from "./services/types";
@@ -48,6 +50,7 @@ export type Services = {
   institutions: InstitutionService;
   ocr: OcrService;
   dashboard: DashboardService;
+  reports: ReportService;
   budget: BudgetService;
   goals: GoalService;
   advisor: AdvisorService;
@@ -114,6 +117,7 @@ export function createServices(): Services {
     budget,
     periods,
   );
+  const reports = new ReportService(createReportRepository(prisma), periods);
 
   return {
     auth: new AuthService(repos, transaction),
@@ -130,6 +134,7 @@ export function createServices(): Services {
       createSharpImageNormalizer(),
     ),
     dashboard,
+    reports,
     budget,
     goals: new GoalService(planningRepos, planningTransaction),
     advisor: new AdvisorService(planningRepos, planningTransaction, createGeminiAdvisorProvider()),
@@ -149,6 +154,7 @@ export type AuthenticatedContext = {
   institutions: InstitutionService;
   ocr: OcrService;
   dashboard: DashboardService;
+  reports: ReportService;
   budget: BudgetService;
   goals: GoalService;
   advisor: AdvisorService;
@@ -187,6 +193,7 @@ export async function authenticatedRequest(
     institutions: services.institutions,
     ocr: services.ocr,
     dashboard: services.dashboard,
+    reports: services.reports,
     budget: services.budget,
     goals: services.goals,
     advisor: services.advisor,

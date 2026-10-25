@@ -39,6 +39,7 @@ function buildHarness(role = "MEMBER", userId = MEMBER, store: FakeStore = creat
     institutions: {} as AuthenticatedContext["institutions"],
     ocr: {} as AuthenticatedContext["ocr"],
     dashboard: {} as AuthenticatedContext["dashboard"],
+    reports: {} as AuthenticatedContext["reports"],
     budget: {} as AuthenticatedContext["budget"],
     goals: {} as AuthenticatedContext["goals"],
     advisor: {} as AuthenticatedContext["advisor"],

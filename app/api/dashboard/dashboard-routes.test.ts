@@ -51,6 +51,7 @@ function buildHarness(role = "OWNER") {
       budget,
       periods,
     ),
+    reports: {} as AuthenticatedContext["reports"],
     budget,
     goals: {} as AuthenticatedContext["goals"],
     advisor: {} as AuthenticatedContext["advisor"],

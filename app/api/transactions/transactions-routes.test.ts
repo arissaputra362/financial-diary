@@ -88,6 +88,7 @@ function buildHarness() {
     institutions: {} as AuthenticatedContext["institutions"],
     ocr: new OcrService(repos, transaction, idempotency, provider, createFakeBlobStore().store),
     dashboard: {} as AuthenticatedContext["dashboard"],
+    reports: {} as AuthenticatedContext["reports"],
     budget: {} as AuthenticatedContext["budget"],
     goals: {} as AuthenticatedContext["goals"],
     advisor: {} as AuthenticatedContext["advisor"],

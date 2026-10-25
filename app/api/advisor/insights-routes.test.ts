@@ -48,6 +48,7 @@ function buildHarness(providerResult?: import("@/lib/server/providers/advisor").
     institutions: {} as AuthenticatedContext["institutions"],
     ocr: {} as AuthenticatedContext["ocr"],
     dashboard: {} as AuthenticatedContext["dashboard"],
+    reports: {} as AuthenticatedContext["reports"],
     budget: {} as AuthenticatedContext["budget"],
     goals: {} as AuthenticatedContext["goals"],
     advisor: new AdvisorService(

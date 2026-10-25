@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { MonthlyReport, type ReportScope } from "@/components/reports/MonthlyReport";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { apiRequest } from "@/lib/api-client";
@@ -18,20 +20,35 @@ import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO, TransactionListDTO, WalletDTO } from "@/types/api";
 import { AddTransactionSheet } from "./AddTransactionSheet";
-import { activityHref, activityListUrl } from "./activityUrl";
+import {
+  activityHref,
+  activityListUrl,
+  type ActivityTypeFilter,
+  type ActivityViewMode,
+} from "./activityUrl";
+import {
+  filterActivityRows,
+  mergeActivityRows,
+  shouldOfferLoadMore,
+} from "./activityRows";
 import { TransactionDetailSheet } from "./TransactionDetailSheet";
 import { TransactionList } from "./TransactionList";
 import { UndoToast } from "./UndoToast";
 import { categoryLabel, isTransferLeg } from "./categories";
 
 export interface ActivityViewProps {
-  initialView: "active" | "trash";
+  initialView: ActivityViewMode;
   /** Validated `YYYY-MM` from the `?month=` deep link; absent = current month. */
   initialMonth?: string;
   /** `?add=1` from the nav/dashboard "Tambah" action opens the add sheet (A-27). */
   initialAdd?: boolean;
   initialFrom?: string;
   initialTo?: string;
+  initialFilter?: ActivityTypeFilter;
+  /** Active tab wallet filter, or the selected report wallet on Ringkasan. */
+  initialWalletId?: string;
+  initialReportScope?: ReportScope;
+  initialReportWalletId?: string;
   initialData?: TransactionListDTO;
 }
 
@@ -46,10 +63,12 @@ const FILTER_OPTIONS: ReadonlyArray<readonly [ListFilter, string]> = [
 /**
  * Activity page: grouped active list with soft delete + 5-second undo, month
  * navigation deep-linked as `?month=YYYY-MM` (server-side filter, A-14), type
- * filters, cursor pagination, a detail sheet, and a Trash tab
- * (`/transactions?view=trash`, A-31). Add is an in-page flow, never a nav item.
+ * filters, cursor pagination, a detail sheet, a Trash tab
+ * (`/transactions?view=trash`, A-31), and the monthly report tab
+ * (`?view=ringkasan`, AC-F7-1). Add is an in-page flow, never a nav item.
  * The page passes a key for view + month, so URL-driven view/month changes
  * restart with fresh state; the Add intent is handled separately (AC-F3-14).
+ * Report scope and wallet travel in the URL so a month remount restores them.
  */
 export function ActivityView({
   initialView,
@@ -57,14 +76,20 @@ export function ActivityView({
   initialFrom,
   initialTo,
   initialAdd = false,
+  initialFilter = "all",
+  initialWalletId,
+  initialReportScope = "shared",
+  initialReportWalletId,
   initialData,
 }: ActivityViewProps) {
   const router = useRouter();
-  const [view, setView] = useState<"active" | "trash">(initialView);
+  const [view, setView] = useState<ActivityViewMode>(initialView);
   const [rows, setRows] = useState<TransactionDTO[]>(initialData?.rows ?? []);
   const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
-  const [listFilter, setListFilter] = useState<ListFilter>("all");
-  const [walletId, setWalletId] = useState("");
+  const [listFilter, setListFilter] = useState<ListFilter>(() => filterFromUrl(initialFilter));
+  const [walletId, setWalletId] = useState(initialWalletId ?? "");
+  const [reportScope, setReportScope] = useState<ReportScope>(initialReportScope);
+  const [reportWalletId, setReportWalletId] = useState(initialReportWalletId ?? "");
   const [wallets, setWallets] = useState<WalletDTO[]>([]);
   const [walletsLoading, setWalletsLoading] = useState(true);
   const [walletsError, setWalletsError] = useState<string | null>(null);
@@ -80,7 +105,9 @@ export function ActivityView({
   const [draftFrom, setDraftFrom] = useState(initialFrom ?? "");
   const [draftTo, setDraftTo] = useState(initialTo ?? "");
   const [dateFilterError, setDateFilterError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(!initialData);
+  const [loading, setLoading] = useState(initialView !== "ringkasan" && !initialData);
+  /* Type-filter fetches keep the filter bar mounted so keyboard focus survives. */
+  const [filterLoading, setFilterLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
@@ -95,18 +122,59 @@ export function ActivityView({
   /* Set by a successful save so the following close does not write a second URL. */
   const savedRef = useRef(false);
   const addTriggerRef = useRef<HTMLButtonElement>(null);
+  /*
+    Deep-link validation must run after the wallet list resolves, not inside an
+    effect body. The fetch callback calls the latest validator through this ref.
+  */
+  const validateSelectionsRef = useRef<(nextWallets: WalletDTO[]) => void>(() => {});
+  /* Prefetched rows serve only the first render; a later filter change refetches. */
+  const initialDataConsumed = useRef(false);
 
   /*
-    Single URL writer for this page (AC-F3-14). `replace` keeps history clean;
-    the month and Trash view survive whenever only the Add intent changes.
+    Single URL writer for this page (AC-F3-14, AC-F7-1/2/6). `replace` keeps
+    history clean. The open tab, month, transaction filter/wallet, and report
+    scope/wallet all travel together, so closing a sheet or changing a month
+    never resets the other controls.
   */
   const writeUrl = useCallback(
-    (nextView: "active" | "trash", month: string, add = false, from = dateFrom, to = dateTo) => {
-      router.replace(activityHref({ view: nextView, month, add, from: from || undefined, to: to || undefined }), {
-        scroll: false,
-      });
+    (next: {
+      view: ActivityViewMode;
+      month?: string;
+      add?: boolean;
+      from?: string;
+      to?: string;
+      filter?: ListFilter;
+      walletId?: string;
+      reportScope?: ReportScope;
+      reportWalletId?: string;
+    }) => {
+      const nextMonth = next.month ?? activeMonth;
+      const nextFilter = next.filter ?? listFilter;
+      const transactionWallet = next.walletId ?? walletId;
+      const nextScope = next.reportScope ?? reportScope;
+      const nextReportWallet = next.reportWalletId ?? reportWalletId;
+      const nextFrom = next.from ?? dateFrom;
+      const nextTo = next.to ?? dateTo;
+      router.replace(
+        activityHref({
+          view: next.view,
+          month: nextMonth,
+          add: next.add,
+          from: next.view === "active" ? nextFrom : undefined,
+          to: next.view === "active" ? nextTo : undefined,
+          filter: next.view === "active" ? filterToUrl(nextFilter) : "all",
+          walletId:
+            next.view === "active"
+              ? transactionWallet
+              : next.view === "ringkasan"
+                ? nextReportWallet
+                : undefined,
+          reportScope: nextScope,
+        }),
+        { scroll: false },
+      );
     },
-    [dateFrom, dateTo, router],
+    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletId, router, walletId],
   );
 
   /*
@@ -135,7 +203,7 @@ export function ActivityView({
     const handleAddIntent = () => {
       setSuppressUrlAdd(true);
       setSheetOpen(true);
-      writeUrl(view, activeMonth, true);
+      writeUrl({ view, month: activeMonth, add: true });
     };
 
     window.addEventListener(TRANSACTION_ADD_EVENT, handleAddIntent);
@@ -148,7 +216,8 @@ export function ActivityView({
 
   useEffect(() => {
     let active = true;
-    apiRequest<{ wallets: WalletDTO[] }>("/api/wallets?view=active")
+    /* `view=all` keeps archived wallets available to the report (AC-F7-8). */
+    apiRequest<{ wallets: WalletDTO[] }>("/api/wallets?view=all")
       .then((response) => {
         if (!active) return;
         if (response.status === 401) {
@@ -163,8 +232,10 @@ export function ActivityView({
           setWalletsError("Filter dompet belum bisa dimuat.");
           return;
         }
-        setWallets(response.data?.wallets ?? []);
+        const nextWallets = response.data?.wallets ?? [];
+        setWallets(nextWallets);
         setWalletsError(null);
+        validateSelectionsRef.current(nextWallets);
       })
       .catch(() => {
         if (active) setWalletsError("Filter dompet belum bisa dimuat.");
@@ -190,10 +261,22 @@ export function ActivityView({
   }, []);
 
   useEffect(() => {
-    if (initialData && reloadToken === 0) return;
+    /* Ringkasan draws every number from its own aggregate request (AC-F7-14). */
+    if (view === "ringkasan") return;
+    if (initialData && !initialDataConsumed.current) {
+      initialDataConsumed.current = true;
+      return;
+    }
     let active = true;
     apiRequest<TransactionListDTO>(
-      activityListUrl({ view, month: activeMonth, walletId, from: dateFrom, to: dateTo }),
+      activityListUrl({
+        view,
+        month: activeMonth,
+        walletId,
+        from: dateFrom,
+        to: dateTo,
+        filter: filterToUrl(listFilter),
+      }),
     )
       .then((response) => {
         if (!active) return;
@@ -222,12 +305,25 @@ export function ActivityView({
         setError("Daftar transaksi belum bisa dimuat.");
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setFilterLoading(false);
+        }
       });
     return () => {
       active = false;
     };
-  }, [activeMonth, dateFrom, dateTo, initialData, reloadToken, router, view, walletId]);
+  }, [
+    activeMonth,
+    dateFrom,
+    dateTo,
+    initialData,
+    listFilter,
+    reloadToken,
+    router,
+    view,
+    walletId,
+  ]);
 
   const reload = () => {
     setLoading(true);
@@ -238,11 +334,12 @@ export function ActivityView({
     const next = shiftMonthKey(activeMonth, delta);
     if (next === activeMonth) return;
     setDetail(null);
-    setLoading(true);
+    if (view !== "ringkasan") setLoading(true);
     setActiveMonth(next);
     resetDateFilter();
     setDateFilterOpen(false);
-    writeUrl(view, next, false, "", "");
+    /* The report scope and wallet survive the month change (AC-F7-2). */
+    writeUrl({ view, month: next, from: "", to: "" });
   };
 
   const openMonthPicker = () => {
@@ -254,12 +351,12 @@ export function ActivityView({
     const next = resolveMonthKey(monthPickerValue);
     if (next !== activeMonth) {
       setDetail(null);
-      setLoading(true);
+      if (view !== "ringkasan") setLoading(true);
       setActiveMonth(next);
       /* The date range belongs to one month, so a new month clears it. */
       resetDateFilter();
       setDateFilterOpen(false);
-      writeUrl(view, next, false, "", "");
+      writeUrl({ view, month: next, from: "", to: "" });
     }
     setMonthPickerOpen(false);
   };
@@ -299,7 +396,7 @@ export function ActivityView({
       setDateFrom(draftFrom);
       setDateTo(draftTo);
     }
-    writeUrl(view, activeMonth, false, draftFrom, draftTo);
+    writeUrl({ view: "active", month: activeMonth, from: draftFrom, to: draftTo });
     setDateFilterOpen(false);
   };
 
@@ -307,7 +404,7 @@ export function ActivityView({
     const hadFilter = Boolean(dateFrom || dateTo);
     resetDateFilter();
     if (hadFilter) setLoading(true);
-    writeUrl(view, activeMonth, false, "", "");
+    writeUrl({ view: "active", month: activeMonth, from: "", to: "" });
   };
 
   const loadMore = async () => {
@@ -316,12 +413,13 @@ export function ActivityView({
     try {
       const response = await apiRequest<TransactionListDTO>(
         activityListUrl({
-          view,
+          view: view === "trash" ? "trash" : "active",
           cursor: nextCursor,
           month: activeMonth,
           walletId,
           from: dateFrom,
           to: dateTo,
+          filter: filterToUrl(listFilter),
         }),
       );
       if (response.status === 401) {
@@ -333,10 +431,7 @@ export function ActivityView({
         return;
       }
       const incoming = response.data?.rows ?? [];
-      setRows((current) => {
-        const seen = new Set(current.map((row) => row.id));
-        return [...current, ...incoming.filter((row) => !seen.has(row.id))];
-      });
+      setRows((current) => mergeActivityRows(current, incoming));
       setNextCursor(response.data?.nextCursor ?? null);
     } catch {
       showNotice("Transaksi lainnya belum bisa dimuat.");
@@ -345,18 +440,49 @@ export function ActivityView({
     }
   };
 
-  const changeView = (next: "active" | "trash") => {
-    setLoading(true);
+  const changeView = (next: ActivityViewMode) => {
     setUndo(null);
     setListFilter("all");
     setWalletId("");
     setDetail(null);
+    setDateFilterOpen(false);
+    resetDateFilter();
     setView(next);
+    if (next === "ringkasan") {
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     /*
-      The selected month travels back into the URL so returning from Trash (or
-      a refresh) restores the same month instead of resetting to today.
+      The selected month travels back into the URL so returning from Trash or
+      Ringkasan (or a refresh) restores the same month instead of today.
+      Report scope/wallet stay put; only the transaction filter resets.
     */
-    writeUrl(next, activeMonth);
+    writeUrl({
+      view: next,
+      month: activeMonth,
+      filter: "all",
+      walletId: "",
+      from: "",
+      to: "",
+    });
+  };
+
+  const changeReportScope = (next: ReportScope) => {
+    /* A scope change always resets the wallet to Semua dompet (AC-F7-8). */
+    setReportScope(next);
+    setReportWalletId("");
+    writeUrl({
+      view: "ringkasan",
+      month: activeMonth,
+      reportScope: next,
+      reportWalletId: "",
+    });
+  };
+
+  const changeReportWallet = (next: string) => {
+    setReportWalletId(next);
+    writeUrl({ view: "ringkasan", month: activeMonth, reportWalletId: next });
   };
 
   const handleDelete = async (row: TransactionDTO) => {
@@ -440,7 +566,7 @@ export function ActivityView({
       setDetail(null);
       setLoading(true);
     }
-    writeUrl("active", activeMonth);
+    writeUrl({ view: "active", month: activeMonth });
   };
 
   /*
@@ -459,7 +585,7 @@ export function ActivityView({
       landing from a tap during this same transition, so checking the URL here
       would miss it and leave `add=1` stuck.
     */
-    if (!saved) writeUrl(view, activeMonth);
+    if (!saved) writeUrl({ view, month: activeMonth });
     window.requestAnimationFrame(() => {
       const active = document.activeElement;
       if (!active || active === document.body) {
@@ -472,41 +598,66 @@ export function ActivityView({
   }, [view, activeMonth, writeUrl]);
 
   /*
-    Summary counts money in and money out only; transfer legs move money
-    between wallets, so they are excluded and called out separately.
+    Keep the latest deep-link validator available to the wallet fetch callback.
+    This effect only updates a ref, so it never cascades a render.
   */
-  const summary = useMemo(() => {
-    let moneyIn = 0;
-    let moneyOut = 0;
-    let transfers = 0;
-    for (const row of rows) {
-      if (isTransferLeg(row)) {
-        transfers += 1;
-        continue;
+  useEffect(() => {
+    validateSelectionsRef.current = (nextWallets) => {
+      if (view === "active" && walletId && !nextWallets.some((wallet) => wallet.id === walletId)) {
+        setWalletId("");
+        setLoading(true);
+        setReloadToken((token) => token + 1);
+        showNotice("Dompet yang dipilih tidak tersedia. Menampilkan semua dompet.");
+        writeUrl({ view: "active", month: activeMonth, walletId: "" });
+        return;
       }
-      if (row.type === "MONEY_IN") moneyIn += row.amountMinor;
-      else if (row.type === "MONEY_OUT") moneyOut += row.amountMinor;
-    }
-    return { moneyIn, moneyOut, transfers, count: rows.length };
-  }, [rows]);
+      if (view !== "ringkasan") return;
+      const inScope = nextWallets.filter((wallet) =>
+        reportScope === "shared" ? wallet.scope === "SHARING" : wallet.scope === "PERSONAL",
+      );
+      if (reportScope === "personal" && inScope.length === 0) {
+        setReportScope("shared");
+        setReportWalletId("");
+        writeUrl({
+          view: "ringkasan",
+          month: activeMonth,
+          reportScope: "shared",
+          reportWalletId: "",
+        });
+        return;
+      }
+      if (reportWalletId && !inScope.some((wallet) => wallet.id === reportWalletId)) {
+        setReportWalletId("");
+        showNotice("Dompet yang dipilih tidak tersedia. Menampilkan semua dompet.");
+        writeUrl({
+          view: "ringkasan",
+          month: activeMonth,
+          reportScope,
+          reportWalletId: "",
+        });
+      }
+    };
+  });
 
-  const visibleRows = useMemo(() => {
-    if (listFilter === "all") return rows;
-    if (listFilter === "transfer") return rows.filter((row) => isTransferLeg(row));
-    return rows.filter((row) => row.type === listFilter && !isTransferLeg(row));
-  }, [rows, listFilter]);
-
-  const showSummaryAndFilter = view === "active" && !loading && !error;
-  const summaryLength = Math.max(
-    formatIDR(summary.moneyIn).length,
-    formatIDR(summary.moneyOut).length,
+  const visibleRows = useMemo(
+    () => filterActivityRows(rows, filterToUrl(listFilter)),
+    [rows, listFilter],
   );
-  const veryLongSummary = summaryLength > 16;
-  const longSummary = summaryLength > 13;
+
+  /*
+    The report needs archived wallets (AC-F7-8); the transaction filter keeps
+    hiding them except when one is the current selection from a shared URL.
+  */
+  const transactionWallets = useMemo(
+    () => wallets.filter((wallet) => wallet.archivedAt === null || wallet.id === walletId),
+    [walletId, wallets],
+  );
+
+  const showFilters = view === "active" && !loading && !error;
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-3 px-1">
+      <div className="flex items-start justify-between gap-3 px-1 print:hidden">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">Catatan keuangan keluarga</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">Aktivitas</h1>
@@ -522,21 +673,28 @@ export function ActivityView({
         </Button>
       </div>
 
-      <div className="flex items-center gap-2" role="tablist" aria-label="Daftar aktivitas">
+      <div
+        className="flex flex-wrap items-center gap-1.5 sm:gap-2 print:hidden"
+        role="tablist"
+        aria-label="Tampilan aktivitas"
+      >
         {(
           [
             ["active", "Transaksi"],
+            ["ringkasan", "Ringkasan"],
             ["trash", "Trash"],
           ] as const
         ).map(([value, label]) => (
           <button
             key={value}
+            id={`activity-tab-${value}`}
             type="button"
             role="tab"
             aria-selected={view === value}
+            aria-controls={`activity-panel-${value}`}
             onClick={() => changeView(value)}
             className={cn(
-              "min-h-11 rounded-full px-5 text-sm font-semibold transition-colors",
+              "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors sm:px-5",
               view === value
                 ? "bg-[#14273F] text-white"
                 : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]",
@@ -547,9 +705,15 @@ export function ActivityView({
         ))}
       </div>
 
-      {view === "active" ? (
+      <div
+        id={`activity-panel-${view}`}
+        role="tabpanel"
+        aria-labelledby={`activity-tab-${view}`}
+        className="space-y-5"
+      >
+      {view === "active" || view === "ringkasan" ? (
         <div
-          className="flex items-center justify-between gap-2 rounded-full border border-[#D8E2EE] bg-white p-1.5 pl-5"
+          className="flex items-center justify-between gap-2 rounded-full border border-[#D8E2EE] bg-white p-1.5 pl-5 print:hidden"
           role="group"
           aria-label="Pilih bulan aktivitas"
         >
@@ -699,154 +863,199 @@ export function ActivityView({
       ) : null}
 
       {notice ? (
-        <p role="status" aria-live="polite" className="rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534]">
+        <p role="status" aria-live="polite" className="rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534] print:hidden">
           {notice}
         </p>
       ) : null}
 
-      {showSummaryAndFilter ? (
-        <Card variant="tint" className="p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#46597A]">
-                Ringkasan aktivitas
-              </p>
-              <p className="mt-1 text-sm text-[#46597A]">
-                Dihitung dari {summary.count} transaksi yang tampil.
-              </p>
-              {summary.transfers > 0 ? (
-                <p className="mt-0.5 text-xs text-[#46597A]">
-                  Transfer antar dompet tidak dihitung.
+      {view === "ringkasan" ? (
+        <MonthlyReport
+          month={activeMonth}
+          wallets={wallets}
+          walletsLoading={walletsLoading}
+          walletsError={walletsError}
+          scope={reportScope}
+          walletId={reportWalletId}
+          onScopeChange={changeReportScope}
+          onWalletChange={changeReportWallet}
+          onAddTransaction={() => setSheetOpen(true)}
+        />
+      ) : (
+        <>
+          {showFilters ? (
+            <div>
+              <Link
+                href={activityHref({
+                  view: "ringkasan",
+                  month: activeMonth,
+                  reportScope: "shared",
+                })}
+                className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+              >
+                Lihat ringkasan bulan ini
+              </Link>
+            </div>
+          ) : null}
+
+          {showFilters ? (
+            <div className="space-y-3">
+              <div
+                className="flex flex-wrap items-center gap-1 rounded-2xl bg-[#EFF4FA] p-1"
+                role="group"
+                aria-label="Saring transaksi"
+              >
+                {FILTER_OPTIONS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={listFilter === value}
+                    onClick={() => {
+                      if (value !== listFilter) {
+                        /* A new type cursor: never continue the previous filter. */
+                        setRows([]);
+                        setNextCursor(null);
+                        setFilterLoading(true);
+                        setListFilter(value);
+                      }
+                      writeUrl({
+                        view: "active",
+                        month: activeMonth,
+                        filter: value,
+                      });
+                    }}
+                    className={cn(
+                      "flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors",
+                      listFilter === value
+                        ? "bg-white text-[#17304F] shadow-sm"
+                        : "text-[#46597A] hover:text-[#17304F]",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-[#D8E2EE] bg-white px-3 text-sm font-semibold text-[#46597A]">
+                <span className="shrink-0">Dompet</span>
+                <select
+                  value={walletId}
+                  disabled={walletsLoading || Boolean(walletsError)}
+                  onChange={(event) => {
+                    const nextWalletId = event.target.value;
+                    setLoading(true);
+                    setWalletId(nextWalletId);
+                    setReloadToken((token) => token + 1);
+                    writeUrl({
+                      view: "active",
+                      month: activeMonth,
+                      filter: listFilter,
+                      walletId: nextWalletId,
+                    });
+                  }}
+                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none"
+                  aria-label="Filter berdasarkan dompet"
+                >
+                  <option value="">
+                    {walletsLoading
+                      ? "Memuat dompet..."
+                      : walletsError
+                        ? "Dompet tidak tersedia"
+                        : "Semua dompet"}
+                  </option>
+                  {!walletsLoading &&
+                    transactionWallets.map((wallet) => (
+                      <option key={wallet.id} value={wallet.id}>
+                        {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
+                        {wallet.archivedAt ? ", Arsip" : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {walletsError ? (
+                <p role="status" className="text-xs text-[#B91C1C]">
+                  {walletsError}
                 </p>
               ) : null}
             </div>
-            <dl
-              className={
-                veryLongSummary
-                  ? "grid w-full grid-cols-1 gap-4 sm:w-auto"
-                  : longSummary
-                    ? "grid w-full grid-cols-1 gap-4 sm:w-auto sm:min-w-64 sm:grid-cols-2"
-                    : "grid w-full grid-cols-2 gap-4 sm:w-auto sm:min-w-64"
-              }
-            >
-              <div className="min-w-0">
-                <dt className="text-xs font-medium text-[#46597A]">Uang masuk</dt>
-                <dd className="whitespace-nowrap text-[clamp(1rem,4.4vw,1.125rem)] font-bold tabular-nums text-[#166534]">
-                  {formatIDR(summary.moneyIn)}
-                </dd>
-              </div>
-              <div className="min-w-0">
-                <dt className="text-xs font-medium text-[#46597A]">Uang keluar</dt>
-                <dd className="whitespace-nowrap text-[clamp(1rem,4.4vw,1.125rem)] font-bold tabular-nums text-[#17304F]">
-                  {formatIDR(summary.moneyOut)}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </Card>
-      ) : null}
-
-      {showSummaryAndFilter ? (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-1 rounded-2xl bg-[#EFF4FA] p-1" role="group" aria-label="Saring transaksi">
-            {FILTER_OPTIONS.map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={listFilter === value}
-                onClick={() => setListFilter(value)}
-                className={cn(
-                  "flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors",
-                  listFilter === value
-                    ? "bg-white text-[#17304F] shadow-sm"
-                    : "text-[#46597A] hover:text-[#17304F]",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-[#D8E2EE] bg-white px-3 text-sm font-semibold text-[#46597A]">
-            <span className="shrink-0">Dompet</span>
-            <select
-              value={walletId}
-              disabled={walletsLoading || Boolean(walletsError)}
-              onChange={(event) => {
-                setLoading(true);
-                setWalletId(event.target.value);
-                setReloadToken((token) => token + 1);
-              }}
-              className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none"
-              aria-label="Filter berdasarkan dompet"
-            >
-              <option value="">
-                {walletsLoading ? "Memuat dompet..." : walletsError ? "Dompet tidak tersedia" : "Semua dompet"}
-              </option>
-              {!walletsLoading &&
-                wallets.map((wallet) => (
-                  <option key={wallet.id} value={wallet.id}>
-                    {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
-                  </option>
-                ))}
-            </select>
-          </label>
-          {walletsError ? (
-            <p role="status" className="text-xs text-[#B91C1C]">
-              {walletsError}
-            </p>
           ) : null}
-        </div>
-      ) : null}
 
-      {showSummaryAndFilter && visibleRows.length === 0 ? (
-        <Card className="text-center">
-          <p className="text-[15px] font-medium text-[#17304F]">
-            Tidak ada transaksi untuk saringan ini.
-          </p>
-          <button
-            type="button"
-            onClick={() => setListFilter("all")}
-            className="mt-4 inline-flex min-h-11 items-center rounded-full border border-[#BFD3E8] bg-white px-5 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
-          >
-            Tampilkan semua
-          </button>
-        </Card>
-      ) : (
-        <TransactionList
-          rows={visibleRows}
-          loading={loading}
-          loadingMore={loadingMore}
-          error={error}
-          mode={view}
-          nextCursor={nextCursor}
-          deletingId={deletingId}
-          restoringId={restoringId}
-          emptyDescription={
-            view === "active"
-              ? `Belum ada catatan untuk ${monthKeyLabel(activeMonth)}. Pilih bulan lain di atas, atau catat transaksimu.`
-              : undefined
-          }
-          emptyAction={
-            view === "active" ? (
-              <Button onClick={() => setSheetOpen(true)}>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Tambah transaksi
-              </Button>
-            ) : undefined
-          }
-          onRetry={reload}
-          onLoadMore={() => void loadMore()}
-          onOpenDetail={(row) => setDetail(row)}
-          onDelete={(row) => void handleDelete(row)}
-          onRestore={(row) => void handleRestore(row)}
-        />
+          {showFilters && !filterLoading && listFilter !== "all" && visibleRows.length === 0 ? (
+            shouldOfferLoadMore(visibleRows.length, nextCursor) ? (
+              <Card className="text-center">
+                <p className="text-[15px] font-medium text-[#17304F]">
+                  Belum ada transaksi yang cocok di halaman ini.
+                </p>
+                <p className="mt-1 text-sm text-[#46597A]">
+                  Masih ada transaksi lain yang belum dimuat.
+                </p>
+                <Button
+                  variant="secondary"
+                  className="mt-4"
+                  onClick={() => void loadMore()}
+                  isLoading={loadingMore}
+                  loadingLabel="Memuat transaksi"
+                >
+                  Muat lebih banyak
+                </Button>
+              </Card>
+            ) : (
+              <Card className="text-center">
+                <p className="text-[15px] font-medium text-[#17304F]">
+                  Tidak ada transaksi untuk saringan ini.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRows([]);
+                    setNextCursor(null);
+                    setFilterLoading(true);
+                    setListFilter("all");
+                    writeUrl({ view: "active", month: activeMonth, filter: "all" });
+                  }}
+                  className="mt-4 inline-flex min-h-11 items-center rounded-full border border-[#BFD3E8] bg-white px-5 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                >
+                  Tampilkan semua
+                </button>
+              </Card>
+            )
+          ) : (
+            <TransactionList
+              rows={visibleRows}
+              loading={loading || filterLoading}
+              loadingMore={loadingMore}
+              error={error}
+              mode={view}
+              nextCursor={nextCursor}
+              deletingId={deletingId}
+              restoringId={restoringId}
+              emptyDescription={
+                view === "active"
+                  ? `Belum ada catatan untuk ${monthKeyLabel(activeMonth)}. Pilih bulan lain di atas, atau catat transaksimu.`
+                  : undefined
+              }
+              emptyAction={
+                view === "active" ? (
+                  <Button onClick={() => setSheetOpen(true)}>
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Tambah transaksi
+                  </Button>
+                ) : undefined
+              }
+              onRetry={reload}
+              onLoadMore={() => void loadMore()}
+              onOpenDetail={(row) => setDetail(row)}
+              onDelete={(row) => void handleDelete(row)}
+              onRestore={(row) => void handleRestore(row)}
+            />
+          )}
+        </>
       )}
+      </div>
 
       <AddTransactionSheet open={sheetOpen} onClose={handleSheetClose} onCreated={handleCreated} />
 
       <TransactionDetailSheet
         row={detail}
-        mode={view}
+        mode={view === "trash" ? "trash" : "active"}
         busy={
           (detail !== null && (deletingId === detail.id || restoringId === detail.id)) || false
         }
@@ -870,4 +1079,18 @@ export function ActivityView({
 function labelFor(row: TransactionDTO): string {
   const name = row.merchant ?? row.note ?? (isTransferLeg(row) ? "Transfer" : categoryLabel(row.category));
   return `${formatIDR(row.amountMinor)} ${name}`;
+}
+
+function filterFromUrl(filter: ActivityTypeFilter): ListFilter {
+  if (filter === "in") return "MONEY_IN";
+  if (filter === "out") return "MONEY_OUT";
+  if (filter === "transfer") return "transfer";
+  return "all";
+}
+
+function filterToUrl(filter: ListFilter): ActivityTypeFilter {
+  if (filter === "MONEY_IN") return "in";
+  if (filter === "MONEY_OUT") return "out";
+  if (filter === "transfer") return "transfer";
+  return "all";
 }

@@ -192,6 +192,70 @@ export type DashboardDTO = {
   recentActivity: TransactionDTO[];
 };
 
+/* ── Monthly report (feat-reporting, AC-F7-1..15) ───────────────────── */
+
+export type ReportScopeDTO = "SHARED" | "PERSONAL";
+
+export type ReportCategoryDTO = {
+  /** Stored category label; never invented by the client. */
+  name: string;
+  amountMinor: number;
+};
+
+export type ReportBreakdownDTO = {
+  /** Server total; must equal the rendered subtotal. */
+  totalMinor: number;
+  /** At most four named categories, largest first. */
+  categories: ReportCategoryDTO[];
+  /** 0 when no uncategorized transaction exists. */
+  uncategorizedMinor: number;
+  /** Number of named categories outside the top four. */
+  otherCategoryCount: number;
+  /** Combined amount of those remaining named categories. */
+  otherAmountMinor: number;
+};
+
+export type MonthlyReportDeltaDTO = {
+  /** Null when the previous month had no data for the same scope + wallet. */
+  closingMinor: number | null;
+  moneyInMinor: number | null;
+  moneyOutMinor: number | null;
+};
+
+export type DailyBalanceDTO = {
+  /** `YYYY-MM-DD` on the Asia/Jakarta calendar. */
+  date: string;
+  closingMinor: number;
+};
+
+export type MonthlyReportDTO = {
+  month: string;
+  periodStart: string;
+  periodEnd: string;
+  isCurrentMonth: boolean;
+  scope: ReportScopeDTO;
+  wallet: { id: string; name: string } | null;
+  openingMinor: number;
+  newWalletOpeningMinor: number;
+  moneyInMinor: number;
+  moneyOutMinor: number;
+  /** Transfer legs entering wallets in this scope. */
+  transferInMinor: number;
+  /** Transfer legs leaving wallets in this scope. */
+  transferOutMinor: number;
+  transferNetMinor: number;
+  closingMinor: number;
+  /** Active rows in the period, including both transfer legs. */
+  transactionCount: number;
+  /** A new wallet has a transaction dated before the wallet was created. */
+  hasBackdatedNewWallet: boolean;
+  delta: MonthlyReportDeltaDTO;
+  income: ReportBreakdownDTO;
+  expense: ReportBreakdownDTO;
+  /** One point per calendar day, including days without transactions. */
+  dailyBalances: DailyBalanceDTO[];
+};
+
 export type OcrJobStatus = "PROCESSING" | "SUCCEEDED" | "FAILED";
 
 export type OcrErrorCode =

@@ -50,6 +50,10 @@ import {
   type ListInstitutionsQuery,
   type QuickAddInstitutionInput,
 } from "./contracts/institutions";
+import {
+  monthlyReportQuerySchema,
+  type MonthlyReportQuery,
+} from "./contracts/reports";
 import { AppError, badRequest, unprocessable, unprocessableCode } from "./errors";
 
 export async function parseJson(request: Request): Promise<unknown> {
@@ -184,6 +188,13 @@ export function parseDashboardQuery(searchParams: URLSearchParams): DashboardQue
 /** GET /api/budget query; absent scope defaults to `shared` (AC-F2-2c). */
 export function parseBudgetQuery(searchParams: URLSearchParams): BudgetQuery {
   const result = budgetQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+  if (!result.success) throw validationError(result.error);
+  return result.data;
+}
+
+/** GET /api/reports/monthly query (feat-reporting). */
+export function parseReportQuery(searchParams: URLSearchParams): MonthlyReportQuery {
+  const result = monthlyReportQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
   if (!result.success) throw validationError(result.error);
   return result.data;
 }

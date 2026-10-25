@@ -6,6 +6,10 @@ import { cn } from "@/lib/utils";
 export interface SegmentedOption<T extends string> {
   value: T;
   label: string;
+  /** Disabled options stay readable but cannot be selected (AC-F7-7). */
+  disabled?: boolean;
+  /** Plain-language reason; the caller renders the visible explanation. */
+  disabledReason?: string;
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -32,9 +36,25 @@ export function SegmentedControl<T extends string>({
 }: SegmentedControlProps<T>) {
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
+  const enabled = (index: number): boolean => !options[index]?.disabled;
+
+  const nextEnabled = (from: number, step: 1 | -1): number | null => {
+    for (let offset = 1; offset <= options.length; offset += 1) {
+      const index = (from + step * offset + options.length) % options.length;
+      if (enabled(index)) return index;
+    }
+    return null;
+  };
+
+  const edgeEnabled = (fromStart: boolean): number | null => {
+    const indexes = options.map((_, index) => index);
+    if (!fromStart) indexes.reverse();
+    return indexes.find((index) => enabled(index)) ?? null;
+  };
+
   const selectAt = (index: number) => {
     const option = options[index];
-    if (!option) return;
+    if (!option || option.disabled) return;
     onChange(option.value);
     optionRefs.current[index]?.focus();
   };
@@ -42,13 +62,13 @@ export function SegmentedControl<T extends string>({
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     let nextIndex: number | null = null;
     if (event.key === "ArrowRight") {
-      nextIndex = (index + 1) % options.length;
+      nextIndex = nextEnabled(index, 1);
     } else if (event.key === "ArrowLeft") {
-      nextIndex = (index - 1 + options.length) % options.length;
+      nextIndex = nextEnabled(index, -1);
     } else if (event.key === "Home") {
-      nextIndex = 0;
+      nextIndex = edgeEnabled(true);
     } else if (event.key === "End") {
-      nextIndex = options.length - 1;
+      nextIndex = edgeEnabled(false);
     }
     if (nextIndex === null) return;
     event.preventDefault();
@@ -75,14 +95,18 @@ export function SegmentedControl<T extends string>({
             type="button"
             role="tab"
             aria-selected={selected}
+            aria-disabled={option.disabled || undefined}
+            disabled={option.disabled}
+            title={option.disabled ? option.disabledReason : undefined}
             tabIndex={selected ? 0 : -1}
-            onClick={() => onChange(option.value)}
+            onClick={() => selectAt(index)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
               "min-h-11 flex-1 rounded-full px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4F87] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFF4FA] sm:flex-none",
               selected
                 ? "bg-white font-semibold text-[#17304F] shadow-sm"
                 : "font-medium text-[#46597A] hover:text-[#17304F]",
+              option.disabled && "cursor-not-allowed text-[#46597A] hover:text-[#46597A]",
             )}
           >
             {option.label}

@@ -143,6 +143,15 @@ export function accessDeniedForStatus(status: string): AppError | null {
   return null;
 }
 
+/* ── Report scope (feat-reporting AC-F7-7) ─────────────────────────── */
+
+/** Personal report requested by a member who has no personal wallet. */
+export function reportScopeUnavailable(
+  message = "Kamu belum punya dompet pribadi.",
+): AppError {
+  return unprocessableCode("REPORT_SCOPE_UNAVAILABLE", { scope: [message] }, message);
+}
+
 /* ── OCR retry control errors (T-012 / AC-F3-10..13) ───────────────── */
 
 /*

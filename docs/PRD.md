@@ -273,6 +273,46 @@ T-011, Dev Plan, dan QA report untuk bukti dan risiko.
 
 ---
 
+### Fitur 7: Laporan Bulanan (Ringkasan)
+
+**Spec:** `docs/spec/feat-reporting.md`
+**Status:** Spec Ready
+
+**User Story**
+
+Sebagai anggota keluarga, saya ingin melihat ringkasan satu bulan berisi total uang
+masuk, dari mana asalnya, berapa uang keluar, dan berapa sisa saldo, dalam bentuk
+kartu yang bisa saya jumlahkan sendiri, agar saya percaya pada angkanya tanpa harus
+memahami istilah akuntansi.
+
+**Acceptance Criteria**
+
+- [ ] AC-F7-1: Ringkasan adalah tab ketiga pada halaman Aktivitas (`?view=ringkasan`), tanpa item navigasi baru, dan dapat dipulihkan lewat URL bersama bulannya.
+- [ ] AC-F7-2: Periode memakai satu kontrol bulan milik halaman yang sama dengan tab Transaksi. Filter tanggal tidak dirender pada tab Ringkasan.
+- [ ] AC-F7-3: Kartu utama menampilkan saldo akhir periode dengan label adaptif bulan berjalan atau bulan lampau.
+- [ ] AC-F7-4: Tersedia jejak saldo (saldo awal, masuk, keluar, saldo akhir) dengan invarian `saldo akhir = saldo awal + masuk − keluar + transfer masuk − transfer keluar + penyesuaian dompet baru` yang selalu tepat.
+- [ ] AC-F7-5: Kartu pemasukan menampilkan total dan maksimal empat kategori terbesar, termasuk baris `Tanpa kategori`, dengan subtotal yang sama dengan total.
+- [ ] AC-F7-6: Kartu pengeluaran memiliki bentuk yang sama dan aksi `Lihat semua pengeluaran` menuju tab Transaksi dengan bulan dan filter tipe yang sama.
+- [ ] AC-F7-7: Cakupan `Bersama` (default) dan `Pribadi` tersedia; keduanya tidak pernah dijumlahkan menjadi satu angka.
+- [ ] AC-F7-8: Filter dompet mempersempit laporan di dalam cakupan aktif, menyertakan dompet arsip, dan direset saat cakupan berubah.
+- [ ] AC-F7-9: Untuk bulan berjalan dengan semua dompet, saldo akhir sama persis dengan saldo pada Beranda untuk cakupan yang sama.
+- [ ] AC-F7-10: Delta terhadap bulan sebelumnya ditampilkan sebagai nominal absolut, dan disembunyikan sepenuhnya bila pembanding tidak ada.
+- [ ] AC-F7-11: Grafik pergerakan saldo harian menampilkan saldo akhir setiap hari, termasuk hari tanpa transaksi, tanpa overflow pada 390px, 768px, dan 1280px.
+- [ ] AC-F7-12: Transfer tidak dihitung sebagai pemasukan atau pengeluaran, tetapi tetap diperhitungkan pada pergerakan saldo dompet yang terlibat.
+- [ ] AC-F7-13: Semua state tersedia: loading, empty, error dengan retry, tanpa pembanding, cakupan nonaktif, dan dompet tanpa data.
+- [ ] AC-F7-14: Seluruh angka berasal dari satu respons server; blok ringkasan lama yang dihitung dari baris termuat dihentikan.
+- [ ] AC-F7-15: Catatan kaki menyebut jumlah transaksi, periode, pengecualian transfer, dan cakupan. Tidak ada baris potongan, tabungan, atau pembanding yang dikarang.
+- [ ] AC-F7-16 (Extension F7.1): Tombol `Cetak atau simpan PDF` menampilkan dialog print yang hanya membawa isi laporan, tanpa dependency pembangkit PDF, dan nama file default mengikuti periode.
+- [ ] AC-F7-17 (Extension F7.1): Hasil cetak memuat halaman ringkasan utuh satu halaman, diikuti `Rincian transaksi` per-bagian (Uang masuk, Uang keluar, Transfer) dengan subtotal yang cocok dengan angka server, dari endpoint list yang ada.
+
+**Batasan (Out of Scope)**
+
+- Ekspor CSV, ekspor PDF di jalur server, gambar yang bisa dibagikan (share/PNG), dan halaman `/reports` mandiri. Ekspor via print ke PDF tercakup AC-F7-16.
+- Rentang tanggal bebas, lintas bulan, dan perbandingan lebih dari satu bulan.
+- Integrasi `SavingsGoal`, konsep potongan pemasukan, rincian per anggota, budget vs realisasi, dan multi-currency.
+
+---
+
 ## Status Lifecycle Fitur
 
 `Draft → Spec Ready → Dev Plan Ready → In Progress → QA Review → QA Passed → Release Approved`
@@ -286,6 +326,7 @@ T-011, Dev Plan, dan QA report untuk bukti dan risiko.
 | Soft Delete, Trash & Restore | Draft |
 | Dompet Pribadi & Sharing (F6 base, T-009) | QA Passed |
 | Extension F6: Label bank/penyedia + Quick Add (T-011) | Done, QA PASS WITH RISKS and PM task accepted (2026-10-22); release approval remains T-008 |
+| Laporan Bulanan (F7) | QA Passed (2026-10-25, PASS WITH RISKS; release approval belum diberikan PM) |
 
 ## Ketergantungan Antar Fitur
 
@@ -300,10 +341,14 @@ flowchart LR
     F2 --> F6
     F3 --> F6
     F5 --> F6
+    F2 --> F7[Fitur 7: Laporan Bulanan]
+    F3 --> F7
+    F6 --> F7
     F2 --> QA[QA & Release]
     F4 --> QA
     F5 --> QA
     F6 --> QA
+    F7 --> QA
 ```
 
 ## Non-Functional Requirements (lintas fitur)
@@ -331,3 +376,4 @@ flowchart LR
 | 2026-09-30 | PRD pertama dibuat dari requirements.md (diarsipkan) + keputusan PM | PM/SA |
 | 2026-10-21 | Extension F6 dicatat: label bank/penyedia, katalog resmi OJK via seeder statis, dan Quick Add per user. T-009 base tetap QA Passed; T-011 belum diimplementasi. | PM |
 | 2026-10-22 | Fitur 3: keputusan teknis PM untuk retry OCR dan Add intent dicatat sebagai AC-9 sampai AC-13 versi Draft. Retry memakai `OcrJob.attempt` dengan klaim row lock `Receipt`; recovery multipart same-job dan `receiptImageAvailable`/`BlobStore.exists` dikeluarkan. **Belum disetujui, belum diimplementasikan, belum delivered.** | Developer (Draft untuk review PM) |
+| 2026-10-25 | Fitur 7 (Laporan Bulanan / Ringkasan): spec, desain (08-reporting.md), dan dev plan disetujui; diimplementasikan oleh Dev pada hari yang sama dengan `GET /api/reports/monthly`. Amandemen PM: invarian AC-F7-4 memuat suku `transfer masuk − transfer keluar`, dan saldo awal menghitung transaksi backdate pada dompet yang dibuat di dalam periode. QA dua putaran: putaran 1 PASS WITH RISKS dengan 4 bug (1 Medium), putaran 2 4/4 bug tertutup tanpa regresi produk. Status QA Passed; release approval belum diberikan PM. | PM/SA + Dev + QA |

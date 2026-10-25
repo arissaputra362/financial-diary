@@ -69,6 +69,23 @@ export class PeriodService {
     };
   }
 
+  /** A specific `YYYY-MM` Asia/Jakarta calendar month. */
+  month(key: string): MonthPeriod {
+    const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(key);
+    if (!match) throw new RangeError("Month key must be YYYY-MM.");
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const startDateOnly = dateOnly(year, month, 1);
+    const endDateOnly = dateOnly(year, month, daysInMonth(year, month));
+    return {
+      periodStartDateOnly: startDateOnly,
+      periodEndDateOnly: endDateOnly,
+      start: startOfJakartaDay(startDateOnly),
+      end: endOfJakartaDay(endDateOnly),
+      budgetPeriodStart: utcMidnight(startDateOnly),
+    };
+  }
+
   /** The last `n` Asia/Jakarta calendar days, inclusive of today (n buckets). */
   lastNDays(now: Date, n: number): DayPeriod {
     if (!Number.isInteger(n) || n < 1) {
