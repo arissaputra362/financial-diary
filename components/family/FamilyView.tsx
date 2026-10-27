@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, Pencil, ShieldCheck, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, Pencil, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -150,24 +150,34 @@ export default function FamilyView({
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-4 px-1">
+          <div className="flex min-w-0 items-start gap-3">
+            <Link
+              href="/home"
+              aria-label="Kembali ke Beranda"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#5C7191] shadow-xs hover:bg-[#F1F5FA] md:flex"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <div className="min-w-0">
             <Link
               href="/profile"
-              className="mb-3 inline-flex min-h-11 items-center gap-1 rounded-full px-1 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
+              className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
             >
-              <span aria-hidden="true">←</span>
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Kembali ke Profil
             </Link>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
               Kelola keluarga
             </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">
+            <h1 className="mt-1 flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
+              <Users className="h-5 w-5 shrink-0 text-[#1D4F87]" aria-hidden="true" />
               {householdName || "Keluarga"}
             </h1>
           </div>
+          </div>
           {isOwner && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
               <Button
                 variant="secondary"
                 onClick={() => {
