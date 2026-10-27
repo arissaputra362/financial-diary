@@ -75,6 +75,13 @@ export interface WalletRecord {
   updatedAt: Date;
 }
 
+/** Minimal wallet projection needed to decorate a transaction DTO. */
+export interface WalletReferenceRecord {
+  id: string;
+  name: string;
+  scope: WalletScopeValue;
+}
+
 /** One wallet plus its server-computed balance (opening + active in - active out). */
 export interface WalletWithBalance extends WalletRecord {
   balanceMinor: number;
@@ -227,6 +234,8 @@ export interface WalletRepository {
   findById(actor: WalletActor, id: string): Promise<WalletRecord | null>;
   /** Internal household-scoped lookup without wallet visibility (migration/repo seams). */
   findByIdAnyWallet(householdId: string, id: string): Promise<WalletRecord | null>;
+  /** Batch internal lookup; every returned wallet remains household-scoped. */
+  findManyByIdsAnyWallet(householdId: string, ids: string[]): Promise<WalletReferenceRecord[]>;
   /** name/purpose/opening/institution only; the type has no `scope` (C-31). */
   update(
     actor: WalletActor,
@@ -669,6 +678,14 @@ export function createWalletRepository(db: Db): WalletRepository {
         include: WALLET_INCLUDE,
       });
       return row ? toWalletRecord(row) : null;
+    },
+    async findManyByIdsAnyWallet(householdId, ids) {
+      const uniqueIds = [...new Set(ids)];
+      if (uniqueIds.length === 0) return [];
+      return db.wallet.findMany({
+        where: { householdId, id: { in: uniqueIds } },
+        select: { id: true, name: true, scope: true },
+      });
     },
     async update(actor, id, patch) {
       /* Visibility lives in the WHERE (A-38); 0 rows → not found/not visible. */

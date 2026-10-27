@@ -6,18 +6,19 @@ import { Button } from "@/components/ui/Button";
 import { useState } from "react";
 import { formatGrams } from "@/lib/gold";
 import { formatIDR } from "@/lib/format";
-import { getGoldBrandLabel, GoldAssetArtwork } from "@/components/gold/GoldAssetArtwork";
+import { getGoldBrandLabel, getJewelryTypeLabel, GoldAssetArtwork } from "@/components/gold/GoldAssetArtwork";
 import type { GoldAssetDTO } from "@/types/gold";
 
 interface GoldAssetDetailModalProps {
   asset: GoldAssetDTO | null;
+  amountsVisible: boolean;
   deleting: boolean;
   onClose: () => void;
   onEdit: (asset: GoldAssetDTO) => void;
   onDelete: (asset: GoldAssetDTO) => void;
 }
 
-export function GoldAssetDetailModal({ asset, deleting, onClose, onEdit, onDelete }: GoldAssetDetailModalProps) {
+export function GoldAssetDetailModal({ asset, amountsVisible, deleting, onClose, onEdit, onDelete }: GoldAssetDetailModalProps) {
   const [scanOpen, setScanOpen] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function GoldAssetDetailModal({ asset, deleting, onClose, onEdit, onDelet
 
   const rows = [
     ["Jenis", asset.type === "BULLION" ? "Logam mulia batangan" : "Perhiasan"],
+    ...(asset.type === "JEWELRY" ? [["Tipe perhiasan", getJewelryTypeLabel(asset.jewelryType)]] : []),
     ["Berat", formatGrams(asset.weightGrams)],
     ["Kadar", asset.purityLabel],
     ["Kepemilikan", asset.scope === "PERSONAL" ? "Pribadi" : "Bersama"],
@@ -76,9 +78,11 @@ export function GoldAssetDetailModal({ asset, deleting, onClose, onEdit, onDelet
 
           <div className="mt-5 rounded-2xl bg-[#F4F7FB] p-4">
             <p className="text-xs font-medium text-[#5C7191]">Taksiran nilai saat ini</p>
-            <p className="mt-1 text-2xl font-extrabold tabular-nums text-[#17304F]">{formatIDR(asset.estimatedValuationMinor)}</p>
+            <p className="mt-1 text-2xl font-extrabold tabular-nums text-[#17304F]">{amountsVisible ? formatIDR(asset.estimatedValuationMinor) : "****"}</p>
             <p className={`mt-1 text-sm font-semibold tabular-nums ${asset.unrealizedPnLMinor >= 0 ? "text-[#166534]" : "text-[#B91C1C]"}`}>
-              {asset.unrealizedPnLMinor >= 0 ? "+" : ""}{formatIDR(asset.unrealizedPnLMinor)} ({asset.unrealizedPnLPercent}%) dari modal beli
+              {amountsVisible
+                ? <>{asset.unrealizedPnLMinor >= 0 ? "+" : ""}{formatIDR(asset.unrealizedPnLMinor)}</>
+                : "****"} ({amountsVisible ? `${asset.unrealizedPnLPercent}%` : "****"}) dari modal beli
             </p>
           </div>
 
@@ -91,7 +95,7 @@ export function GoldAssetDetailModal({ asset, deleting, onClose, onEdit, onDelet
             ))}
             <div className="flex justify-between gap-4 py-3 text-sm">
               <dt className="text-[#7185A0]">Modal beli</dt>
-              <dd className="text-right font-semibold tabular-nums text-[#17304F]">{formatIDR(asset.buyPriceMinor)}</dd>
+              <dd className="text-right font-semibold tabular-nums text-[#17304F]">{amountsVisible ? formatIDR(asset.buyPriceMinor) : "****"}</dd>
             </div>
           </dl>
 

@@ -7,6 +7,8 @@ import {
   ArrowLeft,
   ChevronRight,
   Coins,
+  Eye,
+  EyeOff,
   Gem,
   Plus,
   RefreshCw,
@@ -24,6 +26,7 @@ import type { GoldPortfolioSummaryDTO } from "@/types/gold";
 export function GoldPageView() {
   const router = useRouter();
   const [data, setData] = useState<GoldPortfolioSummaryDTO | null>(null);
+  const [amountsVisible, setAmountsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -132,6 +135,15 @@ export function GoldPageView() {
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
+            onClick={() => setAmountsVisible((visible) => !visible)}
+            aria-label={amountsVisible ? "Sembunyikan nominal" : "Tampilkan nominal"}
+            aria-pressed={amountsVisible}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#46597A] shadow-xs hover:bg-[#F1F5FA]"
+          >
+            {amountsVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+          <button
+            type="button"
             onClick={() => setModalOpen(true)}
             className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#166534] px-4 text-xs font-semibold text-white shadow-xs hover:bg-[#155C30]"
           >
@@ -163,7 +175,7 @@ export function GoldPageView() {
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
               <span>
                 Antam buyback:{" "}
-                <strong className="tabular-nums">{formatIDR(antamPrice.buybackPriceMinor)}</strong>/gr
+                <strong className="tabular-nums">{amountsVisible ? formatIDR(antamPrice.buybackPriceMinor) : "****"}</strong>/gr
               </span>
             </div>
           ) : null}
@@ -172,13 +184,13 @@ export function GoldPageView() {
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
               <span>
                 UBS buyback:{" "}
-                <strong className="tabular-nums">{formatIDR(ubsPrice.buybackPriceMinor)}</strong>/gr
+                <strong className="tabular-nums">{amountsVisible ? formatIDR(ubsPrice.buybackPriceMinor) : "****"}</strong>/gr
               </span>
             </div>
           ) : null}
           {data?.priceInfo?.isStale ? (
             <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700">
-              <span>âš </span>{" "}
+              <span aria-hidden="true">⚠</span>{" "}
               {data.priceInfo.prices.length > 0
                 ? `Harga terakhir ${data.priceInfo.prices[0].sourceDate}`
                 : "Harga emas belum tersedia"}
@@ -218,12 +230,12 @@ export function GoldPageView() {
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-3xl font-extrabold tracking-tight tabular-nums text-[#17304F] sm:text-4xl">
-                  {formatIDR(data.totalEstimatedValueMinor)}
+                  {amountsVisible ? formatIDR(data.totalEstimatedValueMinor) : "****"}
                 </p>
                 <p className="mt-1 text-xs text-[#46597A]">
-                  Taksiran nilai pasar Â· Modal beli:{" "}
+                  Taksiran nilai pasar · Modal beli:{" "}
                   <span className="font-semibold tabular-nums text-[#17304F]">
-                    {formatIDR(data.totalCostBasisMinor)}
+                    {amountsVisible ? formatIDR(data.totalCostBasisMinor) : "****"}
                   </span>
                 </p>
               </div>
@@ -243,7 +255,7 @@ export function GoldPageView() {
                   )}
                   <span className="tabular-nums">
                     {data.totalUnrealizedPnLMinor >= 0 ? "+" : ""}
-                    {formatIDR(data.totalUnrealizedPnLMinor)} (
+                    {amountsVisible ? formatIDR(data.totalUnrealizedPnLMinor) : "****"} (
                     {data.totalUnrealizedPnLMinor >= 0 ? "+" : ""}
                     {data.totalUnrealizedPnLPercent}%)
                   </span>
@@ -319,7 +331,7 @@ export function GoldPageView() {
                         Taksiran nilai
                       </p>
                       <p className="mt-0.5 break-words text-base font-extrabold leading-tight tabular-nums text-[#17304F] sm:text-lg">
-                        {formatIDR(item.estimatedValuationMinor)}
+                        {amountsVisible ? formatIDR(item.estimatedValuationMinor) : "****"}
                       </p>
                     </div>
                   </button>
@@ -345,6 +357,7 @@ export function GoldPageView() {
       />
       <GoldAssetDetailModal
         asset={selectedAsset}
+        amountsVisible={amountsVisible}
         deleting={selectedAsset ? deletingId === selectedAsset.id : false}
         onClose={() => setSelectedAsset(null)}
         onEdit={(asset) => {

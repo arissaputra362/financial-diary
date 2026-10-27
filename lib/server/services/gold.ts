@@ -109,6 +109,7 @@ export class GoldService {
         createdByUserId: asset.createdByUserId,
         scope: asset.scope,
         type: asset.type,
+        jewelryType: asset.jewelryType,
         brand: asset.brand,
         brandCustomName: asset.brandCustomName,
         name: asset.name,

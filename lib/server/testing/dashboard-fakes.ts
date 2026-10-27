@@ -193,6 +193,13 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
       ensureWallet(householdId);
       return store.wallets.find((item) => item.id === id && item.householdId === householdId) ?? null;
     },
+    async findManyByIdsAnyWallet(householdId, ids) {
+      ensureWallet(householdId);
+      const uniqueIds = new Set(ids);
+      return store.wallets.filter(
+        (item) => item.householdId === householdId && uniqueIds.has(item.id),
+      );
+    },
     update: notUsed,
     setArchived: notUsed,
     async lockWallet(id) {

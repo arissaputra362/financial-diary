@@ -73,6 +73,14 @@ enum GoldBrand {
   OTHER
 }
 
+enum JewelryType {
+  RING
+  NECKLACE
+  BRACELET
+  EARRINGS
+  OTHER
+}
+
 // ─── Auth & household ─────────────────────────────────────────────────────────
 
 /// ERD §3.1
@@ -501,6 +509,7 @@ model GoldAsset {
   createdByUserId  String        @map("created_by_user_id") @db.Uuid
   scope            WalletScope   @default(PERSONAL)
   type             GoldAssetType
+  jewelryType      JewelryType?   @map("jewelry_type")
   brand            GoldBrand     @default(OTHER)
   brandCustomName  String?       @map("brand_custom_name") @db.VarChar(100)
   name             String        @db.VarChar(150)

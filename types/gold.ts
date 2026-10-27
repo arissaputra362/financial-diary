@@ -1,4 +1,4 @@
-import type { GoldAssetType, GoldBrand, WalletScope } from "@/lib/generated/prisma/enums";
+import type { GoldAssetType, GoldBrand, JewelryType, WalletScope } from "@/lib/generated/prisma/enums";
 
 export interface GoldPriceItemDTO {
   brand: GoldBrand;
@@ -21,6 +21,7 @@ export interface GoldAssetDTO {
   createdByUserId: string;
   scope: WalletScope;
   type: GoldAssetType;
+  jewelryType: JewelryType | null;
   brand: GoldBrand;
   brandCustomName: string | null;
   name: string;
@@ -55,6 +56,7 @@ export interface GoldPortfolioSummaryDTO {
 export interface CreateGoldAssetInput {
   scope: WalletScope;
   type: GoldAssetType;
+  jewelryType?: JewelryType;
   brand?: GoldBrand;
   brandCustomName?: string;
   name: string;

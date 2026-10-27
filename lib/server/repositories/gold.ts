@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { GoldAssetType, GoldBrand, WalletScope } from "@/lib/generated/prisma/enums";
+import { GoldAssetType, GoldBrand, JewelryType, WalletScope } from "@/lib/generated/prisma/enums";
 import { gramsToMilligrams } from "@/lib/gold";
 import type { CreateGoldAssetInput } from "@/types/gold";
 
@@ -124,6 +124,7 @@ export class GoldRepository {
     return {
       scope: input.scope,
       type: input.type,
+      jewelryType: input.type === GoldAssetType.JEWELRY ? input.jewelryType ?? JewelryType.OTHER : null,
       brand: input.brand ?? GoldBrand.OTHER,
       brandCustomName: input.brandCustomName ?? null,
       name: input.name,

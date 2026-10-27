@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, Coins, Gem, ImageIcon, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { GoldAssetType, GoldBrand, WalletScope } from "@/lib/generated/prisma/enums";
+import { GoldAssetType, GoldBrand, JewelryType, WalletScope } from "@/lib/generated/prisma/enums";
 import { apiRequest } from "@/lib/api-client";
 import { formatIDR } from "@/lib/format";
 import { compressCameraImage } from "@/lib/compress-image";
@@ -46,6 +46,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
 
   // Form State
   const [type, setType] = useState<GoldAssetType>(GoldAssetType.BULLION);
+  const [jewelryType, setJewelryType] = useState<JewelryType>(JewelryType.OTHER);
   const [brand, setBrand] = useState<GoldBrand>(GoldBrand.ANTAM);
   const [brandCustomName, setBrandCustomName] = useState("");
   const [name, setName] = useState("");
@@ -66,6 +67,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
     setError(null);
     setReviewingScan(false);
     setType(asset?.type ?? GoldAssetType.BULLION);
+    setJewelryType(asset?.jewelryType ?? JewelryType.OTHER);
     setBrand(asset?.brand ?? GoldBrand.ANTAM);
     setBrandCustomName(asset?.brandCustomName ?? "");
     setName(asset?.name ?? "");
@@ -212,6 +214,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
       const payload: CreateGoldAssetInput = {
         name: name.trim(),
         type,
+        jewelryType: type === GoldAssetType.JEWELRY ? jewelryType : undefined,
         brand,
         brandCustomName: brandCustomName.trim() || undefined,
         scope,
@@ -414,6 +417,26 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                 </button>
               </div>
             </div>
+
+            {type === GoldAssetType.JEWELRY ? (
+              <div>
+                <label htmlFor="gold-jewelry-type" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                  Jenis Perhiasan
+                </label>
+                <select
+                  id="gold-jewelry-type"
+                  value={jewelryType}
+                  onChange={(event) => setJewelryType(event.target.value as JewelryType)}
+                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                >
+                  <option value={JewelryType.RING}>Cincin</option>
+                  <option value={JewelryType.NECKLACE}>Kalung</option>
+                  <option value={JewelryType.BRACELET}>Gelang</option>
+                  <option value={JewelryType.EARRINGS}>Anting</option>
+                  <option value={JewelryType.OTHER}>Lainnya</option>
+                </select>
+              </div>
+            ) : null}
 
             {/* Brand (jika Bullion) */}
             {type === GoldAssetType.BULLION ? (

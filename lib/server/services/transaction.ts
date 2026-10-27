@@ -445,21 +445,22 @@ export async function decorateTransactionRows(
     .map((row) => row.transferGroupId)
     .filter((id): id is string => id !== null);
   const redactedGroups = await repos.transaction.privateGroupIdsForActor(actor, groupIds);
-  const walletCache = new Map<string, WalletRefDTO | null>();
-  const result: TransactionDTO[] = [];
-  for (const row of rows) {
+  const visibleWalletIds = [
+    ...new Set(
+      rows
+        .filter((row) => !row.transferGroupId || !redactedGroups.has(row.transferGroupId))
+        .map((row) => row.walletId),
+    ),
+  ];
+  const wallets = visibleWalletIds.length
+    ? await repos.wallet.findManyByIdsAnyWallet(actor.householdId, visibleWalletIds)
+    : [];
+  const walletRefs = new Map<string, WalletRefDTO>(wallets.map((wallet) => [wallet.id, wallet]));
+
+  return rows.map((row) => {
     if (row.transferGroupId && redactedGroups.has(row.transferGroupId)) {
-      result.push(toGenericTransactionDTO(row));
-      continue;
+      return toGenericTransactionDTO(row);
     }
-    if (!walletCache.has(row.walletId)) {
-      const wallet = await repos.wallet.findByIdAnyWallet(actor.householdId, row.walletId);
-      walletCache.set(
-        row.walletId,
-        wallet ? { id: wallet.id, name: wallet.name, scope: wallet.scope } : null,
-      );
-    }
-    result.push(toTransactionDTO(row, walletCache.get(row.walletId) ?? null));
-  }
-  return result;
+    return toTransactionDTO(row, walletRefs.get(row.walletId) ?? null);
+  });
 }

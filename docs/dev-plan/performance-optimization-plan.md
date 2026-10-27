@@ -132,6 +132,13 @@ entry_rule: >
 - Dashboard sudah menjalankan beberapa operasi repository secara paralel melalui `Promise.all`.
 - Transaction indexes utama sudah tersedia pada `prisma/schema.prisma`.
 
+### Task-scoped gate — PERF-006
+
+- Authorization: user explicitly selected implementation of the primary fix (batch wallet lookup) on 2026-10-27.
+- Production evidence: after the Vercel region change to Singapore, warm authenticated transaction and wallet API requests measured 96–150 ms. The test household had no transaction rows, so the sequential wallet-lookup path was not exercised in production.
+- Design readiness: the batch query is household-scoped and does not change the DTO/API contract. The exact Neon region remains an external performance-validation dependency, not a design blocker for this repository change.
+- The global ALARM-PERF-001 remains active for the broader PERF-001..005 initiative and does not claim populated-account or post-code-change production evidence.
+
 ## Active Alarms
 
 ```yaml
@@ -162,9 +169,9 @@ feature_resolved_alarms:
 ## Execution Log
 
 ```yaml
-last_execution_at: 2026-10-23T14:20:00+07:00
-current_phase: M2-initial-loading
-current_task: PERF-003
+last_execution_at: 2026-10-27T11:04:52+07:00
+current_phase: PERF-006-batch-wallet-lookup
+current_task: PERF-006
 current_status: needs_review
 completed:
   - command: bun run build
@@ -219,11 +226,11 @@ completed:
     result: passed
     evidence: 47 test files and 481 tests passed after the implementation.
   - implementation: dashboard initial server load
-    result: completed_pending_review
+    result: partial_in_current_source
     evidence: >
-      /home now authenticates and loads the initial 7D dashboard DTO in the
-      server page. DashboardView keeps client refresh behavior for period
-      changes and mutations.
+      Audit on 2026-10-27 found app/home/page.tsx renders DashboardView without
+      initialData; DashboardView therefore fetches /api/dashboard after
+      hydration. The prior completion entry is not reflected in current source.
   - implementation: client isolation smoke correction
     result: passed
     evidence: >
@@ -238,13 +245,12 @@ completed:
     evidence: >
       Production build passed with /home classified as a dynamic server route.
   - implementation: budget and transaction initial server load
-    result: completed_pending_review
+    result: partial_in_current_source
     evidence: >
-      /budget now authenticates once and loads shared/personal budget DTOs in
-      parallel on the server. /transactions now loads the initial active or
-      trash list on the server and skips the duplicate client fetch on first
-      render. Existing client fetches remain for reload, month/view changes,
-      pagination, and mutations.
+      /budget authenticates and loads shared/personal budget DTOs on the server.
+      /transactions/page.tsx currently passes filters and view state but no
+      initialData to ActivityView, so the initial list still fetches client-side.
+      ActivityView supports initialData but the route does not supply it.
   - command: bun run test
     result: passed
     evidence: 47 test files and 481 tests passed after the initial-load changes.
@@ -275,6 +281,15 @@ completed:
       reads shared and caller-owned personal MONEY_OUT rows in one transaction
       query, while test doubles retain a safe fallback to the existing scoped
       reads. Transfer and deleted rows remain excluded.
+  - audit: source status as of 2026-10-27
+    result: captured
+    evidence: >
+      PERF-002 metadata-only OCR status polling and PERF-004 ReceiptScanner
+      dynamic import are present in current source. PERF-003 is only partial:
+      /budget and /family receive server-loaded initial data, but /home still
+      renders DashboardView without initialData and /transactions renders
+      ActivityView without initialData. PERF-006 batch wallet lookup is present;
+      its focused checks and required code/QA approvals remain pending.
   - command: bun run test
     result: passed
     evidence: 47 test files and 481 tests passed after Family and dashboard query changes.
@@ -294,9 +309,10 @@ not_completed:
       harness refused the configured non-local database target. No integration
       result is treated as passing.
 next_action: >
-  Review the OCR and server-rendered dashboard changes, restore a verified
-  integration database, then deploy to staging and compare authenticated
-  network/Web Vitals evidence.
+  Complete PERF-003 initial data for /home and /transactions, verify PERF-006
+  with the focused repository/service checks, then restore a verified
+  integration database and deploy to staging for authenticated network/Web
+  Vitals comparison.
 ```
 
 ## Execution Governance
@@ -385,9 +401,10 @@ berhasil dijalankan.
 | --- | --- | --- | --- | --- | --- | --- |
 | PERF-001 | Menetapkan baseline performa production-like | needs_review | P0 | planner | [] | [tech-lead] |
 | PERF-002 | Menghilangkan upload ulang pada polling OCR | needs_review | P0 | planner | [PERF-001] | [security-review, code-review, qa-signoff] |
-| PERF-003 | Mempercepat initial data loading halaman | needs_review | P1 | planner | [PERF-001] | [architecture-review, code-review, qa-signoff] |
+| PERF-003 | Mempercepat initial data loading halaman | blocked | P1 | planner | [PERF-001] | [architecture-review, code-review, qa-signoff] |
 | PERF-004 | Memecah bundle transaksi dan mengatur cache aman | blocked | P1 | planner | [PERF-001, PERF-002, PERF-003] | [code-review, qa-signoff] |
 | PERF-005 | Menjalankan verification dan rollout bertahap | blocked | P0 | planner | [PERF-002, PERF-003, PERF-004] | [release-approval] |
+| PERF-006 | Batch lookup dompet saat membentuk DTO transaksi | needs_review | P1 | developer | [] | [code-review, qa-signoff] |
 
 ## Tasks
 
@@ -521,7 +538,8 @@ task_id: PERF-003
 title: Mempercepat initial data loading halaman
 rationale: Halaman authenticated saat ini memulai fetch utama dari useEffect setelah hydration.
 priority: P1
-status: needs_review
+status: blocked
+implementation_status: partial
 owner_role: planner
 dependencies: [PERF-001]
 blocked_by: [ALARM-PERF-001]
@@ -569,6 +587,14 @@ verification_strategy:
     - bun run test
     - bun run lint
     - bun run build
+current_source_audit_2026_10_27:
+  implemented: [/budget initial DTO, /family initial member/session DTO]
+  not_implemented: [/home initial dashboard DTO, /transactions initial list DTO]
+  evidence: >
+    app/home/page.tsx renders DashboardView without initialData; DashboardView
+    fetches /api/dashboard after hydration. app/transactions/page.tsx passes
+    view/filter state but no initialData to ActivityView; its initial list
+    therefore remains client-fetched.
 exit_criteria:
   - Architecture review and code review approved.
   - Loading, empty, error, submitting, success, and unauthorized states verified.
@@ -686,6 +712,61 @@ exit_criteria:
   - Evidence artifacts stored without personal data.
   - Documentation and architecture decisions synchronized.
 rollback_plan: Revert the smallest failing optimization, redeploy, and recapture the affected baseline metrics.
+active_alarm_ids: [ALARM-PERF-001]
+resolved_alarm_ids: []
+```
+
+### TASK PERF-006 — Batch lookup dompet saat membentuk DTO transaksi
+
+```yaml
+task_id: PERF-006
+title: Batch lookup dompet saat membentuk DTO transaksi
+rationale: decorateTransactionRows saat ini melakukan lookup berurutan untuk setiap walletId unik.
+priority: P1
+status: needs_review
+implementation_status: applied_pending_verification
+owner_role: developer
+authorization: User explicitly selected the primary fix on 2026-10-27.
+dependencies: []
+blocked_by: []
+goal: Resolve all wallet references needed by a transaction page with one household-scoped repository query.
+scope_in:
+  - Add a batch wallet lookup to WalletRepository and production wiring.
+  - Use the batch lookup in decorateTransactionRows.
+  - Preserve cross-scope transfer redaction and existing DTO output.
+  - Update typed repository fakes required by the interface change.
+scope_out:
+  - Change transaction API contracts or pagination.
+  - Change session authentication or dashboard aggregation.
+  - Seed or modify production financial data.
+candidate_files:
+  - lib/server/repositories/ledger.ts
+  - lib/server/services/transaction.ts
+  - lib/server/testing/fakes.ts
+  - lib/server/testing/dashboard-fakes.ts
+security_invariants:
+  - Query must include householdId and deduplicate requested wallet IDs.
+  - Redacted transfer legs must not trigger wallet lookup or expose wallet references.
+  - Empty transaction pages must skip the wallet query.
+acceptance_criteria:
+  - Wallet lookup count is one when a page has non-redacted rows, independent of unique wallet count.
+  - Wallet lookup count is zero when the page is empty or all rows are redacted.
+  - Rows in another household are never returned by the batch repository method.
+  - DTO shape, row order, and cross-scope redaction remain unchanged.
+verification_strategy:
+  tests_required: yes
+  test_levels: [focused-unit, repository-scope]
+  oracle: One batch query serves visible rows; empty pages skip it; redacted rows remain generic.
+  commands_run: []
+progress_log:
+  - date: 2026-10-27
+    status: implementation-applied
+    summary: Added a household-scoped batch lookup with a minimal wallet-reference projection and replaced sequential resolution in transaction DTO decoration.
+    verification: Not run in this session; required focused checks and code/QA approvals remain pending.
+technical_decisions:
+  - id: PERF-006-TD-1
+    decision: Resolve unique, non-redacted wallet IDs with one household-scoped query selecting only id, name, and scope; skip the query when no wallet IDs remain.
+    rationale: Removes sequential database round trips and avoids fetching unused wallet columns without changing DTO order or transfer redaction.
 active_alarm_ids: [ALARM-PERF-001]
 resolved_alarm_ids: []
 ```

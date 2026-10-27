@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Coins, RefreshCw, Wallet } from "lucide-react";
+import { Coins, Eye, EyeOff, RefreshCw, Wallet } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { formatIDR } from "@/lib/format";
 import type { MonthlyBudgetDTO } from "@/types/api";
@@ -40,6 +40,7 @@ export function TotalWealthCard({
   personalTodayMinor,
 }: TotalWealthCardProps) {
   const [scope, setScope] = useState<WealthScope>("SHARING");
+  const [amountsVisible, setAmountsVisible] = useState(false);
   const [goldState, setGoldState] = useState<{
     scope: WealthScope;
     reloadKey: number;
@@ -100,19 +101,30 @@ export function TotalWealthCard({
             Saldo, tabungan emas, dan pengeluaran sesuai pilihan.
           </p>
         </div>
-        <div role="group" aria-label="Pilih ringkasan keuangan" className="flex rounded-full bg-white/10 p-1">
-          {SCOPE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={scope === option.value}
-              aria-label={`Tampilkan ringkasan ${option.label.toLowerCase()}`}
-              onClick={() => setScope(option.value)}
-              className={`min-h-11 rounded-full px-4 text-sm font-semibold transition-colors ${scope === option.value ? "bg-white text-[#14273F] shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAmountsVisible((visible) => !visible)}
+            aria-label={amountsVisible ? "Sembunyikan nominal" : "Tampilkan nominal"}
+            aria-pressed={amountsVisible}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/20 hover:text-white"
+          >
+            {amountsVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+          <div role="group" aria-label="Pilih ringkasan keuangan" className="flex rounded-full bg-white/10 p-1">
+            {SCOPE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={scope === option.value}
+                aria-label={`Tampilkan ringkasan ${option.label.toLowerCase()}`}
+                onClick={() => setScope(option.value)}
+                className={`min-h-11 rounded-full px-4 text-sm font-semibold transition-colors ${scope === option.value ? "bg-white text-[#14273F] shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -123,7 +135,7 @@ export function TotalWealthCard({
           <div>
             <p className="font-semibold">Total belum bisa dihitung.</p>
             <p className="mt-1 text-xs text-[#B9CDE5]">Data tabungan emas belum berhasil dimuat.</p>
-            <p className="mt-2 text-xs text-white/80">Uang tersedia: {formatIDR(cashBalance)}</p>
+            <p className="mt-2 text-xs text-white/80">Uang tersedia: {amountsVisible ? formatIDR(cashBalance) : "****"}</p>
           </div>
           <button
             type="button"
@@ -138,17 +150,17 @@ export function TotalWealthCard({
         <div className="mt-5 rounded-2xl bg-white/10 p-4">
           <p className="font-semibold">Total belum bisa dihitung.</p>
           <p className="mt-1 text-xs text-[#B9CDE5]">Harga emas belum tersedia untuk menaksir nilainya.</p>
-          <p className="mt-2 text-xs text-white/80">Uang tersedia: {formatIDR(cashBalance)}</p>
+          <p className="mt-2 text-xs text-white/80">Uang tersedia: {amountsVisible ? formatIDR(cashBalance) : "****"}</p>
         </div>
       ) : (
         <>
           <p className="mt-5 text-3xl font-extrabold tracking-tight tabular-nums sm:text-4xl">
-            {formatIDR(totalWealth)}
+            {amountsVisible ? formatIDR(totalWealth) : "****"}
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <div className="rounded-2xl bg-white/10 p-3">
               <p className="text-xs text-[#B9CDE5]">Uang tersedia {scope === "SHARING" ? "bersama" : "pribadi"}</p>
-              <p className="mt-1 font-semibold tabular-nums">{formatIDR(cashBalance)}</p>
+              <p className="mt-1 font-semibold tabular-nums">{amountsVisible ? formatIDR(cashBalance) : "****"}</p>
             </div>
             <div className="rounded-2xl bg-white/10 p-3">
               <p className="flex items-center gap-1.5 text-xs text-[#B9CDE5]">
@@ -156,7 +168,7 @@ export function TotalWealthCard({
                 Tabungan emas {scope === "SHARING" ? "bersama" : "pribadi"}
               </p>
               <p className="mt-1 font-semibold tabular-nums">
-                {formatIDR(hasGoldItems ? gold?.totalEstimatedValueMinor ?? 0 : 0)}
+                {amountsVisible ? formatIDR(hasGoldItems ? gold?.totalEstimatedValueMinor ?? 0 : 0) : "****"}
               </p>
             </div>
           </div>
@@ -176,17 +188,19 @@ export function TotalWealthCard({
       <div className="mt-5 border-t border-white/15 pt-4">
         <p className="text-xs font-semibold text-white/90">Pengeluaran bulan ini</p>
         <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">
-          {formatIDR(budget.spentMinor)}
+          {amountsVisible ? formatIDR(budget.spentMinor) : "****"}
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="rounded-2xl bg-white/10 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#B9CDE5]">Hari ini</p>
-            <p className="mt-1 text-sm font-semibold tabular-nums">{formatIDR(todayMinor)}</p>
+            <p className="mt-1 text-sm font-semibold tabular-nums">{amountsVisible ? formatIDR(todayMinor) : "****"}</p>
           </div>
           <div className="rounded-2xl bg-white/10 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-[#B9CDE5]">Sisa anggaran</p>
             <p className="mt-1 text-sm font-semibold tabular-nums">
-              {budget.isSet && budget.remainingMinor !== null ? formatIDR(budget.remainingMinor) : "Belum diatur"}
+              {budget.isSet && budget.remainingMinor !== null
+                ? amountsVisible ? formatIDR(budget.remainingMinor) : "****"
+                : "Belum diatur"}
             </p>
           </div>
         </div>

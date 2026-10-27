@@ -526,6 +526,12 @@ function walletApis(store: FakeStore): WalletRepository {
     async findByIdAnyWallet(householdId, id) {
       return store.wallets.find((wallet) => wallet.id === id && wallet.householdId === householdId) ?? null;
     },
+    async findManyByIdsAnyWallet(householdId, ids) {
+      const uniqueIds = new Set(ids);
+      return store.wallets.filter(
+        (wallet) => wallet.householdId === householdId && uniqueIds.has(wallet.id),
+      );
+    },
     async update(actor, id, patch) {
       const row = findVisible(actor, id);
       if (!row) throw new Error("wallet not visible");
