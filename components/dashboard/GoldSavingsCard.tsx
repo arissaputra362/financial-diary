@@ -14,6 +14,7 @@ import { formatIDR } from "@/lib/format";
 import { formatGrams } from "@/lib/gold";
 import { apiRequest } from "@/lib/api-client";
 import { GoldAssetModal } from "@/components/gold/GoldAssetModal";
+import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import type { GoldPortfolioSummaryDTO } from "@/types/gold";
 
 export function GoldSavingsCard() {
@@ -22,6 +23,7 @@ export function GoldSavingsCard() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [assetToDelete, setAssetToDelete] = useState<{ id: string; name: string } | null>(null);
   const [undoItem, setUndoItem] = useState<{ id: string; name: string } | null>(null);
 
   async function loadData() {
@@ -45,16 +47,16 @@ export function GoldSavingsCard() {
     loadData();
   }, []);
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Hapus catatan ${name}? Catatan dapat dibatalkan dalam 5 detik.`)) {
-      return;
-    }
-
+  async function handleDelete() {
+    const candidate = assetToDelete;
+    if (!candidate) return;
+    const { id, name } = candidate;
     setDeletingId(id);
     try {
       const res = await apiRequest(`/api/gold/assets/${id}`, { method: "DELETE" });
       if (res.ok) {
         setUndoItem({ id, name });
+        setAssetToDelete(null);
         await loadData();
         // Clear undo after 5 seconds
         setTimeout(() => {
@@ -115,7 +117,7 @@ export function GoldSavingsCard() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           {/* Live Gold Price Pill */}
           {antamPrice || data?.priceInfo?.isStale ? (
             <div className="hidden lg:flex items-center gap-2 rounded-full border border-blue-tint bg-canvas px-3.5 py-1.5 text-[11px] font-medium text-ink">
@@ -146,7 +148,7 @@ export function GoldSavingsCard() {
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-green px-4 text-xs font-semibold text-white shadow-xs hover:bg-brand-green-hover"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-green px-4 text-sm font-semibold text-white shadow-xs hover:bg-brand-green-hover"
           >
             <Plus className="h-3.5 w-3.5" />
             Tambah Emas
@@ -164,11 +166,11 @@ export function GoldSavingsCard() {
           <p className="mt-1 text-xs text-ink-2">
             Tabel database telah diperbarui. Klik tombol muat ulang di bawah.
           </p>
-          <div className="mt-3 flex items-center justify-center gap-3">
+          <div className="mt-3 flex flex-col items-end gap-2 sm:flex-row sm:justify-center sm:gap-3">
             <button
               type="button"
               onClick={loadData}
-              className="inline-flex items-center gap-1.5 rounded-full bg-brand-blue px-4 py-2 text-xs font-semibold text-white hover:bg-brand-blue-hover"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-blue px-4 text-sm font-semibold text-white hover:bg-brand-blue-hover"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Muat ulang data
@@ -176,7 +178,7 @@ export function GoldSavingsCard() {
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-blue-border bg-card px-4 py-2 text-xs font-semibold text-ink hover:bg-canvas"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-ink hover:bg-canvas"
             >
               <Plus className="h-3.5 w-3.5 text-green" />
               Catat Emas Manual
@@ -293,9 +295,9 @@ export function GoldSavingsCard() {
                     <button
                       type="button"
                       disabled={deletingId === item.id}
-                      onClick={() => handleDelete(item.id, item.name)}
+                      onClick={() => setAssetToDelete({ id: item.id, name: item.name })}
                       aria-label={`Hapus ${item.name}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-3 hover:bg-danger-bg hover:text-danger"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full text-ink-3 hover:bg-danger-bg hover:text-danger"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -312,6 +314,15 @@ export function GoldSavingsCard() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSuccess={() => loadData()}
+      />
+      <ConfirmActionDialog
+        open={assetToDelete !== null}
+        title="Hapus catatan emas?"
+        description={assetToDelete ? `Catatan “${assetToDelete.name}” akan dihapus dari daftar. Kamu bisa membatalkannya dalam 5 detik.` : ""}
+        confirmLabel="Hapus catatan"
+        busy={deletingId !== null}
+        onCancel={() => setAssetToDelete(null)}
+        onConfirm={() => void handleDelete()}
       />
     </section>
   );

@@ -419,8 +419,10 @@ export function MonthlyReport({
               </div>
             )}
             <BalanceMovementChart
+              key={`${month}-${scope}-${walletId || "all"}`}
               data={data.dailyBalances}
               monthLabel={monthLabel}
+              isCurrentMonth={data.isCurrentMonth}
               scopeLabel={scope === "shared" ? "bersama" : "pribadi"}
             />
             <GoldReportSection scope={scope} liquidBalanceMinor={data.closingMinor} />

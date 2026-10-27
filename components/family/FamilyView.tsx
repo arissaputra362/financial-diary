@@ -4,8 +4,10 @@ import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, Pencil, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest } from "@/lib/api-client";
@@ -49,6 +51,7 @@ export default function FamilyView({
   const [savingHousehold, setSavingHousehold] = useState(false);
   const [householdError, setHouseholdError] = useState("");
   const [householdNotice, setHouseholdNotice] = useState("");
+  const [memberToRevoke, setMemberToRevoke] = useState<Member | null>(null);
   const editDialogRef = useRef<HTMLDivElement>(null);
 
   const isOwner = me?.role === "OWNER";
@@ -150,8 +153,12 @@ export default function FamilyView({
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 items-start gap-3">
+        <PageHeader
+          eyebrow="Kelola keluarga"
+          title={householdName || "Keluarga"}
+          icon={Users}
+          titleClassName="text-xl font-extrabold"
+          leading={
             <Link
               href="/home"
               aria-label="Kembali ke Beranda"
@@ -159,25 +166,18 @@ export default function FamilyView({
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <div className="min-w-0">
-              <Link
-                href="/profile"
-                className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash md:hidden"
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                Kembali ke Profil
-              </Link>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">
-                Kelola keluarga
-              </p>
-              <h1 className="mt-1 flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink">
-                <Users className="h-5 w-5 shrink-0 text-blue" aria-hidden="true" />
-                {householdName || "Keluarga"}
-              </h1>
-            </div>
-          </div>
-          {isOwner && (
-            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+          }
+          beforeTitle={
+            <Link
+              href="/profile"
+              className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash md:hidden"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Kembali ke Profil
+            </Link>
+          }
+          actions={isOwner ? (
+            <>
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -193,9 +193,9 @@ export default function FamilyView({
                 <UserPlus className="h-4 w-4" aria-hidden="true" />
                 Undang anggota
               </Button>
-            </div>
-          )}
-        </div>
+            </>
+          ) : null}
+        />
 
         {householdNotice ? (
           <p role="status" className="rounded-2xl bg-mint px-4 py-3 text-sm font-medium text-green">
@@ -313,7 +313,7 @@ export default function FamilyView({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleDecision(m.id, "revoke")}
+                    onClick={() => setMemberToRevoke(m)}
                     disabled={actionId === m.id}
                     className="text-danger hover:bg-danger-bg hover:text-danger"
                   >
@@ -395,6 +395,18 @@ export default function FamilyView({
             </div>
           </div>
         ) : null}
+        <ConfirmActionDialog
+          open={memberToRevoke !== null}
+          title="Hapus akses anggota?"
+          description={memberToRevoke ? `${memberToRevoke.user?.displayName ?? "Anggota ini"} tidak akan bisa lagi mengakses data keluarga.` : ""}
+          confirmLabel="Hapus akses"
+          busy={memberToRevoke !== null && actionId === memberToRevoke.id}
+          onCancel={() => setMemberToRevoke(null)}
+          onConfirm={() => {
+            if (!memberToRevoke) return;
+            void handleDecision(memberToRevoke.id, "revoke").then(() => setMemberToRevoke(null));
+          }}
+        />
       </div>
     </AppShell>
   );

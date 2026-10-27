@@ -275,7 +275,7 @@ export function SpendingChart({
               : " keluar pada periode ini."}
           </p>
         </div>
-        <div className="flex flex-col gap-2 sm:items-end lg:flex-row lg:items-center">
+        <div className="flex flex-col items-end gap-2 lg:flex-row lg:items-center">
           <SegmentedControl
             label="Lingkup grafik"
             value={scope}
@@ -283,7 +283,7 @@ export function SpendingChart({
             onChange={changeScope}
           />
           <div
-            className="inline-flex shrink-0 self-start rounded-full bg-blue-wash p-1 sm:self-end lg:self-auto"
+            className="inline-flex shrink-0 self-end rounded-full bg-blue-wash p-1 lg:self-auto"
             role="tablist"
             aria-label="Periode grafik"
           >

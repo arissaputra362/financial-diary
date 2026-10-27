@@ -158,6 +158,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
           <Input
             id="wallet-name"
             label="Nama"
+            required
             value={name}
             maxLength={80}
             error={fieldErrors.name?.[0]}
@@ -241,7 +242,9 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
 
           {mode === "create" ? (
             <fieldset>
-              <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Jenis dompet</legend>
+              <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">
+                Jenis dompet <span className="text-danger" aria-hidden="true">*</span>
+              </legend>
               <div className="mt-2 flex gap-2">
                 {(
                   [

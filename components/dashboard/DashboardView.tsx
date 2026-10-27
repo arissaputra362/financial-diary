@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { LayoutDashboard, RefreshCw } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { apiRequest } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { todayJakarta } from "@/lib/dates";
@@ -135,15 +136,12 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
 
   return (
     <div className="space-y-6">
-      <header className="px-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">
-          Financial Diary
-        </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Beranda</h1>
-        <p suppressHydrationWarning className="mt-1 text-sm text-ink-3">
-          {dateFormatter.format(new Date())}
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Financial Diary"
+        title="Beranda"
+        icon={LayoutDashboard}
+        description={dateFormatter.format(new Date())}
+      />
 
       {notice ? (
         <p

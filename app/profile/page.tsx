@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, KeyRound, LogOut, User, Users } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -133,22 +134,18 @@ export default function ProfilePage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-center gap-4 px-1">
-          <span
-            aria-hidden="true"
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-tint text-blue"
-          >
-            <User className="h-6 w-6" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">
-              Profil
-            </p>
-            <h1 className="mt-1 truncate text-2xl font-bold tracking-tight text-ink">
-              {me?.user?.displayName || "Pengguna"}
-            </h1>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="Profil"
+          title={<span className="min-w-0 truncate">{me?.user?.displayName || "Pengguna"}</span>}
+          leading={
+            <span
+              aria-hidden="true"
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-tint text-blue"
+            >
+              <User className="h-6 w-6" />
+            </span>
+          }
+        />
 
         <Card>
           <ThemeControl />
@@ -172,9 +169,11 @@ export default function ProfilePage() {
             />
             {nameError ? <p role="alert" className="text-sm text-danger">{nameError}</p> : null}
             {nameMessage ? <p role="status" className="text-sm text-green">{nameMessage}</p> : null}
-            <Button type="submit" isLoading={nameSaving} loadingLabel="Menyimpan nama" disabled={nameDraft.trim() === me?.user.displayName}>
-              Simpan nama
-            </Button>
+            <div className="flex justify-end">
+              <Button type="submit" isLoading={nameSaving} loadingLabel="Menyimpan nama" disabled={nameDraft.trim() === me?.user.displayName}>
+                Simpan nama
+              </Button>
+            </div>
           </form>
         </Card>
 
@@ -193,9 +192,11 @@ export default function ProfilePage() {
             <p className="text-xs text-ink-3">Minimal 8 karakter. Perangkat lain akan diminta masuk kembali.</p>
             {passwordError ? <p role="alert" className="text-sm text-danger">{passwordError}</p> : null}
             {passwordMessage ? <p role="status" className="text-sm text-green">{passwordMessage}</p> : null}
-            <Button type="submit" isLoading={passwordSaving} loadingLabel="Menyimpan kata sandi">
-              Simpan kata sandi
-            </Button>
+            <div className="flex justify-end">
+              <Button type="submit" isLoading={passwordSaving} loadingLabel="Menyimpan kata sandi">
+                Simpan kata sandi
+              </Button>
+            </div>
           </form>
         </Card>
 

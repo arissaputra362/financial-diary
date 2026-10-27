@@ -254,7 +254,7 @@ export function LoginForm({
           <form method="post" onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-2">
-                Email
+                Email <span className="text-danger" aria-hidden="true">*</span>
               </label>
               <input
                 id="email"
@@ -272,7 +272,7 @@ export function LoginForm({
             {isSignup && (
               <div>
                 <label htmlFor="displayName" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-2">
-                  Nama tampil
+                  Nama tampil <span className="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   id="displayName"
@@ -291,7 +291,7 @@ export function LoginForm({
 
             <div className="relative">
               <label htmlFor="password" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-2">
-                Kata sandi
+                Kata sandi <span className="text-danger" aria-hidden="true">*</span>
               </label>
               <div className="relative">
                 <input

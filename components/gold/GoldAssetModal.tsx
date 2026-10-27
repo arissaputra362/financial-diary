@@ -388,7 +388,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             {/* Tipe Emas */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                Tipe Emas
+                Tipe Emas <span className="text-danger" aria-hidden="true">*</span>
               </label>
               <div className="mt-1.5 grid grid-cols-2 gap-2">
                 <button
@@ -421,7 +421,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             {type === GoldAssetType.JEWELRY ? (
               <div>
                 <label htmlFor="gold-jewelry-type" className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                  Jenis Perhiasan
+                  Jenis Perhiasan <span className="text-danger" aria-hidden="true">*</span>
                 </label>
                 <select
                   id="gold-jewelry-type"
@@ -442,7 +442,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             {type === GoldAssetType.BULLION ? (
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                  Brand / Produsen
+                  Brand / Produsen <span className="text-danger" aria-hidden="true">*</span>
                 </label>
                 <select
                   value={brand}
@@ -477,7 +477,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             {/* Nama Aset */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                Nama Barang
+                Nama Barang <span className="text-danger" aria-hidden="true">*</span>
               </label>
               <input
                 type="text"
@@ -493,7 +493,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                  Berat (Gram)
+                  Berat (Gram) <span className="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="number"
@@ -508,7 +508,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                  Kadar Kemurnian
+                  Kadar Kemurnian <span className="text-danger" aria-hidden="true">*</span>
                 </label>
                 <select
                   value={purityInput}
@@ -533,7 +533,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                   htmlFor="gold-buy-price"
                   className="block text-xs font-semibold uppercase tracking-wider text-ink-2"
                 >
-                  Modal Beli (Rp)
+                  Modal Beli (Rp) <span className="text-danger" aria-hidden="true">*</span>
                 </label>
                 <div className="mt-1.5 flex items-center gap-1.5 rounded-2xl border border-input-border bg-card px-3 py-3 focus-within:border-blue">
                   <span className="text-sm font-semibold text-ink-2">Rp</span>
@@ -551,7 +551,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                  Tanggal Perolehan
+                  Tanggal Perolehan <span className="text-danger" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="date"
@@ -566,7 +566,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             {/* Scope (Pribadi / Bersama) */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
-                Cakupan Tabungan
+                Cakupan Tabungan <span className="text-danger" aria-hidden="true">*</span>
               </label>
               <div className="mt-1.5 flex gap-3">
                 <label className="flex items-center gap-2 text-sm font-medium text-ink">

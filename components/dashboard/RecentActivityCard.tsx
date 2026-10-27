@@ -140,7 +140,7 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
         </h2>
         <Link
           href="/transactions"
-          className="inline-flex min-h-11 items-center rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue transition-colors hover:bg-blue-wash"
+          className="ml-auto inline-flex min-h-11 items-center rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue transition-colors hover:bg-blue-wash"
         >
           Lihat semua aktivitas
         </Link>

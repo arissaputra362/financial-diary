@@ -2,14 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Plus, ReceiptText, SlidersHorizontal } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { MonthlyReport, type ReportScope } from "@/components/reports/MonthlyReport";
 import { Button } from "@/components/ui/Button";
+import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { Card } from "@/components/ui/Card";
 import { apiRequest } from "@/lib/api-client";
 import { TRANSACTION_ADD_EVENT, setTransactionAddListenerAttached } from "@/lib/transaction-add-intent";
 import {
   currentMonthKey,
+  formatDateLabel,
   monthKeyLabel,
   monthKeyRange,
   resolveMonthKey,
@@ -84,6 +87,7 @@ export function ActivityView({
   const router = useRouter();
   const [view, setView] = useState<ActivityViewMode>(initialView);
   const [rows, setRows] = useState<TransactionDTO[]>(initialData?.rows ?? []);
+  const [transactionToDelete, setTransactionToDelete] = useState<TransactionDTO | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
   const [listFilter, setListFilter] = useState<ListFilter>(() => filterFromUrl(initialFilter));
   const [walletId, setWalletId] = useState(initialWalletId ?? "");
@@ -96,7 +100,7 @@ export function ActivityView({
   const [activeMonth, setActiveMonth] = useState<string>(() => resolveMonthKey(initialMonth));
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [monthPickerValue, setMonthPickerValue] = useState(() => resolveMonthKey(initialMonth));
-  const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   /* Applied range: drives the fetch and the URL. */
   const [dateFrom, setDateFrom] = useState(initialFrom ?? "");
   const [dateTo, setDateTo] = useState(initialTo ?? "");
@@ -336,7 +340,7 @@ export function ActivityView({
     if (view !== "ringkasan") setLoading(true);
     setActiveMonth(next);
     resetDateFilter();
-    setDateFilterOpen(false);
+    setFilterPanelOpen(false);
     /* The report scope and wallet survive the month change (AC-F7-2). */
     writeUrl({ view, month: next, from: "", to: "" });
   };
@@ -354,7 +358,7 @@ export function ActivityView({
       setActiveMonth(next);
       /* The date range belongs to one month, so a new month clears it. */
       resetDateFilter();
-      setDateFilterOpen(false);
+      setFilterPanelOpen(false);
       writeUrl({ view, month: next, from: "", to: "" });
     }
     setMonthPickerOpen(false);
@@ -368,12 +372,12 @@ export function ActivityView({
     setDateFilterError(null);
   };
 
-  const openDateFilter = () => {
+  const openFilterPanel = () => {
     /* Reopening starts from the applied range, not an abandoned draft. */
     setDraftFrom(dateFrom);
     setDraftTo(dateTo);
     setDateFilterError(null);
-    setDateFilterOpen(true);
+    setFilterPanelOpen(true);
   };
 
   const applyDateFilter = () => {
@@ -396,7 +400,7 @@ export function ActivityView({
       setDateTo(draftTo);
     }
     writeUrl({ view: "active", month: activeMonth, from: draftFrom, to: draftTo });
-    setDateFilterOpen(false);
+    setFilterPanelOpen(false);
   };
 
   const clearDateFilter = () => {
@@ -404,6 +408,25 @@ export function ActivityView({
     resetDateFilter();
     if (hadFilter) setLoading(true);
     writeUrl({ view: "active", month: activeMonth, from: "", to: "" });
+  };
+
+  const clearAllFilters = () => {
+    setRows([]);
+    setNextCursor(null);
+    setListFilter("all");
+    setWalletId("");
+    resetDateFilter();
+    setFilterPanelOpen(false);
+    setFilterLoading(false);
+    setLoading(true);
+    writeUrl({
+      view: "active",
+      month: activeMonth,
+      filter: "all",
+      walletId: "",
+      from: "",
+      to: "",
+    });
   };
 
   const loadMore = async () => {
@@ -444,7 +467,7 @@ export function ActivityView({
     setListFilter("all");
     setWalletId("");
     setDetail(null);
-    setDateFilterOpen(false);
+    setFilterPanelOpen(false);
     resetDateFilter();
     setView(next);
     if (next === "ringkasan") {
@@ -484,7 +507,9 @@ export function ActivityView({
     writeUrl({ view: "ringkasan", month: activeMonth, reportWalletId: next });
   };
 
-  const handleDelete = async (row: TransactionDTO) => {
+  const handleDelete = async () => {
+    const row = transactionToDelete;
+    if (!row) return;
     setDeletingId(row.id);
     try {
       const response = await apiRequest(`/api/transactions/${row.id}/trash`, { method: "POST" });
@@ -499,6 +524,7 @@ export function ActivityView({
       setRows((current) => current.filter((item) => item.id !== row.id));
       setDetail((current) => (current?.id === row.id ? null : current));
       setUndo({ id: row.id, label: labelFor(row) });
+      setTransactionToDelete(null);
     } catch {
       showNotice("Transaksi belum bisa dihapus. Coba lagi.");
     } finally {
@@ -659,26 +685,42 @@ export function ActivityView({
     [walletId, wallets],
   );
 
+  const selectedWalletName = transactionWallets.find((wallet) => wallet.id === walletId)?.name;
+  const appliedDateLabel = dateFrom && dateTo
+    ? `Tanggal: ${formatDateLabel(dateFrom)} s.d. ${formatDateLabel(dateTo)}`
+    : dateFrom
+      ? `Dari ${formatDateLabel(dateFrom)}`
+      : dateTo
+        ? `Sampai ${formatDateLabel(dateTo)}`
+        : null;
+  const activeFilterLabels = [
+    listFilter === "all" ? null : FILTER_OPTIONS.find(([value]) => value === listFilter)?.[1] ?? null,
+    appliedDateLabel,
+    walletId ? `Dompet: ${selectedWalletName ?? "Terpilih"}` : null,
+  ].filter((label): label is string => label !== null);
   const showFilters = view === "active" && !loading && !error;
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-3 px-1 print:hidden">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">Financial Diary</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Aktivitas</h1>
-        </div>
-        <Button
-          ref={addTriggerRef}
-          data-add-transaction-trigger
-          onClick={() => setSheetOpen(true)}
-          className="shrink-0"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          <span className="sm:hidden">Tambah</span>
-          <span className="hidden sm:inline">Tambah transaksi</span>
-        </Button>
-      </div>
+      <PageHeader
+        className="flex-row flex-wrap items-center justify-start gap-3 print:hidden"
+        actionsClassName="w-auto flex-row items-center gap-3"
+        eyebrow="Financial Diary"
+        title="Aktivitas"
+        icon={ReceiptText}
+        actions={
+          <Button
+            ref={addTriggerRef}
+            data-add-transaction-trigger
+            onClick={() => setSheetOpen(true)}
+            className="shrink-0"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            <span className="sm:hidden">Tambah</span>
+            <span className="hidden sm:inline">Tambah transaksi</span>
+          </Button>
+        }
+      />
 
       <div
         className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2 print:hidden"
@@ -754,64 +796,205 @@ export function ActivityView({
         </div>
       ) : null}
 
-      {view === "active" ? (
-        <div className="space-y-2">
+      {showFilters ? (
+        <div className="space-y-3 print:hidden">
           <button
             type="button"
-            aria-expanded={dateFilterOpen}
-            onClick={() => (dateFilterOpen ? setDateFilterOpen(false) : openDateFilter())}
-            className="min-h-11 rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
+            aria-controls="activity-filter-panel"
+            aria-expanded={filterPanelOpen}
+            onClick={() => (filterPanelOpen ? setFilterPanelOpen(false) : openFilterPanel())}
+            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-card-border bg-card px-4 text-left text-sm font-semibold text-ink hover:bg-blue-wash"
           >
-            {dateFrom || dateTo ? "Ubah filter tanggal" : "Filter tanggal"}
-          </button>
-          {dateFilterOpen ? (
-            <div className="rounded-2xl border border-card-border bg-card p-4">
-              <p className="text-sm font-semibold text-ink">Filter tanggal</p>
-              <p className="mt-1 text-xs text-ink-3">
-                Pilih rentang di dalam {monthKeyLabel(activeMonth)}.
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
-                  Dari
-                  <input
-                    type="date"
-                    value={draftFrom}
-                    max={draftTo || monthKeyRange(activeMonth).to}
-                    onChange={(event) => setDraftFrom(event.target.value)}
-                    className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
-                  />
-                </label>
-                <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
-                  Sampai
-                  <input
-                    type="date"
-                    value={draftTo}
-                    min={draftFrom || monthKeyRange(activeMonth).from}
-                    max={monthKeyRange(activeMonth).to}
-                    onChange={(event) => setDraftTo(event.target.value)}
-                    className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
-                  />
-                </label>
-              </div>
-              {dateFilterError ? (
-                <p role="alert" className="mt-2 text-xs text-danger">{dateFilterError}</p>
+            <span className="flex min-w-0 items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
+              <span>Filter transaksi</span>
+              {activeFilterLabels.length > 0 ? (
+                <span className="shrink-0 rounded-full bg-blue-tint px-2.5 py-1 text-xs font-semibold text-blue">
+                  {activeFilterLabels.length} aktif
+                </span>
               ) : null}
-              <div className="mt-3 flex flex-wrap justify-end gap-2">
-                {(draftFrom || draftTo) ? (
+            </span>
+            <ChevronDown
+              className={cn("h-4 w-4 shrink-0 text-ink-3 transition-transform", filterPanelOpen && "rotate-180")}
+              aria-hidden="true"
+            />
+          </button>
+
+          {filterPanelOpen ? (
+            <div
+              id="activity-filter-panel"
+              aria-label="Filter transaksi"
+              className="space-y-4 rounded-2xl border border-card-border bg-card p-4"
+            >
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-ink-2">Jenis transaksi</p>
+                <div
+                  className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1 sm:rounded-2xl sm:bg-blue-wash sm:p-1"
+                  role="group"
+                  aria-label="Saring transaksi"
+                >
+                  {FILTER_OPTIONS.map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={listFilter === value}
+                      onClick={() => {
+                        if (value !== listFilter) {
+                          /* A new type cursor: never continue the previous filter. */
+                          setRows([]);
+                          setNextCursor(null);
+                          setFilterLoading(true);
+                          setListFilter(value);
+                        }
+                        writeUrl({
+                          view: "active",
+                          month: activeMonth,
+                          filter: value,
+                        });
+                      }}
+                      className={cn(
+                        "flex min-h-11 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors sm:border-0 sm:px-4",
+                        listFilter === value
+                          ? "border-navy bg-navy text-white shadow-sm sm:bg-card sm:text-ink"
+                          : "border-card-border bg-card text-ink-2 hover:text-ink sm:bg-transparent sm:hover:bg-card",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-card-border bg-card px-3 text-sm font-semibold text-ink-2">
+                <span className="shrink-0">Dompet</span>
+                <select
+                  value={walletId}
+                  disabled={walletsLoading || Boolean(walletsError)}
+                  onChange={(event) => {
+                    const nextWalletId = event.target.value;
+                    setLoading(true);
+                    setWalletId(nextWalletId);
+                    setReloadToken((token) => token + 1);
+                    writeUrl({
+                      view: "active",
+                      month: activeMonth,
+                      filter: listFilter,
+                      walletId: nextWalletId,
+                    });
+                  }}
+                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none"
+                  aria-label="Filter berdasarkan dompet"
+                >
+                  <option value="">
+                    {walletsLoading
+                      ? "Memuat dompet..."
+                      : walletsError
+                        ? "Dompet tidak tersedia"
+                        : "Semua dompet"}
+                  </option>
+                  {!walletsLoading &&
+                    transactionWallets.map((wallet) => (
+                      <option key={wallet.id} value={wallet.id}>
+                        {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
+                        {wallet.archivedAt ? ", Arsip" : ""}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {walletsError ? (
+                <p role="status" className="text-xs text-danger">{walletsError}</p>
+              ) : null}
+
+              <div className="border-t border-row-divider pt-3">
+                <p className="text-sm font-semibold text-ink-2">
+                  Rentang tanggal <span className="font-normal text-ink-3">(opsional)</span>
+                </p>
+                <p className="mt-1 text-xs text-ink-3">
+                  Pilih rentang di dalam {monthKeyLabel(activeMonth)}.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
+                    Dari
+                    <input
+                      type="date"
+                      value={draftFrom}
+                      max={draftTo || monthKeyRange(activeMonth).to}
+                      onChange={(event) => setDraftFrom(event.target.value)}
+                      className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
+                    Sampai
+                    <input
+                      type="date"
+                      value={draftTo}
+                      min={draftFrom || monthKeyRange(activeMonth).from}
+                      max={monthKeyRange(activeMonth).to}
+                      onChange={(event) => setDraftTo(event.target.value)}
+                      className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+                    />
+                  </label>
+                </div>
+                {dateFilterError ? (
+                  <p role="alert" className="mt-2 text-xs text-danger">{dateFilterError}</p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap justify-end gap-2">
+                  {(draftFrom || draftTo) ? (
+                    <button
+                      type="button"
+                      onClick={clearDateFilter}
+                      className="min-h-11 rounded-full border border-blue-border px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
+                    >
+                      Hapus tanggal
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={clearDateFilter}
-                    className="min-h-11 rounded-full border border-blue-border px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
+                    onClick={applyDateFilter}
+                    className="min-h-11 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
                   >
-                    Hapus
+                    Terapkan tanggal
                   </button>
-                ) : null}
+                </div>
+              </div>
+
+              {activeFilterLabels.length > 0 ? (
+                <div className="flex justify-end border-t border-row-divider pt-2">
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2 hover:text-ink"
+                  >
+                    Hapus semua filter
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {!filterPanelOpen && walletsError ? (
+            <p role="status" className="text-xs text-danger">{walletsError}</p>
+          ) : null}
+
+          {!filterPanelOpen && activeFilterLabels.length > 0 ? (
+            <div className="space-y-2" aria-label="Filter aktif">
+              <div className="flex flex-wrap gap-2">
+                {activeFilterLabels.map((label) => (
+                  <span
+                    key={label}
+                    className="max-w-full truncate rounded-full bg-blue-tint px-3 py-1.5 text-xs font-semibold text-blue"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={applyDateFilter}
-                  className="min-h-11 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
+                  onClick={clearAllFilters}
+                  className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2 hover:text-ink"
                 >
-                  Terapkan
+                  Hapus semua filter
                 </button>
               </div>
             </div>
@@ -889,88 +1072,6 @@ export function ActivityView({
         />
       ) : (
         <>
-          {showFilters ? (
-            <div className="space-y-3">
-              <p className="px-1 text-sm font-semibold text-ink-2">Jenis transaksi</p>
-              <div
-                className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1 sm:rounded-2xl sm:bg-blue-wash sm:p-1"
-                role="group"
-                aria-label="Saring transaksi"
-              >
-                {FILTER_OPTIONS.map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={listFilter === value}
-                    onClick={() => {
-                      if (value !== listFilter) {
-                        /* A new type cursor: never continue the previous filter. */
-                        setRows([]);
-                        setNextCursor(null);
-                        setFilterLoading(true);
-                        setListFilter(value);
-                      }
-                      writeUrl({
-                        view: "active",
-                        month: activeMonth,
-                        filter: value,
-                      });
-                    }}
-                    className={cn(
-                      "flex min-h-11 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors sm:border-0 sm:px-4",
-                      listFilter === value
-                        ? "border-navy bg-navy text-white shadow-sm sm:bg-card sm:text-ink"
-                        : "border-card-border bg-card text-ink-2 hover:text-ink sm:bg-transparent sm:hover:bg-card",
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-card-border bg-card px-3 text-sm font-semibold text-ink-2">
-                <span className="shrink-0">Dompet</span>
-                <select
-                  value={walletId}
-                  disabled={walletsLoading || Boolean(walletsError)}
-                  onChange={(event) => {
-                    const nextWalletId = event.target.value;
-                    setLoading(true);
-                    setWalletId(nextWalletId);
-                    setReloadToken((token) => token + 1);
-                    writeUrl({
-                      view: "active",
-                      month: activeMonth,
-                      filter: listFilter,
-                      walletId: nextWalletId,
-                    });
-                  }}
-                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none"
-                  aria-label="Filter berdasarkan dompet"
-                >
-                  <option value="">
-                    {walletsLoading
-                      ? "Memuat dompet..."
-                      : walletsError
-                        ? "Dompet tidak tersedia"
-                        : "Semua dompet"}
-                  </option>
-                  {!walletsLoading &&
-                    transactionWallets.map((wallet) => (
-                      <option key={wallet.id} value={wallet.id}>
-                        {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
-                        {wallet.archivedAt ? ", Arsip" : ""}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              {walletsError ? (
-                <p role="status" className="text-xs text-danger">
-                  {walletsError}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
           {showFilters && !filterLoading && listFilter !== "all" && visibleRows.length === 0 ? (
             shouldOfferLoadMore(visibleRows.length, nextCursor) ? (
               <Card className="text-center">
@@ -1036,7 +1137,7 @@ export function ActivityView({
               onRetry={reload}
               onLoadMore={() => void loadMore()}
               onOpenDetail={(row) => setDetail(row)}
-              onDelete={(row) => void handleDelete(row)}
+              onDelete={(row) => setTransactionToDelete(row)}
               onRestore={(row) => void handleRestore(row)}
             />
           )}
@@ -1054,7 +1155,7 @@ export function ActivityView({
         }
         onClose={() => setDetail(null)}
         onUpdate={handleUpdated}
-        onDelete={(row) => void handleDelete(row)}
+        onDelete={(row) => setTransactionToDelete(row)}
         onRestore={(row) => void handleRestore(row)}
       />
 
@@ -1066,6 +1167,15 @@ export function ActivityView({
           onDismiss={() => setUndo(null)}
         />
       ) : null}
+      <ConfirmActionDialog
+        open={transactionToDelete !== null}
+        title="Hapus transaksi?"
+        description={transactionToDelete ? `Transaksi ${labelFor(transactionToDelete)} akan dipindahkan ke Trash. Kamu bisa memulihkannya lewat Undo.` : ""}
+        confirmLabel="Hapus transaksi"
+        busy={deletingId !== null}
+        onCancel={() => setTransactionToDelete(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw, Wallet } from "lucide-react";
+import { PiggyBank, RefreshCw, Wallet } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { apiRequest } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
 import { MoneyInput } from "@/components/ui/MoneyInput";
@@ -184,15 +185,12 @@ export function BudgetView({
 
   return (
     <div className="space-y-6">
-      <header className="px-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">
-          {me?.household?.name ?? "Keluarga"}
-        </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Budget</h1>
-        <p className="mt-1 text-sm text-ink-3">
-          Budget keluarga dan budget pribadimu dihitung terpisah.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow={me?.household?.name ?? "Keluarga"}
+        title="Budget"
+        icon={PiggyBank}
+        description="Budget keluarga dan budget pribadimu dihitung terpisah."
+      />
 
       {loading ? (
         <Skeleton className="h-64 w-full" />

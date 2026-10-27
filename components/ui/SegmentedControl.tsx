@@ -19,6 +19,7 @@ export interface SegmentedControlProps<T extends string> {
   options: ReadonlyArray<SegmentedOption<T>>;
   onChange: (value: T) => void;
   className?: string;
+  variant?: "default" | "navy";
 }
 
 /**
@@ -33,6 +34,7 @@ export function SegmentedControl<T extends string>({
   options,
   onChange,
   className,
+  variant = "default",
 }: SegmentedControlProps<T>) {
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -80,7 +82,8 @@ export function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={label}
       className={cn(
-        "inline-flex w-full rounded-full bg-blue-wash p-1 sm:w-auto",
+        "inline-flex w-full rounded-full p-1 sm:w-auto",
+        variant === "navy" ? "bg-white/10" : "bg-blue-wash",
         className,
       )}
     >
@@ -102,11 +105,21 @@ export function SegmentedControl<T extends string>({
             onClick={() => selectAt(index)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
-              "min-h-11 flex-1 rounded-full px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-blue-wash sm:flex-none",
+              "min-h-11 flex-1 rounded-full px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 sm:flex-none",
+              variant === "navy"
+                ? "focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
+                : "focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-blue-wash",
               selected
-                ? "bg-card font-semibold text-ink shadow-sm"
-                : "font-medium text-ink-2 hover:text-ink",
-              option.disabled && "cursor-not-allowed text-ink-2 hover:text-ink-2",
+                ? variant === "navy"
+                  ? "bg-white font-semibold text-navy shadow-sm"
+                  : "bg-card font-semibold text-ink shadow-sm"
+                : variant === "navy"
+                  ? "font-medium text-white/80 hover:bg-white/10 hover:text-white"
+                  : "font-medium text-ink-2 hover:text-ink",
+              option.disabled &&
+                (variant === "navy"
+                  ? "cursor-not-allowed text-white/80 hover:text-white/80"
+                  : "cursor-not-allowed text-ink-2 hover:text-ink-2"),
             )}
           >
             {option.label}

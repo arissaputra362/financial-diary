@@ -64,7 +64,7 @@ export function GoldSummaryCard() {
             <p className="text-sm text-ink-3">Belum ada catatan emas.</p>
             <Link
               href="/gold"
-              className="inline-flex items-center gap-1.5 rounded-full bg-brand-green px-4 py-2 text-xs font-semibold text-white hover:bg-brand-green-hover"
+              className="inline-flex min-h-11 items-center gap-1.5 self-end rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
             >
               <Plus className="h-3.5 w-3.5" />
               Catat Emas

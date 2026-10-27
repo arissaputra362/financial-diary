@@ -1,15 +1,8 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type FocusEvent,
-  type KeyboardEvent,
-} from "react";
+import { useState } from "react";
 import { formatIDR } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { todayJakarta } from "@/lib/dates";
 import type { DailyBalanceDTO } from "@/types/api";
 
 const weekdayFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -32,6 +25,7 @@ const dayMonthFormatter = new Intl.DateTimeFormat("id-ID", {
   month: "short",
   timeZone: "Asia/Jakarta",
 });
+
 const compactIDRFormatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
@@ -57,36 +51,45 @@ function axisLabel(date: string): string {
   return value ? dayMonthFormatter.format(value) : date;
 }
 
+function axisTickLabel(date: string): string {
+  const value = jakartaNoon(date);
+  return value ? dayFormatter.format(value) : date;
+}
+
 function shouldShowLabel(index: number, count: number, step: number): boolean {
   if (index === 0 || index === count - 1) return true;
   if (index % step !== 0) return false;
-  return count - 1 - index >= 2;
+  return count - 1 - index >= 4;
 }
 
 export interface BalanceMovementChartProps {
   data: DailyBalanceDTO[];
   /** Long month label, for example "Oktober 2026". */
   monthLabel: string;
+  /** True while the selected report period is the current Jakarta month. */
+  isCurrentMonth: boolean;
   /** "bersama" or "pribadi", used in the accessible name. */
   scopeLabel: "bersama" | "pribadi";
 }
 
-/**
- * Daily closing-balance line/area chart (AC-F7-11). One point per calendar day,
- * including flat days. The point group is one Tab stop with roving focus; the
- * exact value travels in the pill, the aria-label, and the aria-live region.
- * No fixed width, no horizontal scroll, identical point count at every
- * breakpoint.
- */
+/** Daily closing balances shown as a step-area chart with one date slider. */
 export function BalanceMovementChart({
   data,
   monthLabel,
+  isCurrentMonth,
   scopeLabel,
 }: BalanceMovementChartProps) {
-  const points = data.length > 0 ? data : [{ date: "", closingMinor: 0 }];
+  const today = todayJakarta();
+  const visibleData = isCurrentMonth ? data.filter((point) => point.date <= today) : data;
+  const points = visibleData.length > 0
+    ? visibleData
+    : data.length > 0
+      ? [data[0] as DailyBalanceDTO]
+      : [{ date: "", closingMinor: 0 }];
   const values = points.map((point) => point.closingMinor);
   const min = Math.min(...values);
   const max = Math.max(...values);
+  const isFlat = values.every((value) => value === values[0]);
 
   const toY = (value: number): number => {
     if (max === min) return 50;
@@ -105,92 +108,20 @@ export function BalanceMovementChart({
     x: points.length <= 1 ? 50 : (index / (points.length - 1)) * 100,
     y: toY(point.closingMinor),
   }));
+  const firstPoint = coordinates[0] ?? { x: 0, y: 50 };
+  const lastPoint = coordinates[coordinates.length - 1] ?? { x: 100, y: 50 };
+  const stepSegments = coordinates.slice(1).map((point) => `H ${point.x} V ${point.y}`).join(" ");
+  const linePath = `M ${firstPoint.x} ${firstPoint.y} ${stepSegments}`;
+  const areaPath = `M ${firstPoint.x} 100 L ${firstPoint.x} ${firstPoint.y} ${stepSegments} L ${lastPoint.x} 100 Z`;
 
-  const linePath = coordinates.map((point) => `${point.x},${point.y}`).join(" ");
-  const areaPath =
-    coordinates.length > 0
-      ? `M ${coordinates[0]?.x ?? 0},100 L ${linePath.replaceAll(" ", " L ")} L ${coordinates[coordinates.length - 1]?.x ?? 100},100 Z`
-      : "";
-
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const [dismissed, setDismissed] = useState(false);
-  const [pillWidth, setPillWidth] = useState(0);
-
-  const pointRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const pillRef = useRef<HTMLDivElement | null>(null);
-
-  const safeActiveIndex =
-    coordinates.length === 0 ? 0 : Math.min(activeIndex, coordinates.length - 1);
-  const shownIndex = hoveredIndex ?? (focusedIndex !== null && !dismissed ? safeActiveIndex : null);
-  const shownPoint = shownIndex === null ? null : (coordinates[shownIndex] ?? null);
-  const pillText = shownPoint ? tooltipText(shownPoint) : "";
-
-  useEffect(() => {
-    const node = pillRef.current;
-    if (!node) {
-      setPillWidth(0);
-      return;
-    }
-    const measure = () => setPillWidth(node.getBoundingClientRect().width);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [pillText]);
-
-  const pillPercent =
-    shownIndex === null || coordinates.length === 0
-      ? 50
-      : coordinates.length === 1
-        ? 50
-        : (shownIndex / (coordinates.length - 1)) * 100;
-  const halfPill = pillWidth / 2;
-  const pillStyle: CSSProperties =
-    pillWidth > 0
-      ? {
-          left: `clamp(${halfPill}px, ${pillPercent}%, calc(100% - ${halfPill}px))`,
-          transform: "translateX(-50%)",
-        }
-      : { left: `${pillPercent}%`, transform: "translateX(-50%)" };
-
-  const focusPoint = (index: number) => {
-    setActiveIndex(index);
-    setDismissed(false);
-    pointRefs.current[index]?.focus();
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (coordinates.length === 0) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setHoveredIndex(null);
-      setDismissed(true);
-      return;
-    }
-    let nextIndex: number | null = null;
-    if (event.key === "ArrowRight") {
-      nextIndex = Math.min(coordinates.length - 1, safeActiveIndex + 1);
-    } else if (event.key === "ArrowLeft") {
-      nextIndex = Math.max(0, safeActiveIndex - 1);
-    } else if (event.key === "Home") {
-      nextIndex = 0;
-    } else if (event.key === "End") {
-      nextIndex = coordinates.length - 1;
-    }
-    if (nextIndex === null) return;
-    event.preventDefault();
-    focusPoint(nextIndex);
-  };
-
-  const handleBlur = (event: FocusEvent<HTMLDivElement>) => {
-    const next = event.relatedTarget;
-    if (next instanceof Node && event.currentTarget.contains(next)) return;
-    setFocusedIndex(null);
-    setDismissed(false);
-  };
-
+  const [activeIndex, setActiveIndex] = useState(coordinates.length - 1);
+  const safeActiveIndex = Math.min(activeIndex, coordinates.length - 1);
+  const selectedPoint = coordinates[safeActiveIndex] ?? coordinates[0];
+  const selectedLabel = selectedPoint ? tooltipText(selectedPoint) : "";
+  const selectedDayLabel = selectedPoint?.date
+    ? selectedLabel.split(":")[0] ?? axisLabel(selectedPoint.date)
+    : "Tanggal tidak tersedia";
+  const rangeEndLabel = lastPoint.date ? axisLabel(lastPoint.date) : "";
   const labelStep = 7;
 
   return (
@@ -202,138 +133,156 @@ export function BalanceMovementChart({
         Pergerakan saldo harian
       </h2>
       <p className="mt-1 text-sm text-ink-2 print:mt-0 print:text-[7pt]">
-        Saldo akhir tiap hari pada {monthLabel}. Gunakan sumbu untuk membandingkan nilai; tap atau
-        gunakan panah untuk melihat nominal tepat tiap tanggal.
+        Saldo akhir per hari pada {monthLabel}
+        {isCurrentMonth && rangeEndLabel ? ` sampai ${rangeEndLabel}` : ""}.
       </p>
 
-      <div className="mt-8 grid min-w-0 grid-cols-[4.75rem_minmax(0,1fr)] gap-2 print:mt-2 print:grid-cols-[3.5rem_minmax(0,1fr)] print:gap-1">
-        <div className="relative h-40 min-w-0 sm:h-56 print:h-20" aria-hidden="true">
-          {yTicks.map((tick, index) => (
-            <span
-              key={`${tick.value}-${index}`}
-              className="absolute right-0 whitespace-nowrap text-[10px] font-semibold leading-none tabular-nums text-ink-2 print:text-[6pt]"
-              style={{ top: `${tick.y}%`, transform: "translateY(-50%)" }}
-            >
-              {compactIDRFormatter.format(tick.value)}
-            </span>
-          ))}
+      {selectedPoint ? (
+        <div
+          className="mt-4 flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-blue-wash px-3.5 py-2.5"
+          data-testid="balance-selection"
+        >
+          <span className="min-w-0 text-sm font-medium text-ink-2">{selectedDayLabel}</span>
+          <span className="shrink-0 text-base font-bold tabular-nums text-ink">
+            {formatIDR(selectedPoint.closingMinor)}
+          </span>
         </div>
-        <div className="relative min-w-0">
-        {shownPoint ? (
-          <div
-            ref={pillRef}
-            aria-hidden="true"
-            data-testid="balance-tooltip"
-            className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] z-10 max-w-full rounded-full bg-navy px-3 py-1.5 text-xs font-semibold leading-tight text-white shadow-pill"
-            style={pillStyle}
-          >
-            {pillText}
+      ) : null}
+
+      <div
+        className={`mt-4 grid min-w-0 gap-2 print:mt-2 print:gap-1 ${
+          isFlat
+            ? "grid-cols-1"
+            : "grid-cols-[3.75rem_minmax(0,1fr)] print:grid-cols-[3.5rem_minmax(0,1fr)]"
+        }`}
+      >
+        {!isFlat ? (
+          <div className="relative h-40 min-w-0 sm:h-56 print:h-20" aria-hidden="true">
+            {yTicks.map((tick, index) => (
+              <span
+                key={`${tick.value}-${index}`}
+                className="absolute right-0 whitespace-nowrap text-[10px] font-semibold leading-none tabular-nums text-ink-2 print:text-[6pt]"
+                style={{ top: `${tick.y}%`, transform: "translateY(-50%)" }}
+              >
+                {compactIDRFormatter.format(tick.value)}
+              </span>
+            ))}
           </div>
         ) : null}
 
-        <div
-          role="group"
-          aria-label={`Grafik saldo harian ${scopeLabel}, ${monthLabel}. Skala saldo ${formatIDR(min)} sampai ${formatIDR(max)}. Gunakan panah kiri kanan untuk membaca nominal tepat tiap tanggal.`}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          className="relative h-40 min-w-0 overflow-hidden rounded-2xl bg-blue-wash sm:h-56 print:h-20"
-        >
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            className="absolute inset-0 h-full w-full"
+        <div className="relative min-w-0">
+          <div
+            role="img"
+            aria-label={`Grafik area bertangga saldo ${scopeLabel}, ${monthLabel}. Skala ${formatIDR(min)} sampai ${formatIDR(max)}.`}
+            className="relative h-40 min-w-0 overflow-hidden rounded-2xl bg-blue-wash sm:h-56 print:h-20"
           >
-            <path d={areaPath} fill="var(--color-blue-tint)" fillOpacity="0.65" />
-            {yTicks.map((tick, index) => (
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full"
+            >
+              {!isFlat ? <path d={areaPath} fill="var(--color-blue-tint)" fillOpacity="0.55" /> : null}
+              {yTicks.map((tick, index) => (
+                <line
+                  key={`grid-${index}`}
+                  x1="0"
+                  x2="100"
+                  y1={tick.y}
+                  y2={tick.y}
+                  stroke="var(--color-input-border)"
+                  strokeWidth="0.6"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
               <line
-                key={`grid-${index}`}
-                x1="0"
-                x2="100"
-                y1={tick.y}
-                y2={tick.y}
-                stroke="var(--color-input-border)"
-                strokeWidth="0.6"
+                x1={selectedPoint?.x ?? 0}
+                x2={selectedPoint?.x ?? 0}
+                y1="0"
+                y2="100"
+                stroke="var(--color-brand-blue)"
+                strokeWidth="1"
+                strokeDasharray="3 3"
                 vectorEffect="non-scaling-stroke"
               />
-            ))}
-            <polyline
-              points={linePath}
-              fill="none"
-              stroke="var(--color-blue)"
-              strokeWidth="2.5"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-
-          {coordinates.map((point, index) => {
-            const active = index === safeActiveIndex;
-            const focused = focusedIndex === index && !dismissed;
-            return (
-              <button
-                key={`${point.date}-${index}`}
-                ref={(node) => {
-                  pointRefs.current[index] = node;
-                }}
-                type="button"
-                tabIndex={index === safeActiveIndex ? 0 : -1}
-                aria-label={tooltipText(point)}
-                data-testid="balance-point"
-                onClick={() => {
-                  setActiveIndex(index);
-                  setFocusedIndex(index);
-                  setDismissed(false);
-                }}
-                onFocus={() => {
-                  setActiveIndex(index);
-                  setFocusedIndex(index);
-                  setDismissed(false);
-                }}
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                className="absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full focus-visible:outline-none print:h-3 print:w-3"
-                style={{ left: `${point.x}%`, top: `${point.y}%` }}
-              >
-                <span
-                  className={cn(
-                    "block rounded-full bg-blue ring-2 ring-white transition-transform",
-                    active ? "h-2.5 w-2.5" : "h-1.5 w-1.5 opacity-70",
-                    focused && "h-3.5 w-3.5 ring-2 ring-blue ring-offset-2 ring-offset-blue-wash",
-                  )}
+              <path
+                d={linePath}
+                fill="none"
+                stroke="var(--color-brand-blue)"
+                strokeWidth="2.5"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+              {selectedPoint ? (
+                <circle
+                  cx={selectedPoint.x}
+                  cy={selectedPoint.y}
+                  r="2.4"
+                  fill="var(--color-brand-blue)"
+                  stroke="white"
+                  strokeWidth="1.5"
+                  vectorEffect="non-scaling-stroke"
                 />
-              </button>
-            );
-          })}
-        </div>
+              ) : null}
+            </svg>
+          </div>
 
-        <div className="relative mt-1.5 h-3" aria-hidden="true">
-          {coordinates.map((point, index) => {
-            if (!shouldShowLabel(index, coordinates.length, labelStep)) return null;
-            const first = index === 0;
-            const last = index === coordinates.length - 1;
-            return (
-              <span
-                key={`${point.date}-label-${index}`}
-                data-testid="balance-axis-label"
-                className="absolute top-0 whitespace-nowrap text-[10px] font-semibold leading-3 text-ink-2"
-                style={{
-                  left: first ? 0 : last ? undefined : `${point.x}%`,
-                  right: last ? 0 : undefined,
-                  transform: first || last ? undefined : "translateX(-50%)",
-                }}
-              >
-                {axisLabel(point.date)}
-              </span>
-            );
-          })}
-        </div>
+          <div className="relative mt-1.5 h-3" aria-hidden="true">
+            {coordinates.map((point, index) => {
+              if (!shouldShowLabel(index, coordinates.length, labelStep)) return null;
+              const first = index === 0;
+              const last = index === coordinates.length - 1;
+              return (
+                <span
+                  key={`${point.date}-label-${index}`}
+                  data-testid="balance-axis-label"
+                  className="absolute top-0 whitespace-nowrap text-[10px] font-semibold leading-3 text-ink-2"
+                  style={{
+                    left: first ? 0 : last ? undefined : `${point.x}%`,
+                    right: last ? 0 : undefined,
+                    transform: first || last ? undefined : "translateX(-50%)",
+                  }}
+                >
+                  {axisTickLabel(point.date)}
+                </span>
+              );
+            })}
+          </div>
         </div>
       </div>
 
+      {coordinates.length > 1 ? (
+        <div className="mt-1 print:hidden">
+          <label htmlFor="balance-date-slider" className="sr-only">Pilih tanggal saldo</label>
+          <input
+            id="balance-date-slider"
+            type="range"
+            min={0}
+            max={coordinates.length - 1}
+            step={1}
+            value={safeActiveIndex}
+            aria-valuetext={selectedLabel}
+            aria-describedby="balance-date-help"
+            onChange={(event) => setActiveIndex(Number(event.target.value))}
+            className="h-11 w-full cursor-pointer accent-blue"
+          />
+          <p id="balance-date-help" className="sr-only">
+            Geser untuk memilih tanggal dan membaca saldo akhir hari tersebut.
+          </p>
+        </div>
+      ) : null}
+
+      {isFlat && selectedPoint ? (
+        <p className="mt-1 text-xs text-ink-3" data-testid="balance-flat-note">
+          {points[0]?.date && lastPoint.date
+            ? `Saldo tidak berubah dari ${axisLabel(points[0].date)} sampai ${axisLabel(lastPoint.date)}.`
+            : `Saldo tidak berubah pada periode ini: ${formatIDR(selectedPoint.closingMinor)}.`}
+        </p>
+      ) : null}
+
       <p className="sr-only" aria-live="polite" data-testid="balance-live">
-        {pillText}
+        {selectedLabel}
       </p>
     </section>
   );

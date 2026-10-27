@@ -187,7 +187,9 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
     <>
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-5">
       <fieldset>
-        <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Jenis transaksi</legend>
+        <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">
+          Jenis transaksi <span className="text-danger" aria-hidden="true">*</span>
+        </legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {(
             initialRow
@@ -265,7 +267,9 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
 
       {type !== "TRANSFER" ? (
         <fieldset>
-          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Kategori</legend>
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">
+            Kategori <span className="text-danger" aria-hidden="true">*</span>
+          </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {categories.map((value) => {
               const selected = category === value;
@@ -298,7 +302,9 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
       ) : null}
 
       <fieldset>
-        <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Tanggal</legend>
+        <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">
+          Tanggal <span className="text-danger" aria-hidden="true">*</span>
+        </legend>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {(
             [
@@ -448,7 +454,9 @@ function WalletField({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wider text-ink-2">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-ink-2">
+        {label} <span className="text-danger" aria-hidden="true">*</span>
+      </p>
       <button
         type="button"
         onClick={onPick}

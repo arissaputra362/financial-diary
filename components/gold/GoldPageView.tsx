@@ -16,11 +16,13 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { formatIDR } from "@/lib/format";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { formatGrams } from "@/lib/gold";
 import { apiRequest } from "@/lib/api-client";
 import { GoldAssetModal } from "@/components/gold/GoldAssetModal";
 import { GoldAssetDetailModal } from "@/components/gold/GoldAssetDetailModal";
 import { GoldAssetArtwork } from "@/components/gold/GoldAssetArtwork";
+import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import type { GoldPortfolioSummaryDTO } from "@/types/gold";
 
 export function GoldPageView() {
@@ -33,6 +35,7 @@ export function GoldPageView() {
   const [selectedAsset, setSelectedAsset] = useState<GoldPortfolioSummaryDTO["assets"][number] | null>(null);
   const [editingAsset, setEditingAsset] = useState<GoldPortfolioSummaryDTO["assets"][number] | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [assetToDelete, setAssetToDelete] = useState<{ id: string; name: string } | null>(null);
   const [undoItem, setUndoItem] = useState<{ id: string; name: string } | null>(null);
 
   async function loadData() {
@@ -69,14 +72,17 @@ export function GoldPageView() {
     loadData();
   }, []);
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Hapus catatan "${name}"? Dapat dibatalkan dalam 5 detik.`)) return;
+  async function handleDelete() {
+    const candidate = assetToDelete;
+    if (!candidate) return;
+    const { id, name } = candidate;
     setDeletingId(id);
     try {
       const res = await apiRequest(`/api/gold/assets/${id}`, { method: "DELETE" });
       if (res.ok) {
         setUndoItem({ id, name });
         setSelectedAsset(null);
+        setAssetToDelete(null);
         await loadData();
         setTimeout(() => {
           setUndoItem((current) => (current?.id === id ? null : current));
@@ -105,8 +111,14 @@ export function GoldPageView() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 pb-28 sm:px-6 lg:max-w-3xl">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
+      <PageHeader
+        title="Tabungan Emas"
+        icon={Coins}
+        iconClassName="text-gold-accent"
+        titleClassName="text-xl font-extrabold"
+        description="Logam mulia batangan & emas perhiasan keluarga"
+        descriptionClassName="text-xs"
+        leading={
           <Link
             href="/home"
             aria-label="Kembali ke Beranda"
@@ -114,44 +126,38 @@ export function GoldPageView() {
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
-          <div className="min-w-0">
-            <Link
-              href="/profile"
-              className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash md:hidden"
+        }
+        beforeTitle={
+          <Link
+            href="/profile"
+            className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash md:hidden"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Kembali ke Profil
+          </Link>
+        }
+        actions={
+          <div className="grid w-full grid-cols-[minmax(0,1fr)_2.75rem] items-center gap-2 sm:flex sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-brand-green px-4 text-sm font-semibold text-white shadow-xs hover:bg-brand-green-hover"
             >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Kembali ke Profil
-            </Link>
-            <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink">
-              <Coins className="h-5 w-5 shrink-0 text-gold-accent" aria-hidden="true" />
-              Tabungan Emas
-            </h1>
-            <p className="mt-0.5 text-xs text-ink-3">
-              Logam mulia batangan &amp; emas perhiasan keluarga
-            </p>
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Tambah Emas
+            </button>
+            <button
+              type="button"
+              onClick={() => setAmountsVisible((visible) => !visible)}
+              aria-label={amountsVisible ? "Sembunyikan nominal" : "Tampilkan nominal"}
+              aria-pressed={amountsVisible}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-card-border bg-card text-ink-2 shadow-xs hover:bg-canvas"
+            >
+              {amountsVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+            </button>
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-          <button
-            type="button"
-            onClick={() => setAmountsVisible((visible) => !visible)}
-            aria-label={amountsVisible ? "Sembunyikan nominal" : "Tampilkan nominal"}
-            aria-pressed={amountsVisible}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-card-border bg-card text-ink-2 shadow-xs hover:bg-canvas"
-          >
-            {amountsVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-          </button>
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-4 text-sm font-semibold text-white shadow-xs hover:bg-brand-green-hover"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Tambah Emas
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Undo Toast */}
       {undoItem ? (
@@ -212,7 +218,7 @@ export function GoldPageView() {
             <button
               type="button"
               onClick={loadData}
-              className="inline-flex items-center gap-1.5 rounded-full bg-brand-blue px-4 py-2 text-xs font-semibold text-white hover:bg-brand-blue-hover"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-blue px-4 text-sm font-semibold text-white hover:bg-brand-blue-hover"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Coba lagi
@@ -364,7 +370,16 @@ export function GoldPageView() {
           setSelectedAsset(null);
           setEditingAsset(asset);
         }}
-        onDelete={(asset) => handleDelete(asset.id, asset.name)}
+        onDelete={(asset) => setAssetToDelete({ id: asset.id, name: asset.name })}
+      />
+      <ConfirmActionDialog
+        open={assetToDelete !== null}
+        title="Hapus catatan emas?"
+        description={assetToDelete ? `Catatan “${assetToDelete.name}” akan dihapus dari daftar. Kamu bisa membatalkannya dalam 5 detik.` : ""}
+        confirmLabel="Hapus catatan"
+        busy={deletingId !== null}
+        onCancel={() => setAssetToDelete(null)}
+        onConfirm={() => void handleDelete()}
       />
     </div>
   );

@@ -804,7 +804,9 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         </Field>
 
         <fieldset>
-          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Jenis transaksi</legend>
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">
+            Jenis transaksi <span className="text-danger" aria-hidden="true">*</span>
+          </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {(
               [
@@ -831,7 +833,9 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         </fieldset>
 
         <fieldset>
-          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Kategori</legend>
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">
+            Kategori <span className="text-danger" aria-hidden="true">*</span>
+          </legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {categoriesForType(txType).map((value) => (
               <button
@@ -861,7 +865,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
 
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-ink-2">
-            {txType === "MONEY_IN" ? "Ke dompet" : "Dari dompet"}
+            {txType === "MONEY_IN" ? "Ke dompet" : "Dari dompet"} <span className="text-danger" aria-hidden="true">*</span>
           </p>
           <button
             type="button"

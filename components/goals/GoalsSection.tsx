@@ -5,6 +5,7 @@ import { Minus, Plus, RefreshCw, Target, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiRequest, idempotencyHeaders } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
+import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { isValidMoneyAmount } from "@/lib/money-input";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -50,6 +51,8 @@ export function GoalsSection() {
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
+  const [goalToTrash, setGoalToTrash] = useState<GoalDTO | null>(null);
+  const [trashingId, setTrashingId] = useState<string | null>(null);
 
   useDialogFocusTrap(adjust !== null, adjustPanelRef, () => setAdjust(null));
 
@@ -183,8 +186,12 @@ export function GoalsSection() {
     );
   };
 
-  const handleTrash = async (goal: GoalDTO) => {
+  const handleTrash = async () => {
+    const goal = goalToTrash;
+    if (!goal) return;
+    setTrashingId(goal.id);
     const response = await apiRequest<GoalDTO>(`/api/goals/${goal.id}/trash`, { method: "POST" });
+    setTrashingId(null);
     if (response.status === 401) {
       router.push("/login");
       return;
@@ -194,6 +201,7 @@ export function GoalsSection() {
       setTrash((rows) => rows?.filter((row) => row.id !== goal.id) ?? rows);
       setUndo({ id: goal.id, name: goal.name });
     }
+    setGoalToTrash(null);
   };
 
   const undoTrash = async () => {
@@ -322,7 +330,7 @@ export function GoalsSection() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void handleTrash(goal)}
+                    onClick={() => setGoalToTrash(goal)}
                     aria-label={`Hapus target ${goal.name}`}
                     className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-ink-3 hover:bg-danger-bg hover:text-danger"
                   >
@@ -346,7 +354,7 @@ export function GoalsSection() {
         <h3 className="text-sm font-bold text-ink">Buat target baru</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-name">
-            Nama target
+            Nama target <span className="text-danger" aria-hidden="true">*</span>
             <input
               id="goal-name"
               name="goal-name"
@@ -359,7 +367,7 @@ export function GoalsSection() {
             />
           </label>
           <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-target">
-            Nominal target (rupiah)
+            Nominal target (rupiah) <span className="text-danger" aria-hidden="true">*</span>
             <MoneyInput
               id="goal-target"
               name="goal-target"
@@ -442,6 +450,16 @@ export function GoalsSection() {
           onDismiss={() => setUndo(null)}
         />
       ) : null}
+
+      <ConfirmActionDialog
+        open={goalToTrash !== null}
+        title="Hapus target tabungan?"
+        description={goalToTrash ? `“${goalToTrash.name}” akan dipindahkan ke daftar terhapus. Kamu bisa memulihkannya nanti.` : ""}
+        confirmLabel="Hapus target"
+        busy={trashingId !== null}
+        onCancel={() => setGoalToTrash(null)}
+        onConfirm={() => void handleTrash()}
+      />
 
       {adjust ? (
         <div

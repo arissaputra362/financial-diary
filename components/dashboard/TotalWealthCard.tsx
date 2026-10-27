@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Coins, Eye, EyeOff, RefreshCw, Wallet } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { formatIDR } from "@/lib/format";
 import type { MonthlyBudgetDTO } from "@/types/api";
 import type { GoldPortfolioSummaryDTO } from "@/types/gold";
@@ -91,8 +92,8 @@ export function TotalWealthCard({
 
   return (
     <section aria-labelledby="total-wealth-title" className="overflow-hidden rounded-3xl bg-navy p-5 text-white shadow-bento sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h2 id="total-wealth-title" className="flex items-center gap-2 text-sm font-semibold text-white/90">
             <Wallet className="h-4 w-4" aria-hidden="true" />
             Ringkasan keuangan
@@ -101,32 +102,25 @@ export function TotalWealthCard({
             Saldo, tabungan emas, dan pengeluaran sesuai pilihan.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setAmountsVisible((visible) => !visible)}
-            aria-label={amountsVisible ? "Sembunyikan nominal" : "Tampilkan nominal"}
-            aria-pressed={amountsVisible}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/20 hover:text-white"
-          >
-            {amountsVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-          </button>
-          <div role="group" aria-label="Pilih ringkasan keuangan" className="flex rounded-full bg-white/10 p-1">
-            {SCOPE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={scope === option.value}
-                aria-label={`Tampilkan ringkasan ${option.label.toLowerCase()}`}
-                onClick={() => setScope(option.value)}
-                className={`min-h-11 rounded-full px-4 text-sm font-semibold transition-colors ${scope === option.value ? "bg-white text-navy shadow-sm" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setAmountsVisible((visible) => !visible)}
+          aria-label={amountsVisible ? "Sembunyikan nominal ringkasan" : "Tampilkan nominal ringkasan"}
+          aria-pressed={amountsVisible}
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/20 hover:text-white"
+        >
+          {amountsVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+        </button>
       </div>
+
+      <SegmentedControl
+        label="Pilih ringkasan keuangan"
+        value={scope}
+        options={SCOPE_OPTIONS}
+        onChange={setScope}
+        variant="navy"
+        className="mt-3"
+      />
 
       {loading ? (
         <div className="mt-5 h-10 w-48 animate-pulse rounded-xl bg-white/10" aria-label="Memuat total kekayaan" />
@@ -140,7 +134,7 @@ export function TotalWealthCard({
           <button
             type="button"
             onClick={() => setReloadKey((key) => key + 1)}
-            className="inline-flex min-h-10 items-center gap-2 rounded-full bg-white px-4 text-xs font-semibold text-navy hover:bg-white/90"
+            className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-semibold text-navy hover:bg-white/90"
           >
             <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
             Coba lagi
