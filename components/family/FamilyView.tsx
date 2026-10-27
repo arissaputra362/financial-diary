@@ -3,7 +3,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, Pencil, ShieldCheck, UserPlus, Users, X } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -137,13 +136,11 @@ export default function FamilyView({
 
   if (loading) {
     return (
-      <AppShell>
-        <div className="space-y-5" aria-busy="true" aria-label="Memuat keluarga">
-          <Skeleton className="h-10 w-56" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </AppShell>
+      <div className="space-y-5" aria-busy="true" aria-label="Memuat keluarga">
+        <Skeleton className="h-10 w-56" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
     );
   }
 
@@ -151,8 +148,7 @@ export default function FamilyView({
   const active = members.filter((m) => m.status === "APPROVED");
 
   return (
-    <AppShell>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <PageHeader
           eyebrow="Kelola keluarga"
           title={householdName || "Keluarga"}
@@ -407,7 +403,6 @@ export default function FamilyView({
             void handleDecision(memberToRevoke.id, "revoke").then(() => setMemberToRevoke(null));
           }}
         />
-      </div>
-    </AppShell>
+    </div>
   );
 }

@@ -109,7 +109,7 @@ export function GoldPageView() {
   const ubsPrice = data?.priceInfo?.prices?.find((p) => p.brand === "UBS");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 pb-28 sm:px-6 lg:max-w-3xl">
+    <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
         title="Tabungan Emas"

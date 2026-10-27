@@ -6,6 +6,7 @@ import { LayoutDashboard, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { apiRequest } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { todayJakarta } from "@/lib/dates";
 import type { DashboardDTO, DashboardPeriodKey, WalletCardDTO, WalletDTO } from "@/types/api";
 import { WalletDetailSheet } from "@/components/wallets/WalletDetailSheet";
@@ -51,6 +52,9 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
   const [manageTab, setManageTab] = useState<"active" | "archived">("active");
   const [form, setForm] = useState<FormState>({ open: false, mode: "create", wallet: null });
   const [detail, setDetail] = useState<WalletDTO | null>(null);
+  const [archiveCandidate, setArchiveCandidate] = useState<WalletDTO | WalletCardDTO | null>(null);
+  const [archiving, setArchiving] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,16 +111,27 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
     if (response.ok && response.data) setDetail(response.data);
   };
 
-  const archiveWallet = async (wallet: WalletDTO | WalletCardDTO) => {
-    const response = await apiRequest(`/api/wallets/${wallet.id}/archive`, { method: "POST" });
-    if (!response.ok) {
-      setNotice("Dompet belum bisa diarsipkan. Coba lagi.");
-      return;
+  const archiveWallet = async () => {
+    if (!archiveCandidate) return;
+    setArchiving(true);
+    setArchiveError(null);
+    const wallet = archiveCandidate;
+    try {
+      const response = await apiRequest(`/api/wallets/${wallet.id}/archive`, { method: "POST" });
+      if (!response.ok) {
+        setArchiveError("Dompet belum bisa diarsipkan. Coba lagi.");
+        return;
+      }
+      setArchiveCandidate(null);
+      setDetail(null);
+      setManageOpen(false);
+      setNotice("Dompet diarsipkan.");
+      retry();
+    } catch {
+      setArchiveError("Dompet belum bisa diarsipkan. Periksa koneksimu lalu coba lagi.");
+    } finally {
+      setArchiving(false);
     }
-    setDetail(null);
-    setManageOpen(false);
-    setNotice("Dompet diarsipkan.");
-    retry();
   };
 
   const restoreWallet = async (wallet: WalletDTO | WalletCardDTO) => {
@@ -235,7 +250,10 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
           setManageOpen(false);
           setForm({ open: true, mode: "edit", wallet });
         }}
-        onArchive={(wallet) => void archiveWallet(wallet)}
+        onArchive={(wallet) => {
+          setArchiveError(null);
+          setArchiveCandidate(wallet);
+        }}
         onRestore={(wallet) => void restoreWallet(wallet)}
         onCreate={() => {
           setManageOpen(false);
@@ -250,7 +268,10 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
           setDetail(null);
           setForm({ open: true, mode: "edit", wallet });
         }}
-        onArchive={(wallet) => void archiveWallet(wallet)}
+        onArchive={(wallet) => {
+          setArchiveError(null);
+          setArchiveCandidate(wallet);
+        }}
         onRestore={(wallet) => void restoreWallet(wallet)}
       />
 
@@ -265,6 +286,25 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
           setNotice(form.mode === "create" ? "Dompet tersimpan." : "Perubahan disimpan.");
           retry();
         }}
+      />
+
+      <ConfirmActionDialog
+        open={archiveCandidate !== null}
+        title="Arsipkan dompet?"
+        description={
+          archiveCandidate
+            ? `“${archiveCandidate.name}” akan dipindahkan ke Arsip. Riwayat dan saldo tetap tersimpan, dan dompet bisa dipulihkan nanti.`
+            : "Dompet akan dipindahkan ke Arsip."
+        }
+        confirmLabel="Arsipkan dompet"
+        busy={archiving}
+        error={archiveError}
+        onCancel={() => {
+          if (archiving) return;
+          setArchiveCandidate(null);
+          setArchiveError(null);
+        }}
+        onConfirm={() => void archiveWallet()}
       />
     </div>
   );

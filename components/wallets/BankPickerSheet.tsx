@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Archive, Check, Plus, RotateCcw, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest } from "@/lib/api-client";
 import { institutionMatchesQuery, normalizeInstitutionName } from "@/lib/institution-name";
@@ -67,7 +68,7 @@ function archivedStatusLabel(archivedAt: string | null): string {
   abstract B/P badges, never bank logos.
 
   Design 07 §4a: the private group owns an Aktif/Arsip view toggle. Active rows
-  get a labeled `Arsipkan` action with inline confirmation; archived rows get a
+  get a labeled `Arsipkan` action with modal confirmation; archived rows get a
   labeled `Pulihkan` action. Both call the existing owner-only endpoints. No
   route, nav, or global management sheet is added.
 */
@@ -460,7 +461,6 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
                   activeRows={custom}
                   archivedRows={archivedCustom}
                   selectedId={selectedId}
-                  archiveCandidate={archiveCandidate}
                   busyId={busyId}
                   error={manageError}
                   officialOffer={officialOffer}
@@ -470,12 +470,6 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
                     setArchiveCandidate(row);
                     resetManagementFeedback();
                   }}
-                  onCancelArchive={() => {
-                    const id = archiveCandidate?.id;
-                    setArchiveCandidate(null);
-                    if (id) requestFocus(id);
-                  }}
-                  onConfirmArchive={handleArchive}
                   onRestore={handleRestore}
                   onChooseOfficialOffer={(bank) =>
                     choose({ kind: "OFFICIAL", id: bank.id, name: bank.name })
@@ -528,6 +522,28 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
         onClose={() => setQuickAddOpen(false)}
         onSaved={handleSaved}
         onRouteToExisting={handleRouteToExisting}
+      />
+      <ConfirmActionDialog
+        open={archiveCandidate !== null}
+        title="Arsipkan entri?"
+        description={
+          archiveCandidate
+            ? `“${archiveCandidate.name}” akan disembunyikan dari pilihan baru. Label di dompet yang sudah memakainya tetap tampil, dan entri bisa dipulihkan dari tab Arsip.`
+            : "Entri akan disembunyikan dari pilihan baru dan bisa dipulihkan dari tab Arsip."
+        }
+        confirmLabel="Arsipkan entri"
+        busy={archiveCandidate !== null && busyId === archiveCandidate.id}
+        error={manageError}
+        onCancel={() => {
+          if (archiveCandidate && busyId === archiveCandidate.id) return;
+          const id = archiveCandidate?.id;
+          setArchiveCandidate(null);
+          setManageError(null);
+          if (id) requestFocus(id);
+        }}
+        onConfirm={() => {
+          if (archiveCandidate) void handleArchive(archiveCandidate);
+        }}
       />
     </>
   );
@@ -639,15 +655,12 @@ function PrivateInstitutionGroup({
   activeRows,
   archivedRows,
   selectedId,
-  archiveCandidate,
   busyId,
   error,
   officialOffer,
   onSelect,
   onViewChange,
   onRequestArchive,
-  onCancelArchive,
-  onConfirmArchive,
   onRestore,
   onChooseOfficialOffer,
   onTabKeyDown,
@@ -656,15 +669,12 @@ function PrivateInstitutionGroup({
   activeRows: UserCustomInstitutionDTO[];
   archivedRows: UserCustomInstitutionDTO[];
   selectedId: string | null;
-  archiveCandidate: UserCustomInstitutionDTO | null;
   busyId: string | null;
   error: string | null;
   officialOffer: BankInstitutionDTO | null;
   onSelect: (choice: WalletInstitutionDTO) => void;
   onViewChange: (view: PrivateView) => void;
   onRequestArchive: (row: UserCustomInstitutionDTO) => void;
-  onCancelArchive: () => void;
-  onConfirmArchive: (row: UserCustomInstitutionDTO) => void;
   onRestore: (row: UserCustomInstitutionDTO) => void;
   onChooseOfficialOffer: (bank: BankInstitutionDTO) => void;
   onTabKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
@@ -742,7 +752,6 @@ function PrivateInstitutionGroup({
               {activeRows.map((row) => {
                 const selected = row.id === selectedId;
                 const busy = busyId === row.id;
-                const confirming = archiveCandidate?.id === row.id;
                 return (
                   <li
                     key={row.id}
@@ -808,40 +817,6 @@ function PrivateInstitutionGroup({
                       </button>
                     </div>
 
-                    {confirming ? (
-                      <div
-                        role="group"
-                        aria-label={`Konfirmasi arsip ${row.name}`}
-                        className="mt-1.5 rounded-2xl border border-danger-border bg-danger-bg px-3 py-3"
-                      >
-                        <p className="text-sm font-semibold text-ink">
-                          Arsipkan &quot;{row.name}&quot;?
-                        </p>
-                        <p className="mt-1 text-xs text-ink-2">
-                          Entri disembunyikan dari daftar pilihan berikutnya. Label bank pada
-                          dompet yang sudah memakainya tetap tampil. Bukan hapus permanen; bisa
-                          dipulihkan di tab Arsip.
-                        </p>
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={onCancelArchive}
-                            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full border border-input-border bg-card px-4 text-sm font-semibold text-ink-2 hover:bg-blue-wash"
-                          >
-                            Batal
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onConfirmArchive(row)}
-                            disabled={busy}
-                            className="inline-flex min-h-12 flex-1 items-center justify-center gap-1 rounded-full bg-brand-danger px-4 text-sm font-semibold text-white hover:bg-brand-danger-hover disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            <Archive className="h-4 w-4" aria-hidden="true" />
-                            {busy ? "Mengarsipkan..." : "Arsipkan"}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
                   </li>
                 );
               })}

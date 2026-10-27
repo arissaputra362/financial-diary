@@ -28,7 +28,7 @@ export function WalletCard({ wallet, onOpen, onManage }: WalletCardProps) {
   return (
     <div
       className={cn(
-        "flex min-h-40 w-[min(82vw,18rem)] shrink-0 snap-start flex-col rounded-3xl p-5 text-white shadow-bento md:w-72",
+        "flex min-h-40 w-[min(100%,24rem)] shrink-0 snap-start flex-col rounded-3xl p-5 text-white shadow-bento md:w-72",
         shared ? "bg-navy" : "bg-brand-blue",
       )}
     >

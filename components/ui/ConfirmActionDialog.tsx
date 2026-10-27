@@ -10,6 +10,7 @@ type ConfirmActionDialogProps = {
   title: string;
   description: string;
   confirmLabel: string;
+  error?: string | null;
   busy?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -20,6 +21,7 @@ export function ConfirmActionDialog({
   title,
   description,
   confirmLabel,
+  error = null,
   busy = false,
   onCancel,
   onConfirm,
@@ -58,6 +60,14 @@ export function ConfirmActionDialog({
             </p>
           </div>
         </div>
+        {error ? (
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl border border-danger-border bg-danger-bg px-4 py-3 text-sm font-medium text-danger"
+          >
+            {error}
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="secondary" onClick={onCancel} disabled={busy}>
             Batal
