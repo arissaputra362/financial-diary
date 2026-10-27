@@ -127,7 +127,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
   return (
     <>
       <div
-        className="fixed inset-0 z-[70] flex items-end justify-center bg-[#14273F]/40 sm:items-center sm:p-4"
+        className="fixed inset-0 z-[70] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) onClose();
         }}
@@ -138,17 +138,17 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
           aria-modal="true"
         tabIndex={-1}
         aria-labelledby="wallet-form-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
       >
         <div className="flex items-center justify-between">
-          <h2 id="wallet-form-title" className="text-lg font-semibold tracking-tight text-[#17304F]">
+          <h2 id="wallet-form-title" className="text-lg font-semibold tracking-tight text-ink">
             {mode === "create" ? "Buat dompet" : "Ubah dompet"}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -190,22 +190,22 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
                 }
                 onClick={() => setPickerOpen(true)}
                 className={cn(
-                  "flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 rounded-2xl border bg-white px-4 py-3 text-left transition-colors",
+                  "flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 rounded-2xl border bg-card px-4 py-3 text-left transition-colors",
                   "focus:outline-none focus:ring-4",
                   fieldErrors.institution
-                    ? "border-[#B91C1C] focus:border-[#B91C1C] focus:ring-[#B91C1C]/15"
-                    : "border-[#C9D6E4] focus:border-[#1D4F87] focus:ring-[#1D4F87]/15",
+                    ? "border-danger focus:border-danger focus:ring-danger/15"
+                    : "border-input-border focus:border-blue focus:ring-blue/15",
                 )}
               >
                 <span
                   className={cn(
                     "truncate text-[15px]",
-                    institution ? "font-medium text-[#17304F]" : "text-[#5C6C86]",
+                    institution ? "font-medium text-ink" : "text-placeholder",
                   )}
                 >
                   {institution?.name ?? "Pilih bank atau penyedia"}
                 </span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-[#46597A]" aria-hidden="true" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-ink-2" aria-hidden="true" />
               </button>
               {institution ? (
                 <button
@@ -221,7 +221,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
                       return next;
                     });
                   }}
-                  className="flex min-h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#C9D6E4] bg-white text-[#46597A] hover:bg-[#EFF4FA]"
+                  className="flex min-h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-input-border bg-card text-ink-2 hover:bg-blue-wash"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -241,7 +241,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
 
           {mode === "create" ? (
             <fieldset>
-              <legend className="text-xs font-medium uppercase tracking-wider text-[#46597A]">Jenis dompet</legend>
+              <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Jenis dompet</legend>
               <div className="mt-2 flex gap-2">
                 {(
                   [
@@ -257,15 +257,15 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
                     className={cn(
                       "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                       scope === value
-                        ? "bg-[#1D4F87] text-white"
-                        : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]",
+                        ? "bg-brand-blue text-white"
+                        : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
                     )}
                   >
                     {label}
                   </button>
                 ))}
               </div>
-              <p className="mt-1.5 text-xs text-[#5C6C86]">
+              <p className="mt-1.5 text-xs text-placeholder">
                 Bersama: semua anggota keluarga bisa melihat. Pribadi: hanya kamu. Jenis dompet
                 hanya bisa dipilih saat pembuatan.
               </p>
@@ -284,11 +284,11 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
           >
             <div
               className={cn(
-                "flex items-center gap-2 rounded-2xl border border-[#C9D6E4] bg-white px-4 py-3 focus-within:border-[#1D4F87] focus-within:ring-4 focus-within:ring-[#1D4F87]/15",
-                locked && "bg-[#EFF4FA]",
+                "flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-blue focus-within:ring-4 focus-within:ring-blue/15",
+                locked && "bg-blue-wash",
               )}
             >
-              <span className="text-lg font-semibold text-[#46597A]">Rp</span>
+              <span className="text-lg font-semibold text-ink-2">Rp</span>
               <MoneyInput
                 id="wallet-opening"
                 value={openingDigits}
@@ -296,13 +296,13 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
                 disabled={locked}
                 placeholder="0"
                 aria-invalid={fieldErrors.openingBalanceMinor ? true : undefined}
-                className="w-full min-w-0 bg-transparent text-xl font-bold tabular-nums text-[#17304F] outline-none placeholder:text-[#5C6C86]/60 disabled:cursor-not-allowed disabled:text-[#46597A]"
+                className="w-full min-w-0 bg-transparent text-xl font-bold tabular-nums text-ink outline-none placeholder:text-placeholder/60 disabled:cursor-not-allowed disabled:text-ink-2"
               />
             </div>
           </Field>
 
           {formError ? (
-            <p role="alert" className="rounded-2xl bg-[#FDECEC] px-4 py-3 text-sm text-[#B91C1C]">
+            <p role="alert" className="rounded-2xl bg-danger-bg px-4 py-3 text-sm text-danger">
               {formError}
             </p>
           ) : null}

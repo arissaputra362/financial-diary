@@ -155,23 +155,23 @@ export default function FamilyView({
             <Link
               href="/home"
               aria-label="Kembali ke Beranda"
-              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#5C7191] shadow-xs hover:bg-[#F1F5FA] md:flex"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-card-border bg-card text-ink-3 shadow-xs hover:bg-canvas md:flex"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
             <div className="min-w-0">
               <Link
                 href="/profile"
-                className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
+                className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash md:hidden"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 Kembali ke Profil
               </Link>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">
                 Kelola keluarga
               </p>
-              <h1 className="mt-1 flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
-                <Users className="h-5 w-5 shrink-0 text-[#1D4F87]" aria-hidden="true" />
+              <h1 className="mt-1 flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink">
+                <Users className="h-5 w-5 shrink-0 text-blue" aria-hidden="true" />
                 {householdName || "Keluarga"}
               </h1>
             </div>
@@ -198,15 +198,15 @@ export default function FamilyView({
         </div>
 
         {householdNotice ? (
-          <p role="status" className="rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534]">
+          <p role="status" className="rounded-2xl bg-mint px-4 py-3 text-sm font-medium text-green">
             {householdNotice}
           </p>
         ) : null}
 
         {inviteCode && (
           <Card variant="tint">
-            <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#17304F]">
-              <LinkIcon className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
+            <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
+              <LinkIcon className="h-4 w-4 text-blue" aria-hidden="true" />
               Undangan anggota
             </p>
             <div className="space-y-3">
@@ -216,7 +216,7 @@ export default function FamilyView({
                     readOnly
                     value={inviteLink}
                     aria-label="Link undangan"
-                    className="min-w-0 flex-1 rounded-2xl border border-[#D8E2EE] bg-white px-4 py-2 text-sm text-[#46597A]"
+                    className="min-w-0 flex-1 rounded-2xl border border-card-border bg-card px-4 py-2 text-sm text-ink-2"
                   />
                   <Button size="sm" variant="secondary" onClick={handleCopyInviteLink}>
                     <Copy className="h-4 w-4" aria-hidden="true" />
@@ -225,15 +225,15 @@ export default function FamilyView({
                 </div>
               )}
               {inviteCopyError && (
-                <p className="text-xs text-[#B91C1C]" role="alert">
+                <p className="text-xs text-danger" role="alert">
                   {inviteCopyError}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-3">
-                <code className="rounded-2xl border border-[#D8E2EE] bg-white px-4 py-2 text-2xl font-bold tracking-widest text-[#17304F]">
+                <code className="rounded-2xl border border-card-border bg-card px-4 py-2 text-2xl font-bold tracking-widest text-ink">
                   {inviteCode}
                 </code>
-                <p className="text-xs text-[#46597A]">
+                <p className="text-xs text-ink-2">
                   Link membuka form pendaftaran dengan kode terisi otomatis. Kode berlaku 7 hari dan hanya tampil sekali.
                 </p>
               </div>
@@ -243,20 +243,20 @@ export default function FamilyView({
 
         {isOwner && pending.length > 0 && (
           <Card>
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#17304F]">
-              <Users className="h-5 w-5 text-[#1D4F87]" aria-hidden="true" />
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ink">
+              <Users className="h-5 w-5 text-blue" aria-hidden="true" />
               Permintaan bergabung ({pending.length})
             </h2>
             <div className="space-y-3">
               {pending.map((m) => (
-                <div key={m.id} className="rounded-2xl bg-[#EFF4FA] p-4">
+                <div key={m.id} className="rounded-2xl bg-blue-wash p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium text-[#17304F]">{m.user?.displayName ?? "Anggota"}</p>
+                      <p className="font-medium text-ink">{m.user?.displayName ?? "Anggota"}</p>
                       {m.user?.email ? (
-                        <p className="truncate text-sm text-[#46597A]">{m.user.email}</p>
+                        <p className="truncate text-sm text-ink-2">{m.user.email}</p>
                       ) : null}
-                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#FDF3D7] px-3 py-1 text-xs font-semibold text-[#8A5A00]">
+                      <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-warning-bg px-3 py-1 text-xs font-semibold text-warning">
                         <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                         Menunggu persetujuan
                       </span>
@@ -288,21 +288,21 @@ export default function FamilyView({
         )}
 
         <Card>
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#17304F]">
-            <Users className="h-5 w-5 text-[#1D4F87]" aria-hidden="true" />
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ink">
+            <Users className="h-5 w-5 text-blue" aria-hidden="true" />
             Anggota aktif ({active.length})
           </h2>
-          <div className="divide-y divide-[#EAEEF4]">
+          <div className="divide-y divide-row-divider">
             {active.map((m) => (
               <div key={m.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
-                  <p className="font-medium text-[#17304F]">
+                  <p className="font-medium text-ink">
                     {m.user?.displayName ?? "Anggota"}
                     {m.userId === me?.user.id ? " (Kamu)" : ""}
                   </p>
-                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[#E6ECF4] px-2.5 py-0.5 text-xs font-semibold text-[#46597A]">
+                  <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-chip-slate px-2.5 py-0.5 text-xs font-semibold text-ink-2">
                     {m.role === "OWNER" ? (
-                      <Crown className="h-3.5 w-3.5 text-[#166534]" aria-hidden="true" />
+                      <Crown className="h-3.5 w-3.5 text-green" aria-hidden="true" />
                     ) : (
                       <Users className="h-3.5 w-3.5" aria-hidden="true" />
                     )}
@@ -315,7 +315,7 @@ export default function FamilyView({
                     variant="ghost"
                     onClick={() => handleDecision(m.id, "revoke")}
                     disabled={actionId === m.id}
-                    className="text-[#B91C1C] hover:bg-[#FDECEC] hover:text-[#B91C1C]"
+                    className="text-danger hover:bg-danger-bg hover:text-danger"
                   >
                     Hapus akses
                   </Button>
@@ -326,13 +326,13 @@ export default function FamilyView({
         </Card>
 
         <Card variant="tint">
-          <div className="space-y-3 text-sm text-[#17304F]">
+          <div className="space-y-3 text-sm text-ink">
             <p className="flex items-start gap-2">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1D4F87]" aria-hidden="true" />
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
               Item terhapus tetap di Trash sampai dipulihkan
             </p>
             <p className="flex items-start gap-2">
-              <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-[#1D4F87]" aria-hidden="true" />
+              <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
               Akses diperiksa ulang di setiap permintaan
             </p>
           </div>
@@ -340,7 +340,7 @@ export default function FamilyView({
 
         {editOpen ? (
           <div
-            className="fixed inset-0 z-[70] flex items-end justify-center bg-[#14273F]/40 p-0 sm:items-center sm:p-4"
+            className="fixed inset-0 z-[70] flex items-end justify-center bg-scrim/40 p-0 sm:items-center sm:p-4"
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setEditOpen(false);
@@ -351,26 +351,26 @@ export default function FamilyView({
               role="dialog"
               aria-modal="true"
               aria-labelledby="edit-household-title"
-              className="w-full rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6"
+              className="w-full rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 id="edit-household-title" className="text-lg font-semibold text-[#17304F]">
+                  <h2 id="edit-household-title" className="text-lg font-semibold text-ink">
                     Edit informasi keluarga
                   </h2>
-                  <p className="mt-1 text-sm text-[#5C7191]">Ubah nama yang tampil di halaman keluarga.</p>
+                  <p className="mt-1 text-sm text-ink-3">Ubah nama yang tampil di halaman keluarga.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setEditOpen(false)}
                   aria-label="Tutup"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
                 </button>
               </div>
               <form onSubmit={handleSaveHousehold} className="mt-5 space-y-4">
-                <label htmlFor="household-name" className="block text-sm font-semibold text-[#46597A]">
+                <label htmlFor="household-name" className="block text-sm font-semibold text-ink-2">
                   Nama keluarga
                 </label>
                 <input
@@ -380,9 +380,9 @@ export default function FamilyView({
                   maxLength={80}
                   value={householdDraft}
                   onChange={(event) => setHouseholdDraft(event.target.value)}
-                  className="min-h-12 w-full rounded-2xl border border-[#C9D6E4] bg-white px-4 text-base text-[#17304F] outline-none focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
+                  className="min-h-12 w-full rounded-2xl border border-input-border bg-card px-4 text-base text-ink outline-none focus:border-blue focus:ring-4 focus:ring-blue/15"
                 />
-                {householdError ? <p role="alert" className="text-sm text-[#B91C1C]">{householdError}</p> : null}
+                {householdError ? <p role="alert" className="text-sm text-danger">{householdError}</p> : null}
                 <div className="flex justify-end gap-2 pt-1">
                   <Button variant="secondary" onClick={() => setEditOpen(false)} disabled={savingHousehold}>
                     Batal

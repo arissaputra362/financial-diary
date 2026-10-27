@@ -132,37 +132,37 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
   return (
     <section
       aria-labelledby="activity-title"
-      className="rounded-3xl border border-[#D8E2EE] bg-white p-4 shadow-bento sm:p-6"
+      className="rounded-3xl border border-card-border bg-card p-4 shadow-bento sm:p-6"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="activity-title" className="text-lg font-semibold text-[#17304F]">
+        <h2 id="activity-title" className="text-lg font-semibold text-ink">
           Aktivitas terbaru
         </h2>
         <Link
           href="/transactions"
-          className="inline-flex min-h-11 items-center rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] transition-colors hover:bg-[#EFF4FA]"
+          className="inline-flex min-h-11 items-center rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue transition-colors hover:bg-blue-wash"
         >
           Lihat semua aktivitas
         </Link>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-[#D8E2EE] bg-[#F8FAFC] p-3 sm:p-4">
+      <div className="mt-4 rounded-2xl border border-card-border bg-surface-subtle p-3 sm:p-4">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
-          <p className="text-sm font-semibold text-[#17304F]">Filter aktivitas</p>
+          <SlidersHorizontal className="h-4 w-4 text-blue" aria-hidden="true" />
+          <p className="text-sm font-semibold text-ink">Filter aktivitas</p>
           {filtersActive ? (
-            <span className="rounded-full bg-[#DCEBFA] px-2.5 py-1 text-[11px] font-semibold text-[#1D4F87]">
+            <span className="rounded-full bg-blue-tint px-2.5 py-1 text-[11px] font-semibold text-blue">
               Aktif
             </span>
           ) : null}
         </div>
 
         <div className="mt-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#5C7191]">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-3">
             Jenis transaksi
           </p>
           <div
-            className="grid grid-cols-2 gap-1 rounded-2xl bg-[#EFF4FA] p-1 sm:flex"
+            className="grid grid-cols-2 gap-1 rounded-2xl bg-blue-wash p-1 sm:flex"
             role="group"
             aria-label="Jenis transaksi"
           >
@@ -175,8 +175,8 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
                 className={cn(
                   "min-h-11 rounded-full px-3 text-xs font-semibold transition-colors sm:px-4",
                   kind === filter.kind
-                    ? "bg-white text-[#17304F] shadow-sm"
-                    : "text-[#46597A] hover:text-[#17304F]",
+                    ? "bg-card text-ink shadow-sm"
+                    : "text-ink-2 hover:text-ink",
                 )}
               >
                 {filter.label}
@@ -185,13 +185,13 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
           </div>
 
           {wallets.length > 0 ? (
-            <label className="mt-3 flex min-h-11 items-center gap-3 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm font-semibold text-[#46597A]">
-              <Wallet className="h-4 w-4 shrink-0 text-[#1D4F87]" aria-hidden="true" />
+            <label className="mt-3 flex min-h-11 items-center gap-3 rounded-2xl border border-input-border bg-card px-3 text-sm font-semibold text-ink-2">
+              <Wallet className="h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
               <span className="sr-only">Dompet</span>
               <select
                 value={walletId}
                 onChange={(event) => selectWallet(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none"
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none"
                 aria-label="Filter berdasarkan dompet"
               >
                 <option value="">Semua dompet</option>
@@ -204,17 +204,17 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
             </label>
           ) : null}
 
-          <div className="mt-3 border-t border-[#D8E2EE] pt-3">
+          <div className="mt-3 border-t border-card-border pt-3">
             <button
               type="button"
               aria-expanded={showDateFilters}
               onClick={() => setShowDateFilters((visible) => !visible)}
-              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl text-left text-sm font-semibold text-[#17304F]"
+              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl text-left text-sm font-semibold text-ink"
             >
               <span>
-                Rentang tanggal <span className="font-normal text-[#5C7191]">(opsional)</span>
+                Rentang tanggal <span className="font-normal text-ink-3">(opsional)</span>
               </span>
-              <span className="flex items-center gap-2 text-xs font-medium text-[#5C7191]">
+              <span className="flex items-center gap-2 text-xs font-medium text-ink-3">
                 {dateFiltersActive ? "Dipilih" : "Pilih tanggal"}
                 <ChevronDown
                   className={cn("h-4 w-4 transition-transform", showDateFilters && "rotate-180")}
@@ -225,22 +225,22 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
 
             {showDateFilters ? (
               <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-[#46597A]">
+                <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-2">
                   Dari tanggal
                   <input
                     type="date"
                     value={from}
                     onChange={(event) => changeFrom(event.target.value)}
-                    className="min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                    className="min-h-11 w-full rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                   />
                 </label>
-                <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-[#46597A]">
+                <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-ink-2">
                   Sampai tanggal
                   <input
                     type="date"
                     value={to}
                     onChange={(event) => changeTo(event.target.value)}
-                    className="min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                    className="min-h-11 w-full rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                   />
                 </label>
               </div>
@@ -248,10 +248,10 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
           </div>
 
           {filtersActive ? (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#D8E2EE] pt-3">
-              <p className="text-xs text-[#5C7191]">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-card-border pt-3">
+              <p className="text-xs text-ink-3">
                 Menampilkan:{" "}
-                <span className="font-semibold text-[#46597A]">
+                <span className="font-semibold text-ink-2">
                   {FILTERS.find((filter) => filter.kind === kind)?.label}
                 </span>
                 {dateFiltersActive ? " dengan rentang tanggal" : ""}
@@ -259,7 +259,7 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
               <button
                 type="button"
                 onClick={reset}
-                className="min-h-11 rounded-full px-3 text-xs font-semibold text-[#1D4F87] underline underline-offset-2 hover:text-[#17304F]"
+                className="min-h-11 rounded-full px-3 text-xs font-semibold text-blue underline underline-offset-2 hover:text-ink"
               >
                 Hapus semua filter
               </button>
@@ -270,13 +270,13 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
 
       <div className="mt-5">
         {shownError ? (
-          <div className="rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] p-4 text-sm text-[#B91C1C]">
+          <div className="rounded-2xl border border-danger-border bg-danger-bg p-4 text-sm text-danger">
             <p>{shownError}</p>
             {dateInvalid ? (
               <button
                 type="button"
                 onClick={reset}
-                className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+                className="mt-3 inline-flex min-h-11 items-center rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
               >
                 Reset filter
               </button>
@@ -284,7 +284,7 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
               <button
                 type="button"
                 onClick={retry}
-                className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+                className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
               >
                 <RefreshCw className="h-4 w-4" aria-hidden="true" />
                 Coba lagi
@@ -294,15 +294,15 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
         ) : loading ? (
           <ul className="space-y-3" aria-busy="true" aria-label="Memuat aktivitas">
             {[0, 1, 2].map((key) => (
-              <li key={key} className="h-14 animate-pulse rounded-2xl bg-[#E5EDF5] motion-reduce:animate-none" />
+              <li key={key} className="h-14 animate-pulse rounded-2xl bg-bar-track motion-reduce:animate-none" />
             ))}
           </ul>
         ) : rows.length === 0 ? (
-          <div className="rounded-2xl bg-[#EFF4FA] p-6 text-center">
-            <p className="text-[15px] font-semibold text-[#17304F]">
+          <div className="rounded-2xl bg-blue-wash p-6 text-center">
+            <p className="text-[15px] font-semibold text-ink">
               {filtersActive ? "Tidak ada aktivitas yang cocok" : "Belum ada aktivitas"}
             </p>
-            <p className="mt-1 text-sm text-[#46597A]">
+            <p className="mt-1 text-sm text-ink-2">
               {filtersActive
                 ? "Coba ubah atau reset filter untuk melihat aktivitas lain."
                 : "Transaksi yang kamu catat akan muncul di sini."}
@@ -312,14 +312,14 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
                 <button
                   type="button"
                   onClick={reset}
-                  className="inline-flex min-h-11 items-center rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                  className="inline-flex min-h-11 items-center rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
                 >
                   Reset filter
                 </button>
               ) : (
                 <Link
                   href="/transactions?add=1"
-                  className="inline-flex min-h-11 items-center rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+                  className="inline-flex min-h-11 items-center rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
                 >
                   Tambah transaksi
                 </Link>
@@ -327,21 +327,21 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
             </div>
           </div>
         ) : (
-          <ul className="divide-y divide-[#EAEEF4]">
+          <ul className="divide-y divide-row-divider">
             {rows.map((row) => (
               <li key={row.id} className="flex items-center gap-3 py-3">
                 <span
                   aria-hidden="true"
                   className={cn(
                     "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg",
-                    isTransferLeg(row) ? "bg-[#EFF4FA] text-[#1D4F87]" : categoryTone(row.category),
+                    isTransferLeg(row) ? "bg-blue-wash text-blue" : categoryTone(row.category),
                   )}
                 >
                   {categoryEmoji(row.category)}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-medium text-[#17304F]">{rowTitle(row)}</p>
-                  <p className="mt-0.5 truncate text-xs text-[#5C7191]">
+                  <p className="truncate text-[15px] font-medium text-ink">{rowTitle(row)}</p>
+                  <p className="mt-0.5 truncate text-xs text-ink-3">
                     {row.source === "OCR" ? "Hasil scan" : "Manual"} · {formatDateLabel(row.occurredAt)}
                   </p>
                 </div>
@@ -349,10 +349,10 @@ export function RecentActivityCard({ initialRows, wallets = [] }: RecentActivity
                   className={cn(
                     "shrink-0 whitespace-nowrap text-sm font-bold tabular-nums",
                     isTransferLeg(row)
-                      ? "text-[#17304F]"
+                      ? "text-ink"
                       : row.type === "MONEY_IN"
-                        ? "text-[#166534]"
-                        : "text-[#17304F]",
+                        ? "text-green"
+                        : "text-ink",
                   )}
                 >
                   {isTransferLeg(row)

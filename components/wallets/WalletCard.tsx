@@ -29,14 +29,14 @@ export function WalletCard({ wallet, onOpen, onManage }: WalletCardProps) {
     <div
       className={cn(
         "flex min-h-40 w-[min(82vw,18rem)] shrink-0 snap-start flex-col rounded-3xl p-5 text-white shadow-bento md:w-72",
-        shared ? "bg-[#14273F]" : "bg-[#1D4F87]",
+        shared ? "bg-navy" : "bg-brand-blue",
       )}
     >
       <div className="flex items-start justify-between" aria-hidden="true">
-        <span className="flex h-6 w-9 items-center justify-center rounded-md bg-[#166534]">
+        <span className="flex h-6 w-9 items-center justify-center rounded-md bg-brand-green">
           <span className="h-2.5 w-3.5 rounded-sm border border-[#DCFCE7]/70" />
         </span>
-        <Nfc className="h-5 w-5 text-[#DCEBFA]/80" />
+        <Nfc className="h-5 w-5 text-on-dark-soft/80" />
       </div>
 
       <button
@@ -49,19 +49,19 @@ export function WalletCard({ wallet, onOpen, onManage }: WalletCardProps) {
           <span className="min-w-0">
             <span className="block truncate text-lg font-semibold text-white">{wallet.name}</span>
             {wallet.institution ? (
-              <span className="mt-0.5 block truncate text-[11px] font-medium text-[#DCEBFA]">
+              <span className="mt-0.5 block truncate text-[11px] font-medium text-on-dark-soft">
                 {wallet.institution.name}
               </span>
             ) : null}
             {wallet.purpose ? (
-              <span className="mt-0.5 block truncate text-xs text-[#DCEBFA]">
+              <span className="mt-0.5 block truncate text-xs text-on-dark-soft">
                 Tujuan: {wallet.purpose}
               </span>
             ) : null}
           </span>
           <ScopePill
             scope={wallet.scope}
-            className="shrink-0 border-0 bg-white text-[#14273F]"
+            className="shrink-0 border-0 bg-card text-ink"
           />
         </span>
         <span
@@ -76,7 +76,7 @@ export function WalletCard({ wallet, onOpen, onManage }: WalletCardProps) {
       </button>
 
       <div className="mt-3 flex items-end justify-between gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#DCEBFA]">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-on-dark-soft">
           Uang tersedia
         </span>
         <button

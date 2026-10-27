@@ -57,7 +57,7 @@ export function BottomNav() {
       <nav
         aria-label="Navigasi utama"
         data-nav="bottom"
-        className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 gap-1 rounded-full border border-white/10 bg-[#14273F]/95 p-2 text-white shadow-floating-nav backdrop-blur-md md:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 gap-1 rounded-full border border-white/10 bg-navy/95 p-2 text-white shadow-floating-nav backdrop-blur-md md:hidden"
       >
         {primaryItems.map((item) => {
           const isAdd = item.href.includes("add=1");
@@ -76,9 +76,9 @@ export function BottomNav() {
               className={cn(
                 "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-semibold transition-colors",
                 isAdd
-                  ? "mx-auto -mt-5 h-14 w-14 justify-self-center bg-[#166534] text-white shadow-pill hover:bg-[#155C30]"
+                  ? "mx-auto -mt-5 h-14 w-14 justify-self-center bg-brand-green text-white shadow-pill hover:bg-brand-green-hover"
                   : isActive
-                    ? "bg-[#DCEBFA] font-medium text-[#14273F]"
+                    ? "bg-blue-tint font-medium text-ink"
                     : "text-white/60 hover:text-white",
               )}
             >
@@ -97,7 +97,7 @@ export function BottomNav() {
           className={cn(
             "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-semibold transition-colors",
             moreIsActive || moreOpen
-              ? "bg-[#DCEBFA] font-medium text-[#14273F]"
+              ? "bg-blue-tint font-medium text-ink"
               : "text-white/60 hover:text-white",
           )}
         >
@@ -109,7 +109,7 @@ export function BottomNav() {
           <div
             id="mobile-more-menu"
             aria-label="Menu lainnya"
-            className="absolute bottom-full right-0 z-50 mb-3 w-52 rounded-2xl border border-[#D8E2EE] bg-white p-2 text-[#17304F] shadow-xl"
+            className="absolute bottom-full right-0 z-50 mb-3 w-52 rounded-2xl border border-card-border bg-card p-2 text-ink shadow-xl"
           >
             {moreItems.map((item) => {
               const Icon = item.icon;
@@ -121,8 +121,8 @@ export function BottomNav() {
                   onClick={() => setMoreOpen(false)}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium hover:bg-[#F1F5FA]",
-                    isActive && "bg-[#EAF2FB] text-[#1D4F87]",
+                    "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium hover:bg-canvas",
+                    isActive && "bg-blue-tint text-blue",
                   )}
                 >
                   <Icon className="h-4 w-4" aria-hidden="true" />

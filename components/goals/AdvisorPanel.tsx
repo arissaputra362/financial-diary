@@ -147,13 +147,13 @@ export function AdvisorPanel() {
     <>
       <section
         aria-labelledby="finny-title"
-        className="rounded-3xl border border-white/10 bg-[#14273F] p-6 text-white shadow-bento"
+        className="rounded-3xl border border-white/10 bg-navy p-6 text-white shadow-bento"
       >
         <h2 id="finny-title" className="flex items-center gap-2 text-lg font-semibold text-white">
-          <Sparkles className="h-5 w-5 text-[#DCEBFA]" aria-hidden="true" />
+          <Sparkles className="h-5 w-5 text-on-dark-soft" aria-hidden="true" />
           Finny, asisten keuangan
         </h2>
-        <p className="mt-3 text-sm text-[#D9E6F5]">
+        <p className="mt-3 text-sm text-on-dark-soft">
           Lihat saran untuk pengeluaran keluargamu bulan ini.
         </p>
         <button
@@ -163,7 +163,7 @@ export function AdvisorPanel() {
             if (!insight) void request();
           }}
           data-testid="advisor-open"
-          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-white px-5 text-sm font-semibold text-[#14273F] hover:bg-[#DCEBFA]"
+          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-card px-5 text-sm font-semibold text-ink hover:bg-blue-tint"
         >
           Lihat saran
         </button>
@@ -175,17 +175,17 @@ export function AdvisorPanel() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="drawer-title"
-            className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
+            className="flex h-full w-full max-w-md flex-col bg-card shadow-2xl"
           >
-            <header className="flex shrink-0 items-center justify-between border-b border-[#EAEEF4] px-5 py-4">
-              <h3 id="drawer-title" className="flex items-center gap-2 text-sm font-bold text-[#17304F]">
-                <Sparkles className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" />
+            <header className="flex shrink-0 items-center justify-between border-b border-row-divider px-5 py-4">
+              <h3 id="drawer-title" className="flex items-center gap-2 text-sm font-bold text-ink">
+                <Sparkles className="h-4 w-4 text-blue" aria-hidden="true" />
                 Finny, Asisten keuangan
               </h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-[#46597A] hover:bg-[#EFF4FA]"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-ink-2 hover:bg-blue-wash"
                 data-testid="advisor-close"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
@@ -194,7 +194,7 @@ export function AdvisorPanel() {
             </header>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              <p className="text-sm text-[#46597A]">
+              <p className="text-sm text-ink-2">
                 Pilih periode, Finny merangkum pengeluaran keluarga lalu memberi aksi ringan.
               </p>
 
@@ -207,8 +207,8 @@ export function AdvisorPanel() {
                     aria-pressed={preset === option.key}
                     className={`min-h-11 rounded-full px-4 text-sm font-semibold ${
                       preset === option.key
-                        ? "bg-[#1D4F87] text-white"
-                        : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]"
+                        ? "bg-brand-blue text-white"
+                        : "border border-blue-border bg-card text-blue hover:bg-blue-wash"
                     }`}
                   >
                     {option.label}
@@ -216,10 +216,10 @@ export function AdvisorPanel() {
                 ))}
               </div>
 
-              <div className="mt-3 rounded-2xl bg-[#EFF4FA] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#46597A]">Pilih rentang sendiri</p>
+              <div className="mt-3 rounded-2xl bg-blue-wash p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-2">Pilih rentang sendiri</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <label className="text-xs font-semibold text-[#46597A]" htmlFor="advisor-start">
+                  <label className="text-xs font-semibold text-ink-2" htmlFor="advisor-start">
                     Mulai
                     <input
                       id="advisor-start"
@@ -231,10 +231,10 @@ export function AdvisorPanel() {
                         setCustomStart(event.target.value);
                         setRangeError(null);
                       }}
-                      className="mt-1 min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                      className="mt-1 min-h-11 w-full rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                     />
                   </label>
-                  <label className="text-xs font-semibold text-[#46597A]" htmlFor="advisor-end">
+                  <label className="text-xs font-semibold text-ink-2" htmlFor="advisor-end">
                     Akhir
                     <input
                       id="advisor-end"
@@ -246,68 +246,68 @@ export function AdvisorPanel() {
                         setCustomEnd(event.target.value);
                         setRangeError(null);
                       }}
-                      className="mt-1 min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                      className="mt-1 min-h-11 w-full rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                     />
                   </label>
                   <button
                     type="button"
                     onClick={applyCustom}
-                    className="inline-flex min-h-11 rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                    className="inline-flex min-h-11 rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
                   >
                     Setel rentang
                   </button>
                 </div>
                 {rangeError ? (
-                  <p role="alert" className="mt-2 text-xs text-[#B91C1C]">
+                  <p role="alert" className="mt-2 text-xs text-danger">
                     {rangeError}
                   </p>
                 ) : (
-                  <p className="mt-2 text-xs text-[#46597A]">Maksimal 90 hari. Rentang bisa satu hari.</p>
+                  <p className="mt-2 text-xs text-ink-2">Maksimal 90 hari. Rentang bisa satu hari.</p>
                 )}
               </div>
 
               <div className="mt-5" data-testid="advisor-result">
                 {loading ? (
                   <div>
-                    <p className="text-sm font-semibold text-[#46597A]">Finny sedang membaca catatan keluarga...</p>
+                    <p className="text-sm font-semibold text-ink-2">Finny sedang membaca catatan keluarga...</p>
                     <Skeleton className="mt-3 h-28 w-full" />
                   </div>
                 ) : error ? (
-                  <div role="alert" data-testid="advisor-error" className="rounded-2xl border border-[#FDF3D7] bg-[#FDF3D7] p-4">
-                    <p className="text-sm font-semibold text-[#8A5A00]">{error.message}</p>
+                  <div role="alert" data-testid="advisor-error" className="rounded-2xl border border-warning-border bg-warning-bg p-4">
+                    <p className="text-sm font-semibold text-warning">{error.message}</p>
                     <button
                       type="button"
                       onClick={() => void request()}
-                      className="mt-3 inline-flex min-h-11 items-center rounded-full border border-[#8A5A00]/30 bg-white px-4 text-sm font-semibold text-[#8A5A00] hover:bg-[#FDF3D7]"
+                      className="mt-3 inline-flex min-h-11 items-center rounded-full border border-warning/30 bg-card px-4 text-sm font-semibold text-warning hover:bg-warning-bg"
                       data-testid="advisor-retry"
                     >
                       Coba lagi
                     </button>
                   </div>
                 ) : insight ? (
-                  <article className="rounded-2xl border border-[#BCD6EF] bg-[#EFF4FA] p-4">
+                  <article className="rounded-2xl border border-blue-border bg-blue-wash p-4">
                     <div className="flex items-center justify-between gap-2">
-                      <Sparkles className="h-5 w-5 text-[#1D4F87]" aria-hidden="true" />
+                      <Sparkles className="h-5 w-5 text-blue" aria-hidden="true" />
                       {insight.delivery === "CACHE" ? (
                         <span
                           data-testid="advisor-cache-label"
-                          className="rounded-full bg-[#E6ECF4] px-3 py-1 text-[11px] font-semibold text-[#46597A]"
+                          className="rounded-full bg-chip-slate px-3 py-1 text-[11px] font-semibold text-ink-2"
                         >
                           Menggunakan analisis sebelumnya
                         </span>
                       ) : (
                         <span
                           data-testid="advisor-fresh-label"
-                          className="rounded-full bg-[#DCFCE7] px-3 py-1 text-[11px] font-semibold text-[#166534]"
+                          className="rounded-full bg-mint px-3 py-1 text-[11px] font-semibold text-green"
                         >
                           Analisis baru
                         </span>
                       )}
                     </div>
-                    <h4 className="mt-2 text-base font-bold text-[#17304F]" data-testid="advisor-headline">
+                    <h4 className="mt-2 text-base font-bold text-ink" data-testid="advisor-headline">
                       {insight.insight.headline}
                     </h4>
-                    <p className="mt-2 text-sm leading-relaxed text-[#46597A]" data-testid="advisor-summary">
+                    <p className="mt-2 text-sm leading-relaxed text-ink-2" data-testid="advisor-summary">
                       {insight.insight.summary}
                     </p>
                     {insight.insight.actions.filter((action) => action.type !== "NONE").length > 0 ? (
@@ -319,7 +319,7 @@ export function AdvisorPanel() {
                               key={`${action.type}-${action.label}`}
                               type="button"
                               onClick={() => followAction(action.type)}
-                              className="min-h-11 rounded-full bg-[#1D4F87] px-4 text-sm font-semibold text-white hover:bg-[#173F6C]"
+                              className="min-h-11 rounded-full bg-brand-blue px-4 text-sm font-semibold text-white hover:bg-brand-blue-hover"
                             >
                               {action.label}
                             </button>
@@ -330,7 +330,7 @@ export function AdvisorPanel() {
                       <button
                         type="button"
                         onClick={() => void request()}
-                        className="inline-flex min-h-11 rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                        className="inline-flex min-h-11 rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
                       >
                         Minta insight baru
                       </button>
@@ -341,19 +341,19 @@ export function AdvisorPanel() {
             </div>
 
             <footer
-              className="shrink-0 border-t border-[#EAEEF4] bg-white px-5 py-3"
+              className="shrink-0 border-t border-row-divider bg-card px-5 py-3"
               data-testid="advisor-footer"
             >
               {footerPeriod ? (
-                <p className="text-xs font-semibold text-[#17304F]" data-testid="advisor-source-period">
+                <p className="text-xs font-semibold text-ink" data-testid="advisor-source-period">
                   {footerPeriod}
                 </p>
               ) : (
-                <p className="text-xs font-semibold text-[#46597A]" data-testid="advisor-source-period">
+                <p className="text-xs font-semibold text-ink-2" data-testid="advisor-source-period">
                   Periode: {formatDateLabel(period.start)} sampai {formatDateLabel(period.end)}
                 </p>
               )}
-              <p className="mt-1 text-[11px] leading-relaxed text-[#5C7191]" data-testid="advisor-limitations">
+              <p className="mt-1 text-[11px] leading-relaxed text-ink-3" data-testid="advisor-limitations">
                 {insight?.insight.limitations ??
                   "Finny bukan nasihat keuangan profesional. Sarannya dihitung dari catatan keluargamu sendiri dan bisa meleset."}
               </p>

@@ -28,33 +28,33 @@ export function ExpenseHeroCard({
   return (
     <section
       aria-labelledby="expense-hero-title"
-      className="rounded-3xl border border-[#BCD6EF] bg-[#DCEBFA] p-6 shadow-bento"
+      className="rounded-3xl border border-blue-border bg-blue-tint p-6 shadow-bento"
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <h2
             id="expense-hero-title"
-            className="text-base font-semibold text-[#17304F]"
+            className="text-base font-semibold text-ink"
           >
             Pengeluaran bulan ini
           </h2>
-          <p className="mt-1 text-xs text-[#5C7191]">Dihitung dari transaksi di dompet bersama.</p>
+          <p className="mt-1 text-xs text-ink-3">Dihitung dari transaksi di dompet bersama.</p>
           {hasSpending ? (
             <p
               className={
                 longHero
-                  ? "mt-2 whitespace-nowrap text-[clamp(1.25rem,5.5vw,2.5rem)] font-bold leading-[1.1] tracking-tight tabular-nums text-[#17304F]"
-                  : "mt-2 whitespace-nowrap text-[clamp(1.9rem,7.2vw,2.5rem)] font-bold leading-[1.1] tracking-tight tabular-nums text-[#17304F]"
+                  ? "mt-2 whitespace-nowrap text-[clamp(1.25rem,5.5vw,2.5rem)] font-bold leading-[1.1] tracking-tight tabular-nums text-ink"
+                  : "mt-2 whitespace-nowrap text-[clamp(1.9rem,7.2vw,2.5rem)] font-bold leading-[1.1] tracking-tight tabular-nums text-ink"
               }
             >
               {formatIDR(spentMinor)}
             </p>
           ) : (
             <>
-              <p className="mt-2 text-xl font-bold text-[#17304F]">
+              <p className="mt-2 text-xl font-bold text-ink">
                 Belum ada pengeluaran bulan ini
               </p>
-              <p className="mt-1 text-sm text-[#46597A]">
+              <p className="mt-1 text-sm text-ink-2">
                 Catat pengeluaran pertamamu lewat tombol Tambah transaksi.
               </p>
             </>
@@ -68,19 +68,19 @@ export function ExpenseHeroCard({
               : "grid grid-cols-2 gap-3 lg:w-[22rem] lg:shrink-0"
           }
         >
-          <div className="min-w-0 rounded-2xl bg-white/85 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#46597A]">
+          <div className="min-w-0 rounded-2xl bg-card/85 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-2">
               Hari ini
             </p>
-            <p className="mt-1 whitespace-nowrap text-[clamp(1rem,4.6vw,1.125rem)] font-semibold tabular-nums text-[#17304F]">
+            <p className="mt-1 whitespace-nowrap text-[clamp(1rem,4.6vw,1.125rem)] font-semibold tabular-nums text-ink">
               {formatIDR(todayMinor)}
             </p>
           </div>
-          <div className="min-w-0 rounded-2xl bg-white/85 p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#46597A]">
+          <div className="min-w-0 rounded-2xl bg-card/85 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-2">
               Sisa anggaran
             </p>
-            <p className="mt-1 whitespace-nowrap text-[clamp(1rem,4.6vw,1.125rem)] font-semibold tabular-nums text-[#17304F]">
+            <p className="mt-1 whitespace-nowrap text-[clamp(1rem,4.6vw,1.125rem)] font-semibold tabular-nums text-ink">
               {remainingMinor === null ? "Belum diatur" : formatIDR(remainingMinor)}
             </p>
           </div>

@@ -48,34 +48,34 @@ export function GoldReportSection({ scope, liquidBalanceMinor }: GoldReportSecti
       : 0;
 
   return (
-    <div className="rounded-3xl border border-[#D8E2EE] bg-[#F8FAFC] p-6 shadow-xs print:break-inside-avoid">
+    <div className="rounded-3xl border border-card-border bg-surface-subtle p-6 shadow-xs print:break-inside-avoid">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#46597A]">
-          <Coins className="h-4 w-4 text-amber-500" aria-hidden="true" />
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-2">
+          <Coins className="h-4 w-4 text-gold-accent" aria-hidden="true" />
           Aset Emas & Logam Mulia ({scope === "shared" ? "Bersama" : "Pribadi"})
         </h3>
-        <span className="text-xs text-[#5C7191]">
+        <span className="text-xs text-ink-3">
           {formatGrams(data.totalWeightGrams)} · {data.itemCount} item
         </span>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-[#EAEEF4] bg-white p-4">
-          <p className="text-xs text-[#5C7191]">Taksiran Nilai Pasar Terkini</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-[#17304F]">
+        <div className="rounded-2xl border border-row-divider bg-card p-4">
+          <p className="text-xs text-ink-3">Taksiran Nilai Pasar Terkini</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
             {formatIDR(data.totalEstimatedValueMinor)}
           </p>
           <div className="mt-2 flex items-center gap-1.5 text-xs">
             {data.totalUnrealizedPnLMinor >= 0 ? (
-              <TrendingUp className="h-3.5 w-3.5 text-[#166534]" />
+              <TrendingUp className="h-3.5 w-3.5 text-green" />
             ) : (
-              <TrendingDown className="h-3.5 w-3.5 text-[#B91C1C]" />
+              <TrendingDown className="h-3.5 w-3.5 text-danger" />
             )}
             <span
               className={`font-semibold tabular-nums ${
                 data.totalUnrealizedPnLMinor >= 0
-                  ? "text-[#166534]"
-                  : "text-[#B91C1C]"
+                  ? "text-green"
+                  : "text-danger"
               }`}
             >
               {data.totalUnrealizedPnLMinor >= 0 ? "+" : ""}
@@ -83,18 +83,18 @@ export function GoldReportSection({ scope, liquidBalanceMinor }: GoldReportSecti
               {data.totalUnrealizedPnLMinor >= 0 ? "+" : ""}
               {data.totalUnrealizedPnLPercent}%)
             </span>
-            <span className="text-[#5C7191]">vs modal beli</span>
+            <span className="text-ink-3">vs modal beli</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#EAEEF4] bg-white p-4">
-          <p className="text-xs text-[#5C7191]">Porsi dalam Total Aset Keluarga</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-[#17304F]">
+        <div className="rounded-2xl border border-row-divider bg-card p-4">
+          <p className="text-xs text-ink-3">Porsi dalam Total Aset Keluarga</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
             {goldPercentage}% Emas
           </p>
-          <p className="mt-2 text-xs text-[#5C7191]">
-            Kas Cair: <strong className="tabular-nums text-[#17304F]">{formatIDR(liquidBalanceMinor)}</strong> · Total:{" "}
-            <strong className="tabular-nums text-[#17304F]">{formatIDR(totalNetWorthMinor)}</strong>
+          <p className="mt-2 text-xs text-ink-3">
+            Kas Cair: <strong className="tabular-nums text-ink">{formatIDR(liquidBalanceMinor)}</strong> · Total:{" "}
+            <strong className="tabular-nums text-ink">{formatIDR(totalNetWorthMinor)}</strong>
           </p>
         </div>
       </div>

@@ -11,7 +11,7 @@ export function Skeleton({ className, ...props }: SkeletonProps) {
     <div
       aria-hidden="true"
       className={cn(
-        "animate-pulse rounded-2xl bg-[#E5EDF5] motion-reduce:animate-none",
+        "animate-pulse rounded-2xl bg-bar-track motion-reduce:animate-none",
         className,
       )}
       {...props}

@@ -80,7 +80,7 @@ export function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={label}
       className={cn(
-        "inline-flex w-full rounded-full bg-[#EFF4FA] p-1 sm:w-auto",
+        "inline-flex w-full rounded-full bg-blue-wash p-1 sm:w-auto",
         className,
       )}
     >
@@ -102,11 +102,11 @@ export function SegmentedControl<T extends string>({
             onClick={() => selectAt(index)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
-              "min-h-11 flex-1 rounded-full px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4F87] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFF4FA] sm:flex-none",
+              "min-h-11 flex-1 rounded-full px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-blue-wash sm:flex-none",
               selected
-                ? "bg-white font-semibold text-[#17304F] shadow-sm"
-                : "font-medium text-[#46597A] hover:text-[#17304F]",
-              option.disabled && "cursor-not-allowed text-[#46597A] hover:text-[#46597A]",
+                ? "bg-card font-semibold text-ink shadow-sm"
+                : "font-medium text-ink-2 hover:text-ink",
+              option.disabled && "cursor-not-allowed text-ink-2 hover:text-ink-2",
             )}
           >
             {option.label}

@@ -258,17 +258,17 @@ export function SpendingChart({
       data-testid="spending-chart"
       aria-labelledby="spending-title"
       className={cn(
-        "min-w-0 rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento",
+        "min-w-0 rounded-3xl border border-card-border bg-card p-6 shadow-bento",
         loading && "opacity-60",
       )}
       aria-busy={loading || undefined}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 id="spending-title" className="text-lg font-semibold text-[#17304F]">
+          <h2 id="spending-title" className="text-lg font-semibold text-ink">
             Rincian pengeluaran
           </h2>
-          <p className="mt-1 text-sm text-[#46597A]">
+          <p className="mt-1 text-sm text-ink-2">
             {formatIDR(activeSpending.totalOutMinor)}
             {isPersonal
               ? " keluar dari dompet pribadimu pada periode ini."
@@ -283,7 +283,7 @@ export function SpendingChart({
             onChange={changeScope}
           />
           <div
-            className="inline-flex shrink-0 self-start rounded-full bg-[#EFF4FA] p-1 sm:self-end lg:self-auto"
+            className="inline-flex shrink-0 self-start rounded-full bg-blue-wash p-1 sm:self-end lg:self-auto"
             role="tablist"
             aria-label="Periode grafik"
           >
@@ -295,10 +295,10 @@ export function SpendingChart({
                 aria-selected={period === item}
                 onClick={() => changePeriod(item)}
                 className={cn(
-                  "min-h-11 rounded-full px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D4F87] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EFF4FA]",
+                  "min-h-11 rounded-full px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-blue-wash",
                   period === item
-                    ? "bg-white text-[#17304F] shadow-sm"
-                    : "text-[#46597A] hover:text-[#17304F]",
+                    ? "bg-card text-ink shadow-sm"
+                    : "text-ink-2 hover:text-ink",
                 )}
               >
                 {item}
@@ -314,14 +314,14 @@ export function SpendingChart({
             ref={pillRef}
             aria-hidden="true"
             data-testid="spending-tooltip"
-            className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] z-10 max-w-full rounded-full bg-[#14273F] px-3 py-1.5 text-xs font-semibold leading-tight text-white shadow-pill"
+            className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] z-10 max-w-full rounded-full bg-navy px-3 py-1.5 text-xs font-semibold leading-tight text-white shadow-pill"
             style={pillStyle}
           >
             {pillText}
           </div>
         ) : null}
 
-        <div className="rounded-2xl bg-[#EFF4FA] px-3 pb-2 pt-4 sm:px-4">
+        <div className="rounded-2xl bg-blue-wash px-3 pb-2 pt-4 sm:px-4">
           <div
             role="group"
             aria-label={`Grafik pengeluaran ${isPersonal ? "pribadi" : "bersama"} ${chartLabel}, total ${formatIDR(
@@ -367,7 +367,7 @@ export function SpendingChart({
                   className="group flex h-full min-w-0 items-end justify-center rounded-t-lg focus-visible:shadow-none focus-visible:outline-none"
                 >
                   <span
-                    className="block w-full max-w-10 rounded-t-lg bg-[#1D4F87] group-focus-visible:ring-2 group-focus-visible:ring-[#1D4F87] group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-[#EFF4FA]"
+                    className="block w-full max-w-10 rounded-t-lg bg-blue group-focus-visible:ring-2 group-focus-visible:ring-blue group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-blue-wash"
                     style={{ height: barHeight(bucket.amountMinor) }}
                     data-testid="spending-bar-fill"
                   />
@@ -385,7 +385,7 @@ export function SpendingChart({
                 <span
                   key={`${bucket.weekStart}-label`}
                   data-testid="spending-axis-label"
-                  className="absolute top-0 whitespace-nowrap text-[10px] font-semibold leading-3 text-[#46597A]"
+                  className="absolute top-0 whitespace-nowrap text-[10px] font-semibold leading-3 text-ink-2"
                   style={{
                     left: first ? 0 : last ? undefined : `${((index + 0.5) / buckets.length) * 100}%`,
                     right: last ? 0 : undefined,
@@ -405,7 +405,7 @@ export function SpendingChart({
       </p>
 
       {activeSpending.totalOutMinor === 0 ? (
-        <p className="mt-3 text-sm text-[#46597A]">
+        <p className="mt-3 text-sm text-ink-2">
           {isPersonal
             ? "Belum ada pengeluaran dari dompet pribadimu pada periode ini."
             : "Belum ada pengeluaran pada periode ini."}

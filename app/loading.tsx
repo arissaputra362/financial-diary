@@ -16,13 +16,13 @@ export default function Loading() {
     return (
       <main className="mx-auto flex w-full max-w-6xl flex-1 items-center justify-center px-4 pb-28 pt-6">
         <section className="max-w-md text-center" role="alert">
-          <h1 className="text-lg font-semibold text-[#17304F]">Halaman belum merespons</h1>
-          <p className="mt-2 text-sm text-[#5D7187]">
+          <h1 className="text-lg font-semibold text-ink">Halaman belum merespons</h1>
+          <p className="mt-2 text-sm text-ink-2">
             Koneksi ke server terlalu lama. Coba muat ulang halaman.
           </p>
           <button
             type="button"
-            className="mt-5 rounded-xl bg-[#17304F] px-4 py-2 text-sm font-semibold text-white"
+            className="mt-5 rounded-xl bg-brand-green px-4 py-2 text-sm font-semibold text-white"
             onClick={() => window.location.reload()}
           >
             Muat ulang

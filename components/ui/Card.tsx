@@ -13,11 +13,11 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hairline border and the shared bento shadow, never a gradient.
 */
 const variantClasses: Record<CardVariant, string> = {
-  default: "border-[#D8E2EE] bg-white",
-  tint: "border-[#BCD6EF] bg-[#DCEBFA]",
-  mint: "border-[#BBE5C7] bg-[#DCFCE7]",
-  danger: "border-[#F3C2C2] bg-[#FDECEC]",
-  navy: "border-white/10 bg-[#14273F] text-white",
+  default: "border-card-border bg-card",
+  tint: "border-blue-border bg-blue-tint",
+  mint: "border-success-border bg-mint",
+  danger: "border-danger-border bg-danger-bg",
+  navy: "border-white/10 bg-navy text-white",
 };
 
 export function Card({

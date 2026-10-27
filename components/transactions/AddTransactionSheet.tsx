@@ -12,7 +12,7 @@ const ReceiptScanner = dynamic(
   () => import("./ReceiptScanner").then((module) => module.ReceiptScanner),
   {
     ssr: false,
-    loading: () => <p className="py-8 text-center text-sm text-[#5C7191]">Menyiapkan pemindai struk...</p>,
+    loading: () => <p className="py-8 text-center text-sm text-ink-3">Menyiapkan pemindai struk...</p>,
   },
 );
 
@@ -54,7 +54,7 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-[#14273F]/40 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();
       }}
@@ -65,23 +65,23 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="add-transaction-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
       >
         <div className="flex items-center justify-between">
-          <h2 id="add-transaction-title" className="text-lg font-semibold tracking-tight text-[#17304F]">
+          <h2 id="add-transaction-title" className="text-lg font-semibold tracking-tight text-ink">
             Tambah transaksi
           </h2>
           <button
             type="button"
             onClick={close}
             aria-label="Tutup"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-[#EFF4FA] p-1" role="tablist" aria-label="Cara mengisi transaksi">
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-blue-wash p-1" role="tablist" aria-label="Cara mengisi transaksi">
           <button
             type="button"
             role="tab"
@@ -89,7 +89,7 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
             onClick={() => setTab("manual")}
             className={cn(
               "flex min-h-11 items-center justify-center gap-1.5 rounded-full text-sm font-semibold transition-colors",
-              tab === "manual" ? "bg-white text-[#17304F] shadow-sm" : "text-[#46597A] hover:text-[#17304F]",
+              tab === "manual" ? "bg-card text-ink shadow-sm" : "text-ink-2 hover:text-ink",
             )}
           >
             <PenLine className="h-4 w-4" aria-hidden="true" />
@@ -102,7 +102,7 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
             onClick={() => setTab("scan")}
             className={cn(
               "flex min-h-11 items-center justify-center gap-1.5 rounded-full text-sm font-semibold transition-colors",
-              tab === "scan" ? "bg-white text-[#17304F] shadow-sm" : "text-[#46597A] hover:text-[#17304F]",
+              tab === "scan" ? "bg-card text-ink shadow-sm" : "text-ink-2 hover:text-ink",
             )}
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />

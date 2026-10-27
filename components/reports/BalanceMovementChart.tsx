@@ -196,12 +196,12 @@ export function BalanceMovementChart({
   return (
     <section
       aria-labelledby="balance-movement-title"
-      className="min-w-0 break-inside-avoid rounded-3xl border border-[#D8E2EE] bg-white p-5 shadow-bento sm:p-6 print:p-3"
+      className="min-w-0 break-inside-avoid rounded-3xl border border-card-border bg-card p-5 shadow-bento sm:p-6 print:p-3"
     >
-      <h2 id="balance-movement-title" className="text-lg font-semibold text-[#17304F] print:text-sm">
+      <h2 id="balance-movement-title" className="text-lg font-semibold text-ink print:text-sm">
         Pergerakan saldo harian
       </h2>
-      <p className="mt-1 text-sm text-[#46597A] print:mt-0 print:text-[7pt]">
+      <p className="mt-1 text-sm text-ink-2 print:mt-0 print:text-[7pt]">
         Saldo akhir tiap hari pada {monthLabel}. Gunakan sumbu untuk membandingkan nilai; tap atau
         gunakan panah untuk melihat nominal tepat tiap tanggal.
       </p>
@@ -211,7 +211,7 @@ export function BalanceMovementChart({
           {yTicks.map((tick, index) => (
             <span
               key={`${tick.value}-${index}`}
-              className="absolute right-0 whitespace-nowrap text-[10px] font-semibold leading-none tabular-nums text-[#46597A] print:text-[6pt]"
+              className="absolute right-0 whitespace-nowrap text-[10px] font-semibold leading-none tabular-nums text-ink-2 print:text-[6pt]"
               style={{ top: `${tick.y}%`, transform: "translateY(-50%)" }}
             >
               {compactIDRFormatter.format(tick.value)}
@@ -224,7 +224,7 @@ export function BalanceMovementChart({
             ref={pillRef}
             aria-hidden="true"
             data-testid="balance-tooltip"
-            className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] z-10 max-w-full rounded-full bg-[#14273F] px-3 py-1.5 text-xs font-semibold leading-tight text-white shadow-pill"
+            className="pointer-events-none absolute bottom-[calc(100%+0.5rem)] z-10 max-w-full rounded-full bg-navy px-3 py-1.5 text-xs font-semibold leading-tight text-white shadow-pill"
             style={pillStyle}
           >
             {pillText}
@@ -236,7 +236,7 @@ export function BalanceMovementChart({
           aria-label={`Grafik saldo harian ${scopeLabel}, ${monthLabel}. Skala saldo ${formatIDR(min)} sampai ${formatIDR(max)}. Gunakan panah kiri kanan untuk membaca nominal tepat tiap tanggal.`}
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
-          className="relative h-40 min-w-0 overflow-hidden rounded-2xl bg-[#EFF4FA] sm:h-56 print:h-20"
+          className="relative h-40 min-w-0 overflow-hidden rounded-2xl bg-blue-wash sm:h-56 print:h-20"
         >
           <svg
             viewBox="0 0 100 100"
@@ -244,7 +244,7 @@ export function BalanceMovementChart({
             aria-hidden="true"
             className="absolute inset-0 h-full w-full"
           >
-            <path d={areaPath} fill="#DCEBFA" fillOpacity="0.65" />
+            <path d={areaPath} fill="var(--color-blue-tint)" fillOpacity="0.65" />
             {yTicks.map((tick, index) => (
               <line
                 key={`grid-${index}`}
@@ -252,7 +252,7 @@ export function BalanceMovementChart({
                 x2="100"
                 y1={tick.y}
                 y2={tick.y}
-                stroke="#C9D6E4"
+                stroke="var(--color-input-border)"
                 strokeWidth="0.6"
                 vectorEffect="non-scaling-stroke"
               />
@@ -260,7 +260,7 @@ export function BalanceMovementChart({
             <polyline
               points={linePath}
               fill="none"
-              stroke="#1D4F87"
+              stroke="var(--color-blue)"
               strokeWidth="2.5"
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -298,9 +298,9 @@ export function BalanceMovementChart({
               >
                 <span
                   className={cn(
-                    "block rounded-full bg-[#1D4F87] ring-2 ring-white transition-transform",
+                    "block rounded-full bg-blue ring-2 ring-white transition-transform",
                     active ? "h-2.5 w-2.5" : "h-1.5 w-1.5 opacity-70",
-                    focused && "h-3.5 w-3.5 ring-2 ring-[#1D4F87] ring-offset-2 ring-offset-[#EFF4FA]",
+                    focused && "h-3.5 w-3.5 ring-2 ring-blue ring-offset-2 ring-offset-blue-wash",
                   )}
                 />
               </button>
@@ -317,7 +317,7 @@ export function BalanceMovementChart({
               <span
                 key={`${point.date}-label-${index}`}
                 data-testid="balance-axis-label"
-                className="absolute top-0 whitespace-nowrap text-[10px] font-semibold leading-3 text-[#46597A]"
+                className="absolute top-0 whitespace-nowrap text-[10px] font-semibold leading-3 text-ink-2"
                 style={{
                   left: first ? 0 : last ? undefined : `${point.x}%`,
                   right: last ? 0 : undefined,

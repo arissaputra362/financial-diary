@@ -30,11 +30,11 @@ export function Field({
     <div className={cn("flex flex-col gap-1.5", className)}>
       <label
         htmlFor={id}
-        className="text-xs font-medium uppercase tracking-wider text-[#46597A]"
+        className="text-xs font-medium uppercase tracking-wider text-ink-2"
       >
         {label}
         {required ? (
-          <span className="ml-1 text-[#B91C1C]" aria-hidden="true">
+          <span className="ml-1 text-danger" aria-hidden="true">
             *
           </span>
         ) : null}
@@ -44,18 +44,18 @@ export function Field({
         {children}
         {isLoading ? (
           <Loader2
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-[#5C7191]"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-ink-3"
             aria-hidden="true"
           />
         ) : null}
       </div>
 
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-xs text-[#B91C1C]">
+        <p id={`${id}-error`} role="alert" className="text-xs text-danger">
           {error}
         </p>
       ) : helperText ? (
-        <p id={`${id}-helper`} className="text-xs text-[#5C6C86]">
+        <p id={`${id}-helper`} className="text-xs text-placeholder">
           {helperText}
         </p>
       ) : null}
@@ -66,11 +66,11 @@ export function Field({
 /** Shared control styling so Input, Select, and TextArea stay consistent. */
 export const controlClasses = (hasError: boolean) =>
   cn(
-    "w-full rounded-2xl border bg-white px-4 py-3 text-[15px] text-[#17304F]",
-    "placeholder:text-[#5C6C86] transition-colors",
+    "w-full rounded-2xl border bg-card px-4 py-3 text-[15px] text-ink",
+    "placeholder:text-placeholder transition-colors",
     "focus:outline-none focus:ring-4",
-    "disabled:cursor-not-allowed disabled:bg-[#EFF4FA] disabled:text-[#46597A]",
+    "disabled:cursor-not-allowed disabled:bg-blue-wash disabled:text-ink-2",
     hasError
-      ? "border-[#B91C1C] focus:border-[#B91C1C] focus:ring-[#B91C1C]/15"
-      : "border-[#C9D6E4] focus:border-[#1D4F87] focus:ring-[#1D4F87]/15",
+      ? "border-danger focus:border-danger focus:ring-danger/15"
+      : "border-input-border focus:border-blue focus:ring-blue/15",
   );

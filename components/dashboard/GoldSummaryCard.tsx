@@ -30,20 +30,20 @@ export function GoldSummaryCard() {
   return (
     <section
       aria-labelledby="gold-summary-title"
-      className="relative rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento"
+      className="relative rounded-3xl border border-card-border bg-card p-6 shadow-bento"
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2
           id="gold-summary-title"
-          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#46597A]"
+          className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-2"
         >
-          <Coins className="h-4 w-4 text-amber-500" aria-hidden="true" />
+          <Coins className="h-4 w-4 text-gold-accent" aria-hidden="true" />
           Tabungan Emas
         </h2>
         <Link
           href="/gold"
-          className="flex items-center gap-0.5 text-xs font-semibold text-[#1D4F87] hover:underline"
+          className="flex items-center gap-0.5 text-xs font-semibold text-blue hover:underline"
           aria-label="Lihat semua tabungan emas"
         >
           Lihat semua
@@ -54,17 +54,17 @@ export function GoldSummaryCard() {
       {loading ? (
         /* Skeleton */
         <div className="mt-4 space-y-2">
-          <div className="h-8 w-40 animate-pulse rounded-xl bg-[#EFF4FA]" />
-          <div className="h-4 w-24 animate-pulse rounded-lg bg-[#F1F5FA]" />
+          <div className="h-8 w-40 animate-pulse rounded-xl bg-blue-wash" />
+          <div className="h-4 w-24 animate-pulse rounded-lg bg-canvas" />
         </div>
       ) : data ? (
         data.itemCount === 0 ? (
           /* Empty */
           <div className="mt-5 flex flex-col items-start gap-3">
-            <p className="text-sm text-[#5C7191]">Belum ada catatan emas.</p>
+            <p className="text-sm text-ink-3">Belum ada catatan emas.</p>
             <Link
               href="/gold"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#166534] px-4 py-2 text-xs font-semibold text-white hover:bg-[#155C30]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-green px-4 py-2 text-xs font-semibold text-white hover:bg-brand-green-hover"
             >
               <Plus className="h-3.5 w-3.5" />
               Catat Emas
@@ -74,10 +74,10 @@ export function GoldSummaryCard() {
           /* Data */
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-2xl font-extrabold tracking-tight tabular-nums text-[#17304F]">
+              <p className="text-2xl font-extrabold tracking-tight tabular-nums text-ink">
                 {formatIDR(data.totalEstimatedValueMinor)}
               </p>
-              <p className="mt-0.5 text-xs text-[#5C7191]">
+              <p className="mt-0.5 text-xs text-ink-3">
                 {formatGrams(data.totalWeightGrams)} · {data.itemCount} item
               </p>
             </div>
@@ -86,8 +86,8 @@ export function GoldSummaryCard() {
               <div
                 className={`flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-xs font-bold sm:self-auto ${
                   data.totalUnrealizedPnLMinor >= 0
-                    ? "bg-[#DCFCE7] text-[#166534]"
-                    : "bg-[#FDECEC] text-[#B91C1C]"
+                    ? "bg-mint text-green"
+                    : "bg-danger-bg text-danger"
                 }`}
               >
                 {data.totalUnrealizedPnLMinor >= 0 ? (
@@ -109,7 +109,7 @@ export function GoldSummaryCard() {
       {data && data.itemCount > 0 ? (
         <Link
           href="/gold"
-          className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-[#D8E2EE] py-2.5 text-xs font-semibold text-[#5C7191] hover:border-[#BCD6EF] hover:text-[#17304F]"
+          className="mt-5 flex w-full items-center justify-center gap-1.5 rounded-2xl border border-card-border py-2.5 text-xs font-semibold text-ink-3 hover:border-blue-border hover:text-ink"
         >
           Kelola Tabungan Emas
           <ChevronRight className="h-3.5 w-3.5" />

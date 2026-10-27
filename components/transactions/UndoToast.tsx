@@ -39,9 +39,9 @@ export function UndoToast({ message, onUndo, onExpire, onDismiss, seconds = 5 }:
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-x-4 bottom-24 z-50 mx-auto flex max-w-md items-center gap-3 overflow-hidden rounded-full bg-[#14273F]/95 px-5 py-3 text-white shadow-2xl backdrop-blur-md lg:bottom-8"
+      className="fixed inset-x-4 bottom-24 z-50 mx-auto flex max-w-md items-center gap-3 overflow-hidden rounded-full bg-navy/95 px-5 py-3 text-white shadow-2xl backdrop-blur-md lg:bottom-8"
     >
-      <Trash2 className="h-4 w-4 shrink-0 text-[#9FB9D6]" aria-hidden="true" />
+      <Trash2 className="h-4 w-4 shrink-0 text-on-dark-muted" aria-hidden="true" />
       <p className="min-w-0 flex-1 truncate text-sm">{message}</p>
       <button
         ref={undoRef}
@@ -56,7 +56,7 @@ export function UndoToast({ message, onUndo, onExpire, onDismiss, seconds = 5 }:
         type="button"
         onClick={onDismiss}
         aria-label="Tutup notifikasi"
-        className="flex h-11 w-8 items-center justify-center rounded-full text-[#9FB9D6] hover:bg-white/10"
+        className="flex h-11 w-8 items-center justify-center rounded-full text-on-dark-muted hover:bg-white/10"
       >
         <X className="h-4 w-4" aria-hidden="true" />
       </button>

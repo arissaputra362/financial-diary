@@ -665,8 +665,8 @@ export function ActivityView({
     <div className="space-y-5">
       <div className="flex items-start justify-between gap-3 px-1 print:hidden">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">Financial Diary</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">Aktivitas</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">Financial Diary</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Aktivitas</h1>
         </div>
         <Button
           ref={addTriggerRef}
@@ -703,8 +703,8 @@ export function ActivityView({
             className={cn(
               "min-h-11 rounded-full px-2 text-center text-sm font-semibold transition-colors sm:px-5",
               view === value
-                ? "bg-[#14273F] text-white"
-                : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]",
+                ? "bg-navy text-white"
+                : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
             )}
           >
             {label}
@@ -720,14 +720,14 @@ export function ActivityView({
       >
       {view === "active" || view === "ringkasan" ? (
         <div
-          className="flex items-center justify-between gap-2 rounded-full border border-[#D8E2EE] bg-white p-1.5 pl-5 print:hidden"
+          className="flex items-center justify-between gap-2 rounded-full border border-card-border bg-card p-1.5 pl-5 print:hidden"
           role="group"
           aria-label="Pilih bulan aktivitas"
         >
           <button
             type="button"
             onClick={openMonthPicker}
-            className="min-h-11 min-w-0 truncate rounded-full px-3 text-left text-sm font-bold text-[#17304F] hover:bg-[#EFF4FA] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/15"
+            className="min-h-11 min-w-0 truncate rounded-full px-3 text-left text-sm font-bold text-ink hover:bg-blue-wash focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue/15"
             aria-label={`Pilih bulan, saat ini ${monthKeyLabel(activeMonth)}`}
           >
             {monthKeyLabel(activeMonth)}
@@ -737,7 +737,7 @@ export function ActivityView({
               type="button"
               onClick={() => changeMonth(-1)}
               aria-label="Lihat bulan sebelumnya"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -746,7 +746,7 @@ export function ActivityView({
               onClick={() => changeMonth(1)}
               disabled={activeMonth >= currentMonthKey()}
               aria-label="Lihat bulan berikutnya"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA] disabled:cursor-not-allowed disabled:text-[#5C7191] disabled:hover:bg-transparent"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent"
             >
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -760,28 +760,28 @@ export function ActivityView({
             type="button"
             aria-expanded={dateFilterOpen}
             onClick={() => (dateFilterOpen ? setDateFilterOpen(false) : openDateFilter())}
-            className="min-h-11 rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+            className="min-h-11 rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
           >
             {dateFrom || dateTo ? "Ubah filter tanggal" : "Filter tanggal"}
           </button>
           {dateFilterOpen ? (
-            <div className="rounded-2xl border border-[#D8E2EE] bg-white p-4">
-              <p className="text-sm font-semibold text-[#17304F]">Filter tanggal</p>
-              <p className="mt-1 text-xs text-[#5C7191]">
+            <div className="rounded-2xl border border-card-border bg-card p-4">
+              <p className="text-sm font-semibold text-ink">Filter tanggal</p>
+              <p className="mt-1 text-xs text-ink-3">
                 Pilih rentang di dalam {monthKeyLabel(activeMonth)}.
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-1.5 text-sm font-semibold text-[#46597A]">
+                <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
                   Dari
                   <input
                     type="date"
                     value={draftFrom}
                     max={draftTo || monthKeyRange(activeMonth).to}
                     onChange={(event) => setDraftFrom(event.target.value)}
-                    className="min-h-11 rounded-2xl border border-[#C9D6E4] px-3 text-sm text-[#17304F] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                    className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                   />
                 </label>
-                <label className="flex flex-col gap-1.5 text-sm font-semibold text-[#46597A]">
+                <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
                   Sampai
                   <input
                     type="date"
@@ -789,19 +789,19 @@ export function ActivityView({
                     min={draftFrom || monthKeyRange(activeMonth).from}
                     max={monthKeyRange(activeMonth).to}
                     onChange={(event) => setDraftTo(event.target.value)}
-                    className="min-h-11 rounded-2xl border border-[#C9D6E4] px-3 text-sm text-[#17304F] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                    className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                   />
                 </label>
               </div>
               {dateFilterError ? (
-                <p role="alert" className="mt-2 text-xs text-[#B91C1C]">{dateFilterError}</p>
+                <p role="alert" className="mt-2 text-xs text-danger">{dateFilterError}</p>
               ) : null}
               <div className="mt-3 flex flex-wrap justify-end gap-2">
                 {(draftFrom || draftTo) ? (
                   <button
                     type="button"
                     onClick={clearDateFilter}
-                    className="min-h-11 rounded-full border border-[#BFD3E8] px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                    className="min-h-11 rounded-full border border-blue-border px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
                   >
                     Hapus
                   </button>
@@ -809,7 +809,7 @@ export function ActivityView({
                 <button
                   type="button"
                   onClick={applyDateFilter}
-                  className="min-h-11 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+                  className="min-h-11 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
                 >
                   Terapkan
                 </button>
@@ -821,46 +821,46 @@ export function ActivityView({
 
       {monthPickerOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#14273F]/35 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-navy/35 p-4"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setMonthPickerOpen(false);
           }}
         >
           <div
-            className="w-full max-w-sm rounded-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl"
+            className="w-full max-w-sm rounded-3xl border border-card-border bg-card p-5 shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-labelledby="month-picker-title"
           >
-            <h2 id="month-picker-title" className="text-lg font-semibold text-[#17304F]">
+            <h2 id="month-picker-title" className="text-lg font-semibold text-ink">
               Pilih bulan aktivitas
             </h2>
-            <p className="mt-1 text-sm text-[#5C7191]">
+            <p className="mt-1 text-sm text-ink-3">
               Pilih bulan dan tahun untuk melihat transaksi.
             </p>
-            <label className="mt-5 flex flex-col gap-2 text-sm font-semibold text-[#46597A]">
+            <label className="mt-5 flex flex-col gap-2 text-sm font-semibold text-ink-2">
               Bulan dan tahun
               <input
                 type="month"
                 value={monthPickerValue}
                 max={currentMonthKey()}
                 onChange={(event) => setMonthPickerValue(event.target.value)}
-                className="min-h-12 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-base text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                className="min-h-12 rounded-2xl border border-input-border bg-card px-3 text-base text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
               />
             </label>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setMonthPickerOpen(false)}
-                className="min-h-11 rounded-full border border-[#BFD3E8] px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                className="min-h-11 rounded-full border border-blue-border px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={applyMonthPicker}
-                className="min-h-11 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white hover:bg-[#155C30]"
+                className="min-h-11 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
               >
                 Terapkan
               </button>
@@ -870,7 +870,7 @@ export function ActivityView({
       ) : null}
 
       {notice ? (
-        <p role="status" aria-live="polite" className="rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534] print:hidden">
+        <p role="status" aria-live="polite" className="rounded-2xl bg-mint px-4 py-3 text-sm font-medium text-green print:hidden">
           {notice}
         </p>
       ) : null}
@@ -891,9 +891,9 @@ export function ActivityView({
         <>
           {showFilters ? (
             <div className="space-y-3">
-              <p className="px-1 text-sm font-semibold text-[#46597A]">Jenis transaksi</p>
+              <p className="px-1 text-sm font-semibold text-ink-2">Jenis transaksi</p>
               <div
-                className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1 sm:rounded-2xl sm:bg-[#EFF4FA] sm:p-1"
+                className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1 sm:rounded-2xl sm:bg-blue-wash sm:p-1"
                 role="group"
                 aria-label="Saring transaksi"
               >
@@ -919,15 +919,15 @@ export function ActivityView({
                     className={cn(
                       "flex min-h-11 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors sm:border-0 sm:px-4",
                       listFilter === value
-                        ? "border-[#14273F] bg-[#14273F] text-white shadow-sm sm:bg-white sm:text-[#17304F]"
-                        : "border-[#D8E2EE] bg-white text-[#46597A] hover:text-[#17304F] sm:bg-transparent sm:hover:bg-white",
+                        ? "border-navy bg-navy text-white shadow-sm sm:bg-card sm:text-ink"
+                        : "border-card-border bg-card text-ink-2 hover:text-ink sm:bg-transparent sm:hover:bg-card",
                     )}
                   >
                     {label}
                   </button>
                 ))}
               </div>
-              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-[#D8E2EE] bg-white px-3 text-sm font-semibold text-[#46597A]">
+              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-card-border bg-card px-3 text-sm font-semibold text-ink-2">
                 <span className="shrink-0">Dompet</span>
                 <select
                   value={walletId}
@@ -944,7 +944,7 @@ export function ActivityView({
                       walletId: nextWalletId,
                     });
                   }}
-                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#17304F] outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none"
                   aria-label="Filter berdasarkan dompet"
                 >
                   <option value="">
@@ -964,7 +964,7 @@ export function ActivityView({
                 </select>
               </label>
               {walletsError ? (
-                <p role="status" className="text-xs text-[#B91C1C]">
+                <p role="status" className="text-xs text-danger">
                   {walletsError}
                 </p>
               ) : null}
@@ -974,10 +974,10 @@ export function ActivityView({
           {showFilters && !filterLoading && listFilter !== "all" && visibleRows.length === 0 ? (
             shouldOfferLoadMore(visibleRows.length, nextCursor) ? (
               <Card className="text-center">
-                <p className="text-[15px] font-medium text-[#17304F]">
+                <p className="text-[15px] font-medium text-ink">
                   Belum ada transaksi yang cocok di halaman ini.
                 </p>
-                <p className="mt-1 text-sm text-[#46597A]">
+                <p className="mt-1 text-sm text-ink-2">
                   Masih ada transaksi lain yang belum dimuat.
                 </p>
                 <Button
@@ -992,7 +992,7 @@ export function ActivityView({
               </Card>
             ) : (
               <Card className="text-center">
-                <p className="text-[15px] font-medium text-[#17304F]">
+                <p className="text-[15px] font-medium text-ink">
                   Tidak ada transaksi untuk saringan ini.
                 </p>
                 <button
@@ -1004,7 +1004,7 @@ export function ActivityView({
                     setListFilter("all");
                     writeUrl({ view: "active", month: activeMonth, filter: "all" });
                   }}
-                  className="mt-4 inline-flex min-h-11 items-center rounded-full border border-[#BFD3E8] bg-white px-5 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                  className="mt-4 inline-flex min-h-11 items-center rounded-full border border-blue-border bg-card px-5 text-sm font-semibold text-blue hover:bg-blue-wash"
                 >
                   Tampilkan semua
                 </button>

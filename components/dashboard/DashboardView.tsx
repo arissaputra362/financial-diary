@@ -136,11 +136,11 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
   return (
     <div className="space-y-6">
       <header className="px-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">
           Financial Diary
         </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">Beranda</h1>
-        <p suppressHydrationWarning className="mt-1 text-sm text-[#5C7191]">
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Beranda</h1>
+        <p suppressHydrationWarning className="mt-1 text-sm text-ink-3">
           {dateFormatter.format(new Date())}
         </p>
       </header>
@@ -149,7 +149,7 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
         <p
           role="status"
           aria-live="polite"
-          className="rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534]"
+          className="rounded-2xl bg-mint px-4 py-3 text-sm font-medium text-green"
         >
           {notice}
         </p>
@@ -158,13 +158,13 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
       {loading ? (
         <DashboardSkeleton />
       ) : error ? (
-        <div className="rounded-3xl border border-[#F3C2C2] bg-[#FDECEC] p-6 text-center">
-          <p className="text-[15px] font-semibold text-[#B91C1C]">{error}</p>
-          <p className="mt-1 text-sm text-[#46597A]">Periksa koneksimu lalu coba lagi.</p>
+        <div className="rounded-3xl border border-danger-border bg-danger-bg p-6 text-center">
+          <p className="text-[15px] font-semibold text-danger">{error}</p>
+          <p className="mt-1 text-sm text-ink-2">Periksa koneksimu lalu coba lagi.</p>
           <button
             type="button"
             onClick={retry}
-            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-5 text-sm font-semibold text-white hover:bg-[#155C30]"
+            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Coba lagi

@@ -105,12 +105,12 @@ export function TransactionList({
   if (error) {
     return (
       <Card variant="danger" className="text-center">
-        <p className="text-[15px] font-medium text-[#B91C1C]">{error}</p>
-        <p className="mt-1 text-sm text-[#46597A]">Periksa koneksimu lalu coba lagi.</p>
+        <p className="text-[15px] font-medium text-danger">{error}</p>
+        <p className="mt-1 text-sm text-ink-2">Periksa koneksimu lalu coba lagi.</p>
         <button
           type="button"
           onClick={onRetry}
-          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-5 text-sm font-semibold text-white hover:bg-[#155C30]"
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
         >
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
           Coba lagi
@@ -122,8 +122,8 @@ export function TransactionList({
   if (rows.length === 0) {
     return mode === "trash" ? (
       <Card className="text-center">
-        <h2 className="text-lg font-semibold text-[#17304F]">Trash masih kosong</h2>
-        <p className="mt-1 text-[15px] text-[#46597A]">
+        <h2 className="text-lg font-semibold text-ink">Trash masih kosong</h2>
+        <p className="mt-1 text-[15px] text-ink-2">
           Transaksi yang kamu hapus akan muncul di sini dan bisa dipulihkan.
         </p>
       </Card>
@@ -143,7 +143,7 @@ export function TransactionList({
     return (
       <div className="space-y-4">
         <Card className="px-4 py-2">
-          <ul className="divide-y divide-[#EAEEF4]">
+          <ul className="divide-y divide-row-divider">
             {rows.map((row) => (
               <RowItem
                 key={row.id}
@@ -173,10 +173,10 @@ export function TransactionList({
     <div className="space-y-4">
       {groupByDay(rows).map((group) => (
         <Card key={group.key} className="px-4 py-2">
-          <h3 className="px-1 pt-3 text-xs font-semibold uppercase tracking-wider text-[#5C7191]">
+          <h3 className="px-1 pt-3 text-xs font-semibold uppercase tracking-wider text-ink-3">
             {group.label}
           </h3>
-          <ul className="divide-y divide-[#EAEEF4]">
+          <ul className="divide-y divide-row-divider">
             {group.rows.map((row) => (
               <RowItem
                 key={row.id}
@@ -206,7 +206,7 @@ export function TransactionList({
 function LoadingMoreRows() {
   return (
     <div
-      className="space-y-3 rounded-3xl border border-[#D8E2EE] bg-white px-4 py-4"
+      className="space-y-3 rounded-3xl border border-card-border bg-card px-4 py-4"
       aria-busy="true"
       aria-label="Memuat transaksi lainnya"
     >
@@ -254,7 +254,7 @@ function RowItem({
   const signedAmount = formatSignedIDR(isIncome ? row.amountMinor : -row.amountMinor);
   const longAmount = signedAmount.length > 13;
   const amountColor =
-    transfer ? "text-[#17304F]" : isIncome ? "text-[#166534]" : "text-[#17304F]";
+    transfer ? "text-ink" : isIncome ? "text-green" : "text-ink";
 
   return (
     <li>
@@ -264,21 +264,21 @@ function RowItem({
           onClick={() => onOpenDetail(row)}
           disabled={busy}
           aria-label={`Buka detail transaksi ${signedAmount} ${title}`}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 text-left hover:bg-[#EFF4FA]"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 text-left hover:bg-blue-wash"
         >
           <span
             aria-hidden="true"
             className={cn(
               "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl",
-              transfer ? "bg-[#EFF4FA] text-[#1D4F87]" : categoryTone(row.category),
+              transfer ? "bg-blue-wash text-blue" : categoryTone(row.category),
             )}
           >
             {transfer ? <ArrowLeftRight className="h-5 w-5" /> : categoryEmoji(row.category)}
           </span>
 
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-medium text-[#17304F]">{title}</span>
-            <span className="mt-0.5 block truncate text-xs text-[#5C7191]">{subtitle}</span>
+            <span className="block truncate text-[15px] font-medium text-ink">{title}</span>
+            <span className="mt-0.5 block truncate text-xs text-ink-3">{subtitle}</span>
             {longAmount ? (
               <span className={cn("mt-1 block text-sm font-bold tabular-nums sm:hidden", amountColor)}>
                 {signedAmount}
@@ -303,7 +303,7 @@ function RowItem({
             onClick={() => onDelete(row)}
             disabled={busy}
             aria-label={`Hapus transaksi ${signedAmount} ${title}`}
-            className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-[#46597A] hover:bg-[#FDECEC] hover:text-[#B91C1C] disabled:cursor-not-allowed disabled:text-[#5C7191]"
+            className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-danger-bg hover:text-danger disabled:cursor-not-allowed disabled:text-ink-3"
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             Hapus
@@ -314,7 +314,7 @@ function RowItem({
             onClick={() => onRestore(row)}
             disabled={busy}
             aria-label={`Pulihkan transaksi ${signedAmount} ${title}`}
-            className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-[#46597A] hover:bg-[#DCFCE7] hover:text-[#166534] disabled:cursor-not-allowed disabled:text-[#5C7191]"
+            className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-mint hover:text-green disabled:cursor-not-allowed disabled:text-ink-3"
           >
             <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
             Pulihkan

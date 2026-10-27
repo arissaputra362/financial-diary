@@ -185,11 +185,11 @@ export function BudgetView({
   return (
     <div className="space-y-6">
       <header className="px-1">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-3">
           {me?.household?.name ?? "Keluarga"}
         </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#17304F]">Budget</h1>
-        <p className="mt-1 text-sm text-[#5C7191]">
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Budget</h1>
+        <p className="mt-1 text-sm text-ink-3">
           Budget keluarga dan budget pribadimu dihitung terpisah.
         </p>
       </header>
@@ -197,13 +197,13 @@ export function BudgetView({
       {loading ? (
         <Skeleton className="h-64 w-full" />
       ) : loadError ? (
-        <div className="rounded-3xl border border-[#F3C2C2] bg-[#FDECEC] p-6 text-center">
-          <p className="text-[15px] font-semibold text-[#B91C1C]">Budget belum bisa dimuat.</p>
-          <p className="mt-1 text-sm text-[#46597A]">Periksa koneksimu lalu coba lagi.</p>
+        <div className="rounded-3xl border border-danger-border bg-danger-bg p-6 text-center">
+          <p className="text-[15px] font-semibold text-danger">Budget belum bisa dimuat.</p>
+          <p className="mt-1 text-sm text-ink-2">Periksa koneksimu lalu coba lagi.</p>
           <button
             type="button"
             onClick={retry}
-            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-5 text-sm font-semibold text-white hover:bg-[#155C30]"
+            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Coba lagi
@@ -288,13 +288,13 @@ function BudgetContent({
       <section
         id="budget-summary"
         aria-labelledby="budget-summary-title"
-        className="rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento lg:col-span-7"
+        className="rounded-3xl border border-card-border bg-card p-6 shadow-bento lg:col-span-7"
       >
         <h2
           id="budget-summary-title"
-          className="flex items-center gap-2 text-lg font-semibold text-[#17304F]"
+          className="flex items-center gap-2 text-lg font-semibold text-ink"
         >
-          <Wallet className="h-5 w-5 text-[#1D4F87]" aria-hidden="true" />
+          <Wallet className="h-5 w-5 text-blue" aria-hidden="true" />
           Budget bulan ini
         </h2>
 
@@ -303,22 +303,22 @@ function BudgetContent({
             <p
               className={
                 longRemaining
-                  ? "mt-4 whitespace-nowrap text-[clamp(1.1rem,4.5vw,1.875rem)] font-bold tracking-tight tabular-nums text-[#17304F]"
-                  : "mt-4 whitespace-nowrap text-[clamp(1.6rem,6vw,1.875rem)] font-bold tracking-tight tabular-nums text-[#17304F]"
+                  ? "mt-4 whitespace-nowrap text-[clamp(1.1rem,4.5vw,1.875rem)] font-bold tracking-tight tabular-nums text-ink"
+                  : "mt-4 whitespace-nowrap text-[clamp(1.6rem,6vw,1.875rem)] font-bold tracking-tight tabular-nums text-ink"
               }
             >
               {formatIDR(budget.remainingMinor ?? 0)}
             </p>
-            <p className="mt-1 text-sm text-[#46597A]">
+            <p className="mt-1 text-sm text-ink-2">
               {isPersonal ? "sisa dari budget pribadimu" : "sisa dari budget bulan ini"}
             </p>
             <div
-              className="mt-5 h-3 overflow-hidden rounded-full bg-[#E5EDF5]"
+              className="mt-5 h-3 overflow-hidden rounded-full bg-bar-track"
               role="img"
               aria-label={`${spentPercent} persen budget terpakai`}
             >
               <div
-                className="h-full rounded-full bg-[#1D4F87]"
+                className="h-full rounded-full bg-blue"
                 style={{ width: `${spentPercent}%` }}
               />
             </div>
@@ -331,20 +331,20 @@ function BudgetContent({
                     : "mt-3 grid grid-cols-2 gap-3 text-sm"
               }
             >
-              <div className="min-w-0 rounded-2xl bg-[#EFF4FA] p-3">
-                <p className="text-xs font-semibold text-[#46597A]">Budget</p>
-                <p className="mt-1 whitespace-nowrap font-bold tabular-nums text-[#17304F]">
+              <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
+                <p className="text-xs font-semibold text-ink-2">Budget</p>
+                <p className="mt-1 whitespace-nowrap font-bold tabular-nums text-ink">
                   {formatIDR(budget.budgetMinor ?? 0)}
                 </p>
               </div>
-              <div className="min-w-0 rounded-2xl bg-[#EFF4FA] p-3">
-                <p className="text-xs font-semibold text-[#46597A]">Terpakai</p>
-                <p className="mt-1 whitespace-nowrap font-bold tabular-nums text-[#17304F]">
+              <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
+                <p className="text-xs font-semibold text-ink-2">Terpakai</p>
+                <p className="mt-1 whitespace-nowrap font-bold tabular-nums text-ink">
                   {formatIDR(budget.spentMinor)}
                 </p>
               </div>
             </div>
-            <p className="mt-3 text-xs text-[#5C7191]">
+            <p className="mt-3 text-xs text-ink-3">
               {isPersonal
                 ? "Dihitung dari dompet pribadimu."
                 : "Dihitung dari dompet keluarga saja."}
@@ -352,17 +352,17 @@ function BudgetContent({
           </>
         ) : (
           <>
-            <p className="mt-4 text-lg font-bold text-[#17304F]">
+            <p className="mt-4 text-lg font-bold text-ink">
               {isPersonal ? "Belum ada budget pribadi bulan ini" : "Belum ada budget bulan ini"}
             </p>
-            <p className="mt-1 text-sm text-[#46597A]">
+            <p className="mt-1 text-sm text-ink-2">
               {isPersonal
                 ? "Isi budget di samping supaya pengeluaran pribadimu lebih terkendali."
                 : canEdit
                   ? "Isi budget di samping supaya pengeluaran keluarga lebih terkendali."
                   : "Pemilik keluarga belum mengatur budget bulan ini."}
             </p>
-            <p className="mt-3 text-xs text-[#5C7191]">
+            <p className="mt-3 text-xs text-ink-3">
               {isPersonal
                 ? "Dihitung dari dompet pribadimu."
                 : "Dihitung dari dompet keluarga saja."}
@@ -373,9 +373,9 @@ function BudgetContent({
 
       <section
         aria-labelledby="budget-form-title"
-        className="rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento lg:col-span-5"
+        className="rounded-3xl border border-card-border bg-card p-6 shadow-bento lg:col-span-5"
       >
-        <h2 id="budget-form-title" className="text-lg font-semibold text-[#17304F]">
+        <h2 id="budget-form-title" className="text-lg font-semibold text-ink">
           {isPersonal
             ? budget.isSet
               ? "Ubah budget pribadi"
@@ -386,7 +386,7 @@ function BudgetContent({
                 : "Atur budget"
               : "Budget keluarga"}
         </h2>
-        <p className="mt-1 text-sm text-[#46597A]">
+        <p className="mt-1 text-sm text-ink-2">
           {isPersonal
             ? "Hanya kamu yang bisa melihat dan mengubah budget pribadi ini."
             : "Berlaku untuk dompet keluarga bersama."}
@@ -396,7 +396,7 @@ function BudgetContent({
           <p
             role="status"
             aria-live="polite"
-            className="mt-4 rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534]"
+            className="mt-4 rounded-2xl bg-mint px-4 py-3 text-sm font-medium text-green"
           >
             {notice}
           </p>
@@ -404,7 +404,7 @@ function BudgetContent({
 
         {canEdit ? (
           <form className="mt-4 space-y-3" onSubmit={onSubmit} noValidate>
-            <label htmlFor="budget-amount" className="block text-sm font-semibold text-[#17304F]">
+            <label htmlFor="budget-amount" className="block text-sm font-semibold text-ink">
               {isPersonal ? "Budget pribadi bulan ini (rupiah)" : "Budget bulan ini (rupiah)"}
             </label>
             <MoneyInput
@@ -415,19 +415,19 @@ function BudgetContent({
               aria-invalid={fieldError ? true : undefined}
               aria-describedby={fieldError ? "budget-amount-error" : "budget-amount-helper"}
               placeholder="Contoh: 3000000"
-              className="w-full rounded-2xl border border-[#C9D6E4] bg-white px-4 py-3 text-[15px] tabular-nums text-[#17304F] placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+              className="w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] tabular-nums text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
             />
             {fieldError ? (
-              <p id="budget-amount-error" role="alert" className="text-xs text-[#B91C1C]">
+              <p id="budget-amount-error" role="alert" className="text-xs text-danger">
                 {fieldError}
               </p>
             ) : (
-              <p id="budget-amount-helper" className="text-xs text-[#5C6C86]">
+              <p id="budget-amount-helper" className="text-xs text-placeholder">
                 Angka saja. Titik ribuan muncul otomatis.
               </p>
             )}
             {amountValid ? (
-              <p className="text-sm font-semibold text-[#17304F]">
+              <p className="text-sm font-semibold text-ink">
                 Akan disimpan: <span className="tabular-nums">{formatIDR(previewAmount)}</span>
               </p>
             ) : null}
@@ -436,7 +436,7 @@ function BudgetContent({
             </Button>
           </form>
         ) : (
-          <p className="mt-4 text-sm text-[#46597A]">
+          <p className="mt-4 text-sm text-ink-2">
             Hanya pemilik keluarga yang dapat mengubah budget. Kamu tetap bisa melihat sisa budget di halaman ini.
           </p>
         )}

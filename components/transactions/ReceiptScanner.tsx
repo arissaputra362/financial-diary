@@ -557,7 +557,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     return (
       <div role="status" aria-live="polite" aria-atomic="true" className="space-y-4 text-center">
         <ScanningCard previewUrl={previewUrl} />
-        <p className="text-xs text-[#5C7191]">Biasanya selesai dalam 2 sampai 4 detik.</p>
+        <p className="text-xs text-ink-3">Biasanya selesai dalam 2 sampai 4 detik.</p>
       </div>
     );
   }
@@ -578,18 +578,18 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           className="space-y-4 outline-none"
         >
           <Card variant="tint">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#1D4F87]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue">
               Struk sedang diproses
             </p>
-            <p className="mt-1 text-[15px] font-semibold text-[#17304F]">
+            <p className="mt-1 text-[15px] font-semibold text-ink">
               Pemindaian struk ini masih berjalan.
             </p>
-            <p className="mt-1 text-sm text-[#46597A]">
+            <p className="mt-1 text-sm text-ink-2">
               Hasilnya akan muncul otomatis di sini. Kamu tidak perlu menekan tombol apa pun.
             </p>
           </Card>
           {retryNotice ? (
-            <p role="alert" className="rounded-2xl bg-[#FDECEC] px-4 py-3 text-sm text-[#B91C1C]">
+            <p role="alert" className="rounded-2xl bg-danger-bg px-4 py-3 text-sm text-danger">
               {retryNotice}
             </p>
           ) : null}
@@ -606,7 +606,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         <button
           type="button"
           onClick={onCancel}
-          className="mx-auto block min-h-11 px-4 text-sm font-medium text-[#46597A] underline"
+          className="mx-auto block min-h-11 px-4 text-sm font-medium text-ink-2 underline"
         >
           Batal
         </button>
@@ -638,30 +638,30 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           ) : (
             <>
               <Card variant="danger">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#B91C1C]">
+                <p className="text-xs font-semibold uppercase tracking-wider text-danger">
                   Struk gagal dibaca
                 </p>
-                <p className="mt-1 text-[15px] font-semibold text-[#17304F]">
+                <p className="mt-1 text-[15px] font-semibold text-ink">
                   Struk ini belum bisa dibaca otomatis.
                 </p>
-                <p className="mt-1 text-sm text-[#B91C1C]">{reason}</p>
+                <p className="mt-1 text-sm text-danger">{reason}</p>
                 {unavailable ? (
-                  <p className="mt-3 text-sm text-[#46597A]">
+                  <p className="mt-3 text-sm text-ink-2">
                     Gambar struk yang lama sudah tidak bisa diproses. Pilih foto struk lain atau isi manual.
                   </p>
                 ) : retryable ? (
-                  <p className="mt-3 text-sm text-[#46597A]">
+                  <p className="mt-3 text-sm text-ink-2">
                     Kamu bisa memilih gambar struk lagi atau menggantinya dengan foto lain.
                   </p>
                 ) : null}
                 {failedJob ? (
-                  <p className="mt-1 text-sm text-[#46597A]">
+                  <p className="mt-1 text-sm text-ink-2">
                     Percobaan yang gagal tadi tidak mengubah catatan keuangan apa pun.
                   </p>
                 ) : null}
               </Card>
               {retryNotice ? (
-                <p role="alert" className="rounded-2xl bg-[#FDECEC] px-4 py-3 text-sm text-[#B91C1C]">
+                <p role="alert" className="rounded-2xl bg-danger-bg px-4 py-3 text-sm text-danger">
                   {retryNotice}
                 </p>
               ) : null}
@@ -698,7 +698,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         <button
           type="button"
           onClick={onCancel}
-          className="mx-auto block min-h-11 px-4 text-sm font-medium text-[#46597A] underline"
+          className="mx-auto block min-h-11 px-4 text-sm font-medium text-ink-2 underline"
         >
           Batal
         </button>
@@ -718,28 +718,28 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           : null;
     return (
       <div className="space-y-5">
-        <div className="flex items-start gap-2 rounded-2xl bg-[#DCEBFA] px-4 py-3">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#1D4F87]" aria-hidden="true" />
+        <div className="flex items-start gap-2 rounded-2xl bg-blue-tint px-4 py-3">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
           <div>
-            <p className="text-sm font-semibold text-[#17304F]">Struk berhasil dibaca!</p>
-            <p className="text-xs text-[#46597A]">Periksa detail di bawah ini sebelum menyimpan.</p>
+            <p className="text-sm font-semibold text-ink">Struk berhasil dibaca!</p>
+            <p className="text-xs text-ink-2">Periksa detail di bawah ini sebelum menyimpan.</p>
           </div>
         </div>
 
         {duplicateNotice ? (
-          <p role="status" className="rounded-2xl bg-[#FDF3D7] px-4 py-3 text-sm text-[#8A5A00]">
+          <p role="status" className="rounded-2xl bg-warning-bg px-4 py-3 text-sm text-warning">
             {duplicateNotice}
           </p>
         ) : null}
 
         {lowConfidence ? (
-          <p role="status" className="rounded-2xl bg-[#FDF3D7] px-4 py-3 text-sm text-[#8A5A00]">
+          <p role="status" className="rounded-2xl bg-warning-bg px-4 py-3 text-sm text-warning">
             Perlu diperiksa. Sebagian tulisan di struk mungkin kurang jelas.
           </p>
         ) : null}
 
         {previewUrl ? (
-          <div className="overflow-hidden rounded-3xl border border-[#D8E2EE]">
+          <div className="overflow-hidden rounded-3xl border border-card-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={previewUrl} alt="Pratinjau struk" className="max-h-56 w-full object-contain" />
           </div>
@@ -772,18 +772,18 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           error={fieldErrors.amountMinor?.[0]}
           helperText={autoDetected(missingFields, "totalAmountMinor", "✨ Terbaca otomatis")}
         >
-          <div className="flex items-center gap-2 rounded-2xl border border-[#C9D6E4] bg-white px-4 py-3 focus-within:border-[#1D4F87] focus-within:ring-4 focus-within:ring-[#1D4F87]/15">
-            <span className="text-lg font-semibold text-[#46597A]">Rp</span>
+          <div className="flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-blue focus-within:ring-4 focus-within:ring-blue/15">
+            <span className="text-lg font-semibold text-ink-2">Rp</span>
             <MoneyInput
               id="ocr-amount"
               value={amountDigits}
               onValueChange={setAmountDigits}
               placeholder="0"
               aria-invalid={fieldErrors.amountMinor ? true : undefined}
-              className="w-full min-w-0 bg-transparent text-2xl font-bold tabular-nums text-[#17304F] outline-none placeholder:text-[#5C6C86]/60"
+              className="w-full min-w-0 bg-transparent text-2xl font-bold tabular-nums text-ink outline-none placeholder:text-placeholder/60"
             />
           </div>
-          {amountDigits ? <p className="text-xs text-[#5C7191]">Terbaca: {formatIDR(amountMinor)}</p> : null}
+          {amountDigits ? <p className="text-xs text-ink-3">Terbaca: {formatIDR(amountMinor)}</p> : null}
         </Field>
 
         <Field
@@ -799,12 +799,12 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             value={occurredAt}
             max={todayJakarta()}
             onChange={(event) => setOccurredAt(event.target.value)}
-            className="min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-4 py-3 text-[15px] text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+            className="min-h-11 w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
           />
         </Field>
 
         <fieldset>
-          <legend className="text-xs font-medium uppercase tracking-wider text-[#46597A]">Jenis transaksi</legend>
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Jenis transaksi</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {(
               [
@@ -820,8 +820,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
                 className={cn(
                   "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                   txType === value
-                    ? "bg-[#1D4F87] text-white"
-                    : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]",
+                    ? "bg-brand-blue text-white"
+                    : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
                 )}
               >
                 {label}
@@ -831,7 +831,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         </fieldset>
 
         <fieldset>
-          <legend className="text-xs font-medium uppercase tracking-wider text-[#46597A]">Kategori</legend>
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Kategori</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {categoriesForType(txType).map((value) => (
               <button
@@ -843,8 +843,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
                 className={cn(
                   "flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all",
                   category === value
-                    ? "border-[#1D4F87] bg-[#DCEBFA] text-[#1D4F87]"
-                    : "border-[#BFD3E8] bg-white text-[#46597A] hover:bg-[#EFF4FA]",
+                    ? "border-blue bg-blue-tint text-blue"
+                    : "border-blue-border bg-card text-ink-2 hover:bg-blue-wash",
                 )}
               >
                 <span aria-hidden="true">{CATEGORY_EMOJI[value]}</span>
@@ -853,14 +853,14 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             ))}
           </div>
           {fieldErrors.category?.[0] ? (
-            <p role="alert" className="mt-1.5 text-xs text-[#B91C1C]">
+            <p role="alert" className="mt-1.5 text-xs text-danger">
               {fieldErrors.category[0]}
             </p>
           ) : null}
         </fieldset>
 
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-[#46597A]">
+          <p className="text-xs font-medium uppercase tracking-wider text-ink-2">
             {txType === "MONEY_IN" ? "Ke dompet" : "Dari dompet"}
           </p>
           <button
@@ -868,46 +868,46 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             onClick={() => setPickerOpen(true)}
             aria-haspopup="dialog"
             className={cn(
-              "mt-1.5 flex min-h-12 w-full items-center justify-between gap-2 rounded-2xl border bg-white px-4 text-left",
-              fieldErrors.walletId ? "border-[#B91C1C]" : "border-[#C9D6E4]",
+              "mt-1.5 flex min-h-12 w-full items-center justify-between gap-2 rounded-2xl border bg-card px-4 text-left",
+              fieldErrors.walletId ? "border-danger" : "border-input-border",
             )}
           >
             {wallet ? (
               <span className="flex min-w-0 items-center gap-2">
                 <ScopePill scope={wallet.scope} />
-                <span className="truncate text-[15px] font-semibold text-[#17304F]">{wallet.name}</span>
+                <span className="truncate text-[15px] font-semibold text-ink">{wallet.name}</span>
               </span>
             ) : (
-              <span className="text-sm text-[#46597A]">Pilih dompet</span>
+              <span className="text-sm text-ink-2">Pilih dompet</span>
             )}
-            <span aria-hidden="true" className="text-[#5C7191]">
+            <span aria-hidden="true" className="text-ink-3">
               &gt;
             </span>
           </button>
           {fieldErrors.walletId?.[0] ? (
-            <p role="alert" className="mt-1.5 text-xs text-[#B91C1C]">
+            <p role="alert" className="mt-1.5 text-xs text-danger">
               {fieldErrors.walletId[0]}
             </p>
           ) : null}
-          <p className="mt-1.5 text-xs text-[#5C7191]">Pilih di mana uang catatan ini dihitung.</p>
+          <p className="mt-1.5 text-xs text-ink-3">Pilih di mana uang catatan ini dihitung.</p>
         </div>
 
         {disclosure ? (
-          <div role="note" className="rounded-2xl bg-[#EFF4FA] px-4 py-3 text-sm text-[#46597A]">
-            <p className="font-semibold text-[#17304F]">Catatan sebelum menyimpan</p>
+          <div role="note" className="rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
+            <p className="font-semibold text-ink">Catatan sebelum menyimpan</p>
             <p className="mt-1">{disclosure}</p>
           </div>
         ) : null}
 
         {confidence !== null ? (
-          <p className="flex items-center gap-1.5 text-xs text-[#5C7191]">
-            <CheckCircle2 className="h-3.5 w-3.5 text-[#166534]" aria-hidden="true" />
+          <p className="flex items-center gap-1.5 text-xs text-ink-3">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green" aria-hidden="true" />
             Keyakinan baca {Math.round(confidence * 100)}%
           </p>
         ) : null}
 
         {formError ? (
-          <p role="alert" className="rounded-2xl bg-[#FDECEC] px-4 py-3 text-sm text-[#B91C1C]">
+          <p role="alert" className="rounded-2xl bg-danger-bg px-4 py-3 text-sm text-danger">
             {formError}
           </p>
         ) : null}
@@ -927,7 +927,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             </Button>
           </div>
         </div>
-        <button type="button" onClick={onCancel} disabled={saving} className="mx-auto block text-sm font-medium text-[#46597A] underline">
+        <button type="button" onClick={onCancel} disabled={saving} className="mx-auto block text-sm font-medium text-ink-2 underline">
           Batal
         </button>
         <WalletPickerSheet
@@ -973,16 +973,16 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         onDrop={handleDrop}
         className={`rounded-3xl border-2 border-dashed p-6 text-center transition-colors ${
           dragActive
-            ? "border-[#1D4F87] bg-[#DCEBFA] ring-4 ring-[#1D4F87]/10"
-            : "border-[#BFD3E8] bg-[#EFF4FA]/60"
+            ? "border-blue bg-blue-tint ring-4 ring-blue/10"
+            : "border-blue-border bg-blue-wash/60"
         }`}
       >
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-tint text-blue">
           <Camera className="h-6 w-6" aria-hidden="true" />
         </span>
-        <span className="mt-3 block text-[15px] font-semibold text-[#17304F]">Tambahkan foto struk</span>
-        <span className="mt-1 block text-xs text-[#46597A]">JPG, PNG, atau WebP. Maksimal 4 MB.</span>
-        <span className="mt-1 block text-xs text-[#5C7191]">Seret dan lepaskan foto ke area ini, atau pilih sumber foto.</span>
+        <span className="mt-3 block text-[15px] font-semibold text-ink">Tambahkan foto struk</span>
+        <span className="mt-1 block text-xs text-ink-2">JPG, PNG, atau WebP. Maksimal 4 MB.</span>
+        <span className="mt-1 block text-xs text-ink-3">Seret dan lepaskan foto ke area ini, atau pilih sumber foto.</span>
         <div className="mt-5 grid gap-2 sm:grid-cols-2">
           <Button type="button" onClick={() => openPicker("camera")} className="w-full">
             <Camera className="h-4 w-4" aria-hidden="true" />
@@ -994,14 +994,14 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           </Button>
         </div>
       </div>
-      <p className="flex items-center justify-center gap-1.5 text-xs text-[#5C7191]">
+      <p className="flex items-center justify-center gap-1.5 text-xs text-ink-3">
         <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
         Ingin ketik sendiri?{" "}
-        <button type="button" onClick={onSwitchToManual} className="font-semibold text-[#1D4F87] underline">
+        <button type="button" onClick={onSwitchToManual} className="font-semibold text-blue underline">
           Isi manual
         </button>
       </p>
-      <button type="button" onClick={onCancel} className="mx-auto block text-sm font-medium text-[#46597A] underline">
+      <button type="button" onClick={onCancel} className="mx-auto block text-sm font-medium text-ink-2 underline">
         Batal
       </button>
       {fileInputs}
@@ -1011,8 +1011,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
 
 function ScanningCard({ previewUrl }: { previewUrl: string | null }) {
   return (
-    <div className="rounded-3xl border-2 border-[#BCD6EF] bg-[#EFF4FA] p-6">
-      <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-[#DCEBFA] text-[#1D4F87]">
+    <div className="rounded-3xl border-2 border-blue-border bg-blue-wash p-6">
+      <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-blue-tint text-blue">
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={previewUrl} alt="Pratinjau struk" className="h-full w-full rounded-2xl object-cover" />
@@ -1020,11 +1020,11 @@ function ScanningCard({ previewUrl }: { previewUrl: string | null }) {
           <ImageIcon className="h-8 w-8" aria-hidden="true" />
         )}
       </div>
-      <p className="mt-4 animate-pulse text-[15px] font-semibold text-[#17304F] motion-reduce:animate-none">
+      <p className="mt-4 animate-pulse text-[15px] font-semibold text-ink motion-reduce:animate-none">
         AI sedang membaca strukmu...
       </p>
-      <p className="mt-1 text-sm text-[#46597A]">Mengambil total, nama toko, dan tanggal...</p>
-      <div className="mx-auto mt-4 h-1 w-40 animate-pulse rounded-full bg-[#1D4F87] motion-reduce:animate-none" />
+      <p className="mt-1 text-sm text-ink-2">Mengambil total, nama toko, dan tanggal...</p>
+      <div className="mx-auto mt-4 h-1 w-40 animate-pulse rounded-full bg-brand-blue motion-reduce:animate-none" />
     </div>
   );
 }

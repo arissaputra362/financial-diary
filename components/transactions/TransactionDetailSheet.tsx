@@ -90,16 +90,16 @@ export function TransactionDetailSheet({
   const signedAmount = formatSignedIDR(isIncome ? row.amountMinor : -row.amountMinor);
   const longAmount = signedAmount.length > 16;
   const amountColor =
-    showTransfer ? "text-[#17304F]" : isIncome ? "text-[#166534]" : "text-[#17304F]";
+    showTransfer ? "text-ink" : isIncome ? "text-green" : "text-ink";
   const heroClass = showTransfer
-    ? "border-[#CBE2F2] bg-[#EFF4FA]"
+    ? "border-blue-border bg-blue-wash"
     : isIncome
-      ? "border-[#BBE5C7] bg-[#DCFCE7]"
-      : "border-[#D8E2EE] bg-[#EFF4FA]";
+      ? "border-success-border bg-mint"
+      : "border-card-border bg-blue-wash";
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-[#14273F]/40 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) close();
       }}
@@ -110,10 +110,10 @@ export function TransactionDetailSheet({
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="transaction-detail-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
       >
         <div className="flex items-center justify-between">
-          <h2 id="transaction-detail-title" className="text-lg font-semibold tracking-tight text-[#17304F]">
+          <h2 id="transaction-detail-title" className="text-lg font-semibold tracking-tight text-ink">
             {editing ? "Edit transaksi" : "Detail transaksi"}
           </h2>
           <button
@@ -121,7 +121,7 @@ export function TransactionDetailSheet({
             type="button"
             onClick={close}
             aria-label="Tutup detail transaksi"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -146,14 +146,14 @@ export function TransactionDetailSheet({
               aria-hidden="true"
               className={cn(
                 "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl",
-                showTransfer ? "bg-[#DCEBFA] text-[#1D4F87]" : categoryTone(row.category),
+                showTransfer ? "bg-blue-tint text-blue" : categoryTone(row.category),
               )}
             >
               {showTransfer ? <ArrowLeftRight className="h-5 w-5" /> : categoryEmoji(row.category)}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-[15px] font-medium text-[#17304F]">{title}</p>
-              <p className="text-xs font-medium text-[#46597A]">
+              <p className="truncate text-[15px] font-medium text-ink">{title}</p>
+              <p className="text-xs font-medium text-ink-2">
                 {showTransfer ? "Transfer antar dompet" : TYPE_LABELS[row.type]}
               </p>
             </div>
@@ -172,19 +172,19 @@ export function TransactionDetailSheet({
         </div>
 
         {showTransfer ? (
-          <p className="mt-3 rounded-2xl bg-[#EFF4FA] px-4 py-3 text-sm text-[#46597A]">
+          <p className="mt-3 rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
             Transfer antar dompet tercatat sebagai dua baris: uang keluar dari satu dompet dan uang
             masuk ke dompet lain.
           </p>
         ) : null}
 
-        <dl className="mt-4 divide-y divide-[#EAEEF4]">
+        <dl className="mt-4 divide-y divide-row-divider">
           <DetailRow label="Jenis">
             <span className="inline-flex items-center gap-1.5">
               {isIncome ? (
-                <ArrowDownLeft className="h-4 w-4 text-[#166534]" aria-hidden="true" />
+                <ArrowDownLeft className="h-4 w-4 text-green" aria-hidden="true" />
               ) : (
-                <ArrowUpRight className={cn("h-4 w-4", showTransfer ? "text-[#5C7191]" : "text-[#1D4F87]")} aria-hidden="true" />
+                <ArrowUpRight className={cn("h-4 w-4", showTransfer ? "text-ink-3" : "text-blue")} aria-hidden="true" />
               )}
               {showTransfer ? "Transfer antar dompet" : TYPE_LABELS[row.type]}
             </span>
@@ -213,9 +213,9 @@ export function TransactionDetailSheet({
               <button
                 type="button"
                 onClick={() => setViewerOpen(true)}
-                className="inline-flex items-center gap-1.5 font-semibold text-[#1D4F87] underline underline-offset-2"
+                className="inline-flex items-center gap-1.5 font-semibold text-blue underline underline-offset-2"
               >
-                <ReceiptText className="h-4 w-4 text-[#5C7191]" aria-hidden="true" />
+                <ReceiptText className="h-4 w-4 text-ink-3" aria-hidden="true" />
                 Lihat struk
               </button>
             </DetailRow>
@@ -226,7 +226,7 @@ export function TransactionDetailSheet({
           ) : null}
         </dl>
 
-        <div className="mt-5 border-t border-[#EAEEF4] pt-4">
+        <div className="mt-5 border-t border-row-divider pt-4">
           {mode === "active" ? (
             <>
               <div className={transfer ? "" : "grid grid-cols-2 gap-2"}>
@@ -254,7 +254,7 @@ export function TransactionDetailSheet({
                   Hapus
                 </Button>
               </div>
-              <p className="mt-2 text-center text-xs text-[#5C7191]">
+              <p className="mt-2 text-center text-xs text-ink-3">
                 Masih bisa dipulihkan lewat Undo atau tab Trash.
               </p>
             </>
@@ -332,7 +332,7 @@ function ReceiptImageViewer({ receiptId, alt, onClose }: { receiptId: string; al
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-[#14273F]/60 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-navy/60 sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -343,34 +343,34 @@ function ReceiptImageViewer({ receiptId, alt, onClose }: { receiptId: string; al
         aria-modal="true"
         tabIndex={-1}
         aria-label="Foto struk"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:rounded-3xl"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold tracking-tight text-[#17304F]">Foto struk</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-ink">Foto struk</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup foto struk"
-            className="flex h-12 w-12 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+            className="flex h-12 w-12 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
         {state === "notfound" ? (
-          <div className="mt-4 rounded-2xl bg-[#EFF4FA] px-4 py-6 text-center">
-            <p className="text-sm text-[#46597A]">Struk tidak tersedia.</p>
+          <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-6 text-center">
+            <p className="text-sm text-ink-2">Struk tidak tersedia.</p>
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white"
+              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-brand-green px-5 text-sm font-semibold text-white"
             >
               Tutup
             </button>
           </div>
         ) : state === "error" ? (
-          <div className="mt-4 rounded-2xl bg-[#FDECEC] px-4 py-6 text-center">
-            <p className="text-sm text-[#B91C1C]">Struk gagal dimuat. Periksa koneksi, lalu coba lagi.</p>
+          <div className="mt-4 rounded-2xl bg-danger-bg px-4 py-6 text-center">
+            <p className="text-sm text-danger">Struk gagal dimuat. Periksa koneksi, lalu coba lagi.</p>
             <button
               type="button"
               onClick={() => {
@@ -378,15 +378,15 @@ function ReceiptImageViewer({ receiptId, alt, onClose }: { receiptId: string; al
                 setState("loading");
                 setRetryToken((token) => token + 1);
               }}
-              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white"
+              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-brand-green px-5 text-sm font-semibold text-white"
             >
               Coba lagi
             </button>
           </div>
         ) : !url ? (
           <div className="mt-4" aria-busy="true">
-            <div className="h-64 animate-pulse rounded-2xl bg-[#E5EDF5] motion-reduce:animate-none" />
-            <p className="mt-2 text-center text-sm text-[#5C7191]">Memuat struk...</p>
+            <div className="h-64 animate-pulse rounded-2xl bg-bar-track motion-reduce:animate-none" />
+            <p className="mt-2 text-center text-sm text-ink-3">Memuat struk...</p>
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
@@ -400,10 +400,10 @@ function ReceiptImageViewer({ receiptId, alt, onClose }: { receiptId: string; al
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5">
-      <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wider text-[#5C7191]">
+      <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wider text-ink-3">
         {label}
       </dt>
-      <dd className="min-w-0 text-right text-[15px] font-medium leading-relaxed text-[#17304F]">
+      <dd className="min-w-0 text-right text-[15px] font-medium leading-relaxed text-ink">
         {children}
       </dd>
     </div>

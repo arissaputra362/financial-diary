@@ -12,21 +12,21 @@ export default function NotFound() {
       <Card className="w-full text-center">
         <span
           aria-hidden="true"
-          className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]"
+          className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-tint text-blue"
         >
           <FileQuestion className="h-5 w-5" />
         </span>
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[#17304F]">
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-ink">
           Halaman tidak ditemukan
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-[#46597A]">
+        <p className="mt-2 text-[15px] leading-relaxed text-ink-2">
           Alamat yang kamu buka tidak ada atau sudah dipindahkan. Kembali ke
           Beranda untuk melanjutkan.
         </p>
         <div className="mt-5 flex justify-center">
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#155C30] active:scale-[0.98]"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-green px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-green-hover active:scale-[0.98]"
           >
             Kembali ke Beranda
           </Link>

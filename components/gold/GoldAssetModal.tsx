@@ -251,33 +251,33 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
         role="dialog"
         aria-modal="true"
         aria-labelledby="gold-modal-title"
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-[#BCD6EF] bg-white p-6 shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-blue-border bg-card p-6 shadow-2xl"
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Tutup modal"
-          className="absolute top-5 right-5 inline-flex h-9 w-9 items-center justify-center rounded-full text-[#5C7191] hover:bg-[#F1F5FA] hover:text-[#17304F]"
+          className="absolute top-5 right-5 inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-3 hover:bg-canvas hover:text-ink"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <h2 id="gold-modal-title" className="text-xl font-bold text-[#17304F]">
+        <h2 id="gold-modal-title" className="text-xl font-bold text-ink">
           {initialAsset ? "Edit Tabungan Emas" : "Catat Tabungan Emas"}
         </h2>
-        <p className="mt-1 text-sm text-[#46597A]">
+        <p className="mt-1 text-sm text-ink-2">
           Simpan catatan logam mulia batangan atau emas perhiasan keluargamu.
         </p>
 
         {/* Tab switch */}
-        <div className="mt-5 grid grid-cols-2 rounded-2xl bg-[#F1F5FA] p-1">
+        <div className="mt-5 grid grid-cols-2 rounded-2xl bg-canvas p-1">
           <button
             type="button"
             onClick={() => setActiveTab("manual")}
             className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition ${
               activeTab === "manual"
-                ? "bg-white text-[#1D4F87] shadow-xs"
-                : "text-[#5C7191] hover:text-[#17304F]"
+                ? "bg-card text-blue shadow-xs"
+                : "text-ink-3 hover:text-ink"
             }`}
           >
             <Coins className="h-4 w-4" />
@@ -288,17 +288,17 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             onClick={() => setActiveTab("scan")}
             className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition ${
               activeTab === "scan"
-                ? "bg-white text-[#1D4F87] shadow-xs"
-                : "text-[#5C7191] hover:text-[#17304F]"
+                ? "bg-card text-blue shadow-xs"
+                : "text-ink-3 hover:text-ink"
             }`}
           >
-            <Sparkles className="h-4 w-4 text-amber-500" />
+            <Sparkles className="h-4 w-4 text-gold-accent" />
             {initialAsset ? (initialAsset.receiptId ? "Ganti foto" : "Tambah foto") : "Pindai AI"}
           </button>
         </div>
 
         {error ? (
-          <div className="mt-4 rounded-2xl bg-[#FDECEC] p-3 text-sm font-medium text-[#B91C1C]">
+          <div className="mt-4 rounded-2xl bg-danger-bg p-3 text-sm font-medium text-danger">
             {error}
           </div>
         ) : null}
@@ -310,24 +310,24 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             onDrop={handleDrop}
             className={`mt-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-colors ${
               dragActive
-                ? "border-[#1D4F87] bg-[#DCEBFA] ring-4 ring-[#1D4F87]/10"
-                : "border-[#BCD6EF] bg-[#F8FAFC]"
+                ? "border-blue bg-blue-tint ring-4 ring-blue/10"
+                : "border-blue-border bg-surface-subtle"
             }`}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#DCEBFA] text-[#1D4F87]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-tint text-blue">
               {scanning ? (
-                <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#1D4F87] border-t-transparent" />
+                <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue border-t-transparent" />
               ) : (
                 <Camera className="h-8 w-8" />
               )}
             </div>
-            <h3 className="mt-4 font-bold text-[#17304F]">
+            <h3 className="mt-4 font-bold text-ink">
               {scanning ? "Memindai dengan Gemini Vision..." : "Unggah Foto Certicard / Nota Emas"}
             </h3>
-            <p className="mt-1 text-xs text-[#5C7191]">
+            <p className="mt-1 text-xs text-ink-3">
               Foto kemasan certicard (Antam/UBS) atau nota pembelian toko perhiasan fisik.
             </p>
-            <p className="mt-1 text-xs text-[#5C7191]">Seret dan lepaskan foto ke area ini, atau pilih sumber foto.</p>
+            <p className="mt-1 text-xs text-ink-3">Seret dan lepaskan foto ke area ini, atau pilih sumber foto.</p>
 
             <div className="mt-5 grid w-full gap-2 sm:grid-cols-2">
               <Button
@@ -379,7 +379,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
         ) : (
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             {reviewingScan ? (
-              <p role="status" className="rounded-2xl bg-[#EFF4FA] px-4 py-3 text-sm font-medium text-[#1D4F87]">
+              <p role="status" className="rounded-2xl bg-blue-wash px-4 py-3 text-sm font-medium text-blue">
                 {initialAsset
                   ? "Foto hasil scan siap ditambahkan. Simpan perubahan untuk menautkannya ke catatan emas."
                   : "Periksa kembali data hasil pindai sebelum disimpan."}
@@ -387,7 +387,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             ) : null}
             {/* Tipe Emas */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                 Tipe Emas
               </label>
               <div className="mt-1.5 grid grid-cols-2 gap-2">
@@ -396,8 +396,8 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                   onClick={() => setType(GoldAssetType.BULLION)}
                   className={`flex items-center justify-center gap-2 rounded-2xl border p-3 text-sm font-semibold transition ${
                     type === GoldAssetType.BULLION
-                      ? "border-[#1D4F87] bg-[#DCEBFA] text-[#1D4F87]"
-                      : "border-[#D8E2EE] bg-white text-[#46597A]"
+                      ? "border-blue bg-blue-tint text-blue"
+                      : "border-card-border bg-card text-ink-2"
                   }`}
                 >
                   <Coins className="h-4 w-4" />
@@ -408,8 +408,8 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                   onClick={() => setType(GoldAssetType.JEWELRY)}
                   className={`flex items-center justify-center gap-2 rounded-2xl border p-3 text-sm font-semibold transition ${
                     type === GoldAssetType.JEWELRY
-                      ? "border-[#1D4F87] bg-[#DCEBFA] text-[#1D4F87]"
-                      : "border-[#D8E2EE] bg-white text-[#46597A]"
+                      ? "border-blue bg-blue-tint text-blue"
+                      : "border-card-border bg-card text-ink-2"
                   }`}
                 >
                   <Gem className="h-4 w-4" />
@@ -420,14 +420,14 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
 
             {type === GoldAssetType.JEWELRY ? (
               <div>
-                <label htmlFor="gold-jewelry-type" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                <label htmlFor="gold-jewelry-type" className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                   Jenis Perhiasan
                 </label>
                 <select
                   id="gold-jewelry-type"
                   value={jewelryType}
                   onChange={(event) => setJewelryType(event.target.value as JewelryType)}
-                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
                 >
                   <option value={JewelryType.RING}>Cincin</option>
                   <option value={JewelryType.NECKLACE}>Kalung</option>
@@ -441,13 +441,13 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             {/* Brand (jika Bullion) */}
             {type === GoldAssetType.BULLION ? (
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                   Brand / Produsen
                 </label>
                 <select
                   value={brand}
                   onChange={(e) => setBrand(e.target.value as GoldBrand)}
-                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
                 >
                   <option value={GoldBrand.ANTAM}>Antam (Logam Mulia)</option>
                   <option value={GoldBrand.UBS}>UBS Gold</option>
@@ -460,7 +460,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
 
             {type === GoldAssetType.BULLION && brand === GoldBrand.OTHER ? (
               <div>
-                <label htmlFor="gold-custom-brand" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                <label htmlFor="gold-custom-brand" className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                   Nama merek
                 </label>
                 <input
@@ -469,14 +469,14 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                   maxLength={100}
                   value={brandCustomName}
                   onChange={(event) => setBrandCustomName(event.target.value)}
-                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
                 />
               </div>
             ) : null}
 
             {/* Nama Aset */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                 Nama Barang
               </label>
               <input
@@ -484,7 +484,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={type === GoldAssetType.BULLION ? "Contoh: Antam Certicard 10g" : "Contoh: Cincin Berlian 18K"}
-                className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
                 required
               />
             </div>
@@ -492,7 +492,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
             {/* Berat & Kadar */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                   Berat (Gram)
                 </label>
                 <input
@@ -502,18 +502,18 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                   value={weightGrams}
                   onChange={(e) => setWeightGrams(e.target.value)}
                   placeholder="Misal: 5.0"
-                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                   Kadar Kemurnian
                 </label>
                 <select
                   value={purityInput}
                   onChange={(e) => setPurityInput(e.target.value)}
-                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
                 >
                   <option value="24K">24K (99.9% - Murni)</option>
                   <option value="22K">22K (91.6%)</option>
@@ -531,33 +531,33 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
               <div>
                 <label
                   htmlFor="gold-buy-price"
-                  className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]"
+                  className="block text-xs font-semibold uppercase tracking-wider text-ink-2"
                 >
                   Modal Beli (Rp)
                 </label>
-                <div className="mt-1.5 flex items-center gap-1.5 rounded-2xl border border-[#C9D6E4] bg-white px-3 py-3 focus-within:border-[#1D4F87]">
-                  <span className="text-sm font-semibold text-[#46597A]">Rp</span>
+                <div className="mt-1.5 flex items-center gap-1.5 rounded-2xl border border-input-border bg-card px-3 py-3 focus-within:border-blue">
+                  <span className="text-sm font-semibold text-ink-2">Rp</span>
                   <MoneyInput
                     id="gold-buy-price"
                     value={buyPriceMinor}
                     onValueChange={setBuyPriceMinor}
                     placeholder="7.500.000"
-                    className="w-full min-w-0 bg-transparent text-sm font-medium tabular-nums text-[#17304F] outline-none placeholder:text-[#9BAFC8]"
+                    className="w-full min-w-0 bg-transparent text-sm font-medium tabular-nums text-ink outline-none placeholder:text-placeholder"
                   />
                 </div>
                 {buyPriceMinor ? (
-                  <p className="mt-1 text-xs text-[#5C7191]">{formatIDR(parseMoneyInputValue(buyPriceMinor))}</p>
+                  <p className="mt-1 text-xs text-ink-3">{formatIDR(parseMoneyInputValue(buyPriceMinor))}</p>
                 ) : null}
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                   Tanggal Perolehan
                 </label>
                 <input
                   type="date"
                   value={purchaseDate}
                   onChange={(e) => setPurchaseDate(e.target.value)}
-                  className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                  className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
                   required
                 />
               </div>
@@ -565,29 +565,29 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
 
             {/* Scope (Pribadi / Bersama) */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                 Cakupan Tabungan
               </label>
               <div className="mt-1.5 flex gap-3">
-                <label className="flex items-center gap-2 text-sm font-medium text-[#17304F]">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink">
                   <input
                     type="radio"
                     name="scope"
                     value={WalletScope.PERSONAL}
                     checked={scope === WalletScope.PERSONAL}
                     onChange={() => setScope(WalletScope.PERSONAL)}
-                    className="accent-[#1D4F87]"
+                    className="accent-blue"
                   />
                   Tabungan Pribadi
                 </label>
-                <label className="flex items-center gap-2 text-sm font-medium text-[#17304F]">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink">
                   <input
                     type="radio"
                     name="scope"
                     value={WalletScope.SHARING}
                     checked={scope === WalletScope.SHARING}
                     onChange={() => setScope(WalletScope.SHARING)}
-                    className="accent-[#1D4F87]"
+                    className="accent-blue"
                   />
                   Tabungan Bersama (Keluarga)
                 </label>
@@ -596,7 +596,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
 
             {/* Nomor Seri & Catatan */}
             <div>
-              <label htmlFor="gold-serial-number" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+              <label htmlFor="gold-serial-number" className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                 Nomor Seri (Opsional)
               </label>
               <input
@@ -606,11 +606,11 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                 value={serialNumber}
                 onChange={(e) => setSerialNumber(e.target.value)}
                 placeholder="Nomor pada certicard atau nota"
-                className="mt-1.5 w-full rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                className="mt-1.5 w-full rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
               />
             </div>
             <div>
-              <label htmlFor="gold-notes" className="block text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+              <label htmlFor="gold-notes" className="block text-xs font-semibold uppercase tracking-wider text-ink-2">
                 Catatan (Opsional)
               </label>
               <textarea
@@ -619,7 +619,7 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Contoh: disimpan di brankas"
-                className="mt-1.5 w-full resize-y rounded-2xl border border-[#C9D6E4] bg-white p-3 text-sm font-medium text-[#17304F] focus:border-[#1D4F87] focus:outline-hidden"
+                className="mt-1.5 w-full resize-y rounded-2xl border border-input-border bg-card p-3 text-sm font-medium text-ink focus:border-blue focus:outline-hidden"
               />
             </div>
 
@@ -627,14 +627,14 @@ export function GoldAssetModal({ open, initialAsset = null, onClose, onSuccess }
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-full px-5 py-2.5 text-sm font-semibold text-[#5C7191] hover:bg-[#F1F5FA]"
+                className="rounded-full px-5 py-2.5 text-sm font-semibold text-ink-3 hover:bg-canvas"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-full bg-[#166534] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#155C30] disabled:opacity-50"
+                className="rounded-full bg-brand-green px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-green-hover disabled:opacity-50"
               >
                 {loading ? "Menyimpan..." : initialAsset ? "Simpan Perubahan" : "Simpan Aset Emas"}
               </button>

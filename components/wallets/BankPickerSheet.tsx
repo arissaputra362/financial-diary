@@ -328,7 +328,7 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
   return (
     <>
       <div
-        className="fixed inset-0 z-[80] flex items-end justify-center bg-[#14273F]/40 sm:items-center sm:p-4"
+        className="fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) onClose();
         }}
@@ -339,17 +339,17 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
           aria-modal="true"
           tabIndex={-1}
           aria-labelledby="bank-picker-title"
-          className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+          className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
         >
           <div className="flex items-center justify-between">
-            <h2 id="bank-picker-title" className="text-lg font-semibold tracking-tight text-[#17304F]">
+            <h2 id="bank-picker-title" className="text-lg font-semibold tracking-tight text-ink">
               Pilih bank atau penyedia
             </h2>
             <button
               type="button"
               onClick={onClose}
               aria-label="Tutup pilih bank atau penyedia"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -374,12 +374,12 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
           </div>
 
           {showCurrentLabel && current && !state.loading && !state.error ? (
-            <div className="mt-3 rounded-2xl border border-[#D8E2EE] bg-[#EFF4FA] px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#5C7191]">
+            <div className="mt-3 rounded-2xl border border-card-border bg-blue-wash px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Label saat ini
               </p>
-              <p className="mt-0.5 break-words text-sm font-medium text-[#17304F]">{current.name}</p>
-              <p className="mt-1 text-xs text-[#5C6C86]">
+              <p className="mt-0.5 break-words text-sm font-medium text-ink">{current.name}</p>
+              <p className="mt-1 text-xs text-placeholder">
                 {current.kind === "OFFICIAL"
                   ? "Bank ini tidak lagi tersedia untuk pilihan baru. Label lama tetap tersimpan di dompet."
                   : current.id === null
@@ -393,7 +393,7 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
             <p
               role="status"
               aria-live="polite"
-              className="mt-3 rounded-2xl bg-[#DCFCE7] px-4 py-3 text-sm font-medium text-[#166534]"
+              className="mt-3 rounded-2xl bg-mint px-4 py-3 text-sm font-medium text-green"
             >
               {notice}
             </p>
@@ -408,36 +408,36 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
           ) : state.error ? (
             <div
               role="alert"
-              className="mt-4 rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] px-4 py-4 text-center"
+              className="mt-4 rounded-2xl border border-danger-border bg-danger-bg px-4 py-4 text-center"
             >
-              <p className="text-sm font-medium text-[#B91C1C]">{state.error}</p>
+              <p className="text-sm font-medium text-danger">{state.error}</p>
               <button
                 type="button"
                 onClick={retry}
-                className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[#166534] px-5 text-sm font-semibold text-white hover:bg-[#155C30]"
+                className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
               >
                 <Search className="h-4 w-4" aria-hidden="true" />
                 Coba lagi
               </button>
             </div>
           ) : total === 0 ? (
-            <div className="mt-4 rounded-2xl bg-[#EFF4FA] px-4 py-5 text-center">
-              <p className="text-sm text-[#46597A]">
+            <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-5 text-center">
+              <p className="text-sm text-ink-2">
                 Katalog bank resmi belum tersedia. Kamu tetap bisa menambah bank/penyedia pribadi
                 atau membuat dompet manual.
               </p>
             </div>
           ) : !hasFilteredResults ? (
-            <div className="mt-4 rounded-2xl bg-[#EFF4FA] px-4 py-5 text-center">
-              <p className="text-sm font-medium text-[#17304F]">Tidak ada yang cocok.</p>
-              <p className="mt-1 text-sm text-[#46597A]">
+            <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-5 text-center">
+              <p className="text-sm font-medium text-ink">Tidak ada yang cocok.</p>
+              <p className="mt-1 text-sm text-ink-2">
                 Tambahkan sebagai entri pribadi, atau buat dompet manual tanpa label bank.
               </p>
             </div>
           ) : (
             <div className="mt-4 space-y-5">
               {state.official.length === 0 && (state.custom.length > 0 || state.archivedCustom.length > 0) ? (
-                <p className="rounded-2xl bg-[#EFF4FA] px-4 py-3 text-xs text-[#46597A]">
+                <p className="rounded-2xl bg-blue-wash px-4 py-3 text-xs text-ink-2">
                   Katalog bank resmi belum tersedia. Entri pribadi dan dompet manual tetap bisa
                   dipakai.
                 </p>
@@ -492,11 +492,11 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
             </div>
           )}
 
-          <div className="mt-5 space-y-2 border-t border-[#EAEEF4] pt-4">
+          <div className="mt-5 space-y-2 border-t border-row-divider pt-4">
             <button
               type="button"
               onClick={() => setQuickAddOpen(true)}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-[#1D4F87] bg-white px-5 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-blue bg-card px-5 text-sm font-semibold text-blue hover:bg-blue-wash"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Tambah bank atau penyedia
@@ -504,14 +504,14 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
             <button
               type="button"
               onClick={chooseManual}
-              className="inline-flex min-h-11 w-full flex-col items-start rounded-2xl border border-dashed border-[#9FB9D6] bg-white px-4 py-2.5 text-left hover:bg-[#EFF4FA]"
+              className="inline-flex min-h-11 w-full flex-col items-start rounded-2xl border border-dashed border-blue bg-card px-4 py-2.5 text-left hover:bg-blue-wash"
             >
-              <span className="text-sm font-semibold text-[#17304F]">Dompet manual / bank lain</span>
-              <span className="text-xs text-[#5C6C86]">
+              <span className="text-sm font-semibold text-ink">Dompet manual / bank lain</span>
+              <span className="text-xs text-placeholder">
                 Buat dompet tanpa label bank. Nama dompet tetap kamu isi sendiri.
               </span>
             </button>
-            <p className="rounded-2xl bg-[#EFF4FA] px-4 py-3 text-xs text-[#46597A]">
+            <p className="rounded-2xl bg-blue-wash px-4 py-3 text-xs text-ink-2">
               Entri pribadi hanya terlihat olehmu. Jika dipakai di dompet Bersama, nama bank tampil
               sebagai metadata dompet bagi anggota yang berhak melihatnya.
             </p>
@@ -568,8 +568,8 @@ function InstitutionGroup({
 
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5C7191]">{title}</h3>
-      <p className="mt-0.5 text-xs text-[#5C6C86]">{description}</p>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-3">{title}</h3>
+      <p className="mt-0.5 text-xs text-placeholder">{description}</p>
       <ul role="listbox" aria-label={title} className="mt-2 space-y-1">
         {rows.map((row) => {
           const selected = row.id === selectedId;
@@ -598,8 +598,8 @@ function InstitutionGroup({
                   }
                 }}
                 className={cn(
-                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-[#EFF4FA]",
-                  selected ? "border-[#1D4F87] bg-[#EFF4FA] ring-1 ring-[#1D4F87]" : "border-[#D8E2EE]",
+                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-blue-wash",
+                  selected ? "border-blue bg-blue-wash ring-1 ring-blue" : "border-card-border",
                 )}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
@@ -608,19 +608,19 @@ function InstitutionGroup({
                     className={cn(
                       "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                       row.kind === "OFFICIAL"
-                        ? "bg-[#DCEBFA] text-[#1D4F87]"
-                        : "bg-[#DCFCE7] text-[#166534]",
+                        ? "bg-blue-tint text-blue"
+                        : "bg-mint text-green",
                     )}
                   >
                     {mark}
                   </span>
-                  <span className="min-w-0 break-words text-[15px] font-medium text-[#17304F]">
+                  <span className="min-w-0 break-words text-[15px] font-medium text-ink">
                     {row.name}
                     {selected ? <span className="sr-only"> (terpilih)</span> : null}
                   </span>
                 </span>
                 {selected ? (
-                  <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-[#1D4F87]">
+                  <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-blue">
                     <Check className="h-4 w-4" aria-hidden="true" />
                     Dipilih
                   </span>
@@ -671,15 +671,15 @@ function PrivateInstitutionGroup({
 }) {
   return (
     <section>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5C7191]">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
         Bank/penyedia pribadiku
       </h3>
-      <p className="mt-0.5 text-xs text-[#5C6C86]">
+      <p className="mt-0.5 text-xs text-placeholder">
         Tersimpan di daftar pribadimu; tidak menjadi pilihan bagi user lain.
       </p>
 
       <div
-        className="mt-2 inline-flex gap-1 rounded-full bg-[#EFF4FA] p-1"
+        className="mt-2 inline-flex gap-1 rounded-full bg-blue-wash p-1"
         role="tablist"
         aria-label="Tampilan bank/penyedia pribadi"
       >
@@ -701,7 +701,7 @@ function PrivateInstitutionGroup({
             onKeyDown={onTabKeyDown}
             className={cn(
               "flex min-h-11 min-w-[76px] items-center justify-center rounded-full px-4 text-sm font-semibold transition-colors motion-reduce:transition-none",
-              view === value ? "bg-white text-[#17304F] shadow-sm" : "text-[#46597A]",
+              view === value ? "bg-card text-ink shadow-sm" : "text-ink-2",
             )}
           >
             {label}
@@ -709,21 +709,21 @@ function PrivateInstitutionGroup({
         ))}
       </div>
 
-      <p className="mt-2 text-xs text-[#5C6C86]">
+      <p className="mt-2 text-xs text-placeholder">
         Entri diarsip tidak dihapus: label bank pada dompet yang sudah memakainya tetap tampil.
       </p>
 
       {error ? (
         <div
           role="alert"
-          className="mt-2 rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] px-3 py-2.5"
+          className="mt-2 rounded-2xl border border-danger-border bg-danger-bg px-3 py-2.5"
         >
-          <p className="text-sm font-medium text-[#B91C1C]">{error}</p>
+          <p className="text-sm font-medium text-danger">{error}</p>
           {officialOffer ? (
             <button
               type="button"
               onClick={() => onChooseOfficialOffer(officialOffer)}
-              className="mt-2 inline-flex min-h-11 items-center rounded-full bg-white px-4 text-sm font-semibold text-[#1D4F87] ring-1 ring-[#9FB9D6] hover:bg-[#EFF4FA]"
+              className="mt-2 inline-flex min-h-11 items-center rounded-full bg-card px-4 text-sm font-semibold text-blue ring-1 ring-blue hover:bg-blue-wash"
             >
               Pilih {officialOffer.name}
             </button>
@@ -734,7 +734,7 @@ function PrivateInstitutionGroup({
       <div id="bank-private-panel" role="tabpanel" aria-labelledby={`bank-private-tab-${view}`}>
         {view === "active" ? (
           activeRows.length === 0 ? (
-            <p className="mt-2 rounded-2xl bg-[#EFF4FA] px-4 py-3 text-sm text-[#46597A]">
+            <p className="mt-2 rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
               Belum ada entri pribadi di tampilan Aktif.
             </p>
           ) : (
@@ -748,7 +748,7 @@ function PrivateInstitutionGroup({
                     key={row.id}
                     className={cn(
                       "rounded-2xl border px-2 py-1.5",
-                      selected ? "border-[#1D4F87] bg-[#EFF4FA]" : "border-[#D8E2EE]",
+                      selected ? "border-blue bg-blue-wash" : "border-card-border",
                     )}
                   >
                     <div className="flex items-center gap-1">
@@ -775,22 +775,22 @@ function PrivateInstitutionGroup({
                               ?.focus();
                           }
                         }}
-                        className="flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl px-2 py-1 text-left hover:bg-white/70"
+                        className="flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl px-2 py-1 text-left hover:bg-card/70"
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span
                             aria-hidden="true"
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#DCFCE7] text-xs font-bold text-[#166534]"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-mint text-xs font-bold text-green"
                           >
                             P
                           </span>
-                          <span className="min-w-0 break-words text-[15px] font-medium text-[#17304F]">
+                          <span className="min-w-0 break-words text-[15px] font-medium text-ink">
                             {row.name}
                             {selected ? <span className="sr-only"> (terpilih)</span> : null}
                           </span>
                         </span>
                         {selected ? (
-                          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-[#1D4F87]">
+                          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-blue">
                             <Check className="h-4 w-4" aria-hidden="true" />
                             Dipilih
                           </span>
@@ -801,7 +801,7 @@ function PrivateInstitutionGroup({
                         onClick={() => onRequestArchive(row)}
                         disabled={busy}
                         aria-label={`Arsipkan ${row.name}`}
-                        className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold text-[#B91C1C] hover:bg-[#FDECEC] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold text-danger hover:bg-danger-bg disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <Archive className="h-3.5 w-3.5" aria-hidden="true" />
                         Arsipkan
@@ -812,12 +812,12 @@ function PrivateInstitutionGroup({
                       <div
                         role="group"
                         aria-label={`Konfirmasi arsip ${row.name}`}
-                        className="mt-1.5 rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] px-3 py-3"
+                        className="mt-1.5 rounded-2xl border border-danger-border bg-danger-bg px-3 py-3"
                       >
-                        <p className="text-sm font-semibold text-[#17304F]">
+                        <p className="text-sm font-semibold text-ink">
                           Arsipkan &quot;{row.name}&quot;?
                         </p>
-                        <p className="mt-1 text-xs text-[#46597A]">
+                        <p className="mt-1 text-xs text-ink-2">
                           Entri disembunyikan dari daftar pilihan berikutnya. Label bank pada
                           dompet yang sudah memakainya tetap tampil. Bukan hapus permanen; bisa
                           dipulihkan di tab Arsip.
@@ -826,7 +826,7 @@ function PrivateInstitutionGroup({
                           <button
                             type="button"
                             onClick={onCancelArchive}
-                            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full border border-[#C9D6E4] bg-white px-4 text-sm font-semibold text-[#46597A] hover:bg-[#EFF4FA]"
+                            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full border border-input-border bg-card px-4 text-sm font-semibold text-ink-2 hover:bg-blue-wash"
                           >
                             Batal
                           </button>
@@ -834,7 +834,7 @@ function PrivateInstitutionGroup({
                             type="button"
                             onClick={() => onConfirmArchive(row)}
                             disabled={busy}
-                            className="inline-flex min-h-12 flex-1 items-center justify-center gap-1 rounded-full bg-[#B91C1C] px-4 text-sm font-semibold text-white hover:bg-[#991B1B] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex min-h-12 flex-1 items-center justify-center gap-1 rounded-full bg-brand-danger px-4 text-sm font-semibold text-white hover:bg-brand-danger-hover disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             <Archive className="h-4 w-4" aria-hidden="true" />
                             {busy ? "Mengarsipkan..." : "Arsipkan"}
@@ -848,7 +848,7 @@ function PrivateInstitutionGroup({
             </ul>
           )
         ) : archivedRows.length === 0 ? (
-          <p className="mt-2 rounded-2xl bg-[#EFF4FA] px-4 py-3 text-sm text-[#46597A]">
+          <p className="mt-2 rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
             Belum ada entri di Arsip. Entri yang kamu arsipkan lewat tombol Arsipkan tampil di
             sini.
           </p>
@@ -859,21 +859,21 @@ function PrivateInstitutionGroup({
               return (
                 <li
                   key={row.id}
-                  className="rounded-2xl border border-[#D8E2EE] px-3 py-2"
+                  className="rounded-2xl border border-card-border px-3 py-2"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2.5">
                       <span
                         aria-hidden="true"
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#DCFCE7] text-xs font-bold text-[#166534]"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-mint text-xs font-bold text-green"
                       >
                         P
                       </span>
                       <div className="min-w-0">
-                        <p className="break-words text-[15px] font-medium text-[#17304F]">
+                        <p className="break-words text-[15px] font-medium text-ink">
                           {row.name}
                         </p>
-                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[#FDF3D7] px-2 py-0.5 text-[11px] font-semibold text-[#8A5A00]">
+                        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-warning-bg px-2 py-0.5 text-[11px] font-semibold text-warning">
                           <Archive className="h-3 w-3" aria-hidden="true" />
                           {archivedStatusLabel(row.archivedAt)}
                         </span>
@@ -885,7 +885,7 @@ function PrivateInstitutionGroup({
                       disabled={busy}
                       aria-label={`Pulihkan ${row.name}`}
                       data-private-focus={row.id}
-                      className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold text-[#166534] hover:bg-[#DCFCE7] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold text-green hover:bg-mint disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                       {busy ? "Memulihkan..." : "Pulihkan"}

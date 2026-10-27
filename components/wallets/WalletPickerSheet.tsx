@@ -75,7 +75,7 @@ export function WalletPickerSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-[#14273F]/40 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -86,17 +86,17 @@ export function WalletPickerSheet({
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="wallet-picker-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
       >
         <div className="flex items-center justify-between">
-          <h2 id="wallet-picker-title" className="text-lg font-semibold tracking-tight text-[#17304F]">
+          <h2 id="wallet-picker-title" className="text-lg font-semibold tracking-tight text-ink">
             Pilih dompet
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -109,25 +109,25 @@ export function WalletPickerSheet({
             <Skeleton className="h-14 w-full" />
           </div>
         ) : error ? (
-          <div className="mt-4 rounded-2xl bg-[#FDECEC] px-4 py-3 text-center">
-            <p className="text-sm text-[#B91C1C]">{error}</p>
+          <div className="mt-4 rounded-2xl bg-danger-bg px-4 py-3 text-center">
+            <p className="text-sm text-danger">{error}</p>
             <button
               type="button"
               onClick={() => void reload()}
-              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white"
+              className="mt-3 inline-flex min-h-11 items-center rounded-full bg-brand-green px-5 text-sm font-semibold text-white"
             >
               Coba lagi
             </button>
           </div>
         ) : wallets.length === 0 ? (
-          <div className="mt-4 rounded-2xl bg-[#EFF4FA] px-4 py-5 text-center">
-            <p className="text-sm text-[#46597A]">
+          <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-5 text-center">
+            <p className="text-sm text-ink-2">
               Kamu belum punya dompet. Buat dompet agar uang tersimpan ke tempat yang tepat.
             </p>
             <button
               type="button"
               onClick={onCreate}
-              className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[#166534] px-5 text-sm font-semibold text-white"
+              className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-brand-green px-5 text-sm font-semibold text-white"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Buat dompet baru
@@ -152,7 +152,7 @@ export function WalletPickerSheet({
             <button
               type="button"
               onClick={onCreate}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[#BFD3E8] bg-white px-5 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-blue-border bg-card px-5 text-sm font-semibold text-blue hover:bg-blue-wash"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Buat dompet baru
@@ -182,7 +182,7 @@ function WalletGroup({
   if (wallets.length === 0) return null;
   return (
     <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-[#5C7191]">{title}</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-3">{title}</h3>
       <ul
         role="listbox"
         aria-label={title}
@@ -215,25 +215,25 @@ function WalletGroup({
                 onFocus={() => onFocusOption(wallet.id)}
                 onClick={() => onSelect(wallet)}
                 className={cn(
-                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-[#EFF4FA]",
-                  selected ? "border-[#1D4F87] bg-[#EFF4FA] ring-1 ring-[#1D4F87]" : "border-[#D8E2EE]",
+                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-blue-wash",
+                  selected ? "border-blue bg-blue-wash ring-1 ring-blue" : "border-card-border",
                 )}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <WalletMark />
                   <span className="min-w-0">
                     <span className="flex min-w-0 items-center gap-1.5">
-                      <span className="truncate text-[15px] font-medium text-[#17304F]">
+                      <span className="truncate text-[15px] font-medium text-ink">
                         {wallet.name}
                         {selected ? <span className="sr-only"> (dompet terpilih)</span> : null}
                       </span>
                       <ScopePill scope={wallet.scope} className="shrink-0" />
                     </span>
                     {wallet.purpose ? (
-                      <span className="block truncate text-xs text-[#5C7191]">{wallet.purpose}</span>
+                      <span className="block truncate text-xs text-ink-3">{wallet.purpose}</span>
                     ) : null}
                     {longBalance ? (
-                      <span className="mt-1 block whitespace-nowrap text-sm font-semibold tabular-nums text-[#17304F] sm:hidden">
+                      <span className="mt-1 block whitespace-nowrap text-sm font-semibold tabular-nums text-ink sm:hidden">
                         {formatIDR(wallet.balanceMinor)}
                       </span>
                     ) : null}
@@ -245,8 +245,8 @@ function WalletGroup({
                     longBalance ? "hidden sm:flex" : "flex",
                   )}
                 >
-                  {selected ? <Check className="h-4 w-4 text-[#1D4F87]" aria-hidden="true" /> : null}
-                  <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-[#17304F]">
+                  {selected ? <Check className="h-4 w-4 text-blue" aria-hidden="true" /> : null}
+                  <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
                     {formatIDR(wallet.balanceMinor)}
                   </span>
                 </span>

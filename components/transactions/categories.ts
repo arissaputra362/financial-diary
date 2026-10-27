@@ -65,16 +65,16 @@ export function categoryEmoji(category: string | null | undefined): string {
   legs use the sky tone from TransactionList since they carry no category.
 */
 export const CATEGORY_TONES: Record<string, string> = {
-  food: "bg-orange-100 text-orange-600",
-  transport: "bg-indigo-100 text-indigo-600",
-  bills: "bg-blue-100 text-blue-600",
-  shopping: "bg-pink-100 text-pink-600",
-  health: "bg-rose-100 text-rose-600",
-  education: "bg-amber-100 text-amber-700",
-  entertainment: "bg-purple-100 text-purple-600",
-  income: "bg-emerald-100 text-emerald-700",
-  gift_donation: "bg-teal-100 text-teal-700",
-  other: "bg-slate-100 text-slate-600",
+  food: "bg-category-orange-bg text-category-orange-text",
+  transport: "bg-category-indigo-bg text-category-indigo-text",
+  bills: "bg-category-blue-bg text-category-blue-text",
+  shopping: "bg-category-pink-bg text-category-pink-text",
+  health: "bg-category-rose-bg text-category-rose-text",
+  education: "bg-category-amber-bg text-category-amber-text",
+  entertainment: "bg-category-purple-bg text-category-purple-text",
+  income: "bg-category-emerald-bg text-category-emerald-text",
+  gift_donation: "bg-category-teal-bg text-category-teal-text",
+  other: "bg-category-slate-bg text-category-slate-text",
 };
 
 export function categoryTone(category: string | null | undefined): string {

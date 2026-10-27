@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { BootSignal } from "@/components/layout/BootSignal";
 import "./globals.css";
@@ -26,6 +26,62 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F1F5FA" },
+    { media: "(prefers-color-scheme: dark)", color: "#111B26" },
+  ],
+};
+
+const THEME_BOOTSTRAP = `(function () {
+  var storageKey = "financial-diary-theme";
+  var eventName = "financial-diary:theme-change";
+  var root = document.documentElement;
+  var media = window.matchMedia("(prefers-color-scheme: dark)");
+  var preference = "system";
+
+  function readPreference() {
+    try {
+      var value = window.localStorage.getItem(storageKey);
+      return value === "light" || value === "dark" ? value : "system";
+    } catch {
+      return "system";
+    }
+  }
+
+  function applyTheme(event) {
+    var requested = event && event.detail;
+    preference = requested === "system" || requested === "light" || requested === "dark"
+      ? requested
+      : readPreference();
+    var resolved = preference === "system"
+      ? (media.matches ? "dark" : "light")
+      : preference;
+    root.dataset.theme = preference;
+    root.dataset.colorScheme = resolved;
+    var themeColor = resolved === "dark" ? "#111B26" : "#F1F5FA";
+    var themeColorTags = document.querySelectorAll('meta[name="theme-color"]');
+    for (var index = 0; index < themeColorTags.length; index += 1) {
+      themeColorTags[index].setAttribute("content", themeColor);
+    }
+  }
+
+  applyTheme();
+  window.addEventListener(eventName, applyTheme);
+  window.addEventListener("storage", function (event) {
+    if (event.key === storageKey || event.key === null) applyTheme();
+  });
+  if (media.addEventListener) {
+    media.addEventListener("change", function () {
+      if (preference === "system") applyTheme();
+    });
+  } else if (media.addListener) {
+    media.addListener(function () {
+      if (preference === "system") applyTheme();
+    });
+  }
+})();`;
+
 /*
   Runs as a plain classic script, so it still works when the React bundle never
   boots. It reveals a reload prompt instead of leaving the splash text forever.
@@ -50,18 +106,23 @@ const BOOT_WATCHDOG = `(function () {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" className={`${plusJakartaSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-canvas text-[#17304F]">
+    <html
+      lang="id"
+      suppressHydrationWarning
+      className={`${plusJakartaSans.variable} h-full antialiased`}
+    >
+      <body className="min-h-full flex flex-col bg-canvas text-ink">
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
         {children}
         <BootSignal />
         <div
           id="boot-fallback"
           hidden
           role="alert"
-          className="fixed inset-x-4 bottom-6 z-50 rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] p-4 text-sm text-[#B91C1C] shadow-bento"
+          className="fixed inset-x-4 bottom-6 z-50 rounded-2xl border border-danger-border bg-danger-bg p-4 text-sm text-danger shadow-bento"
         >
           <p className="font-semibold">Aplikasi belum selesai dimuat.</p>
-          <p className="mt-1 text-[#B91C1C]">
+          <p className="mt-1 text-danger">
             Periksa koneksi, lalu muat ulang halaman.
           </p>
           <button

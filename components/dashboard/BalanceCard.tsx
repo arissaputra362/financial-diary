@@ -16,28 +16,28 @@ export function BalanceCard({ balanceMinor, hasTransactions }: BalanceCardProps)
   return (
     <section
       aria-labelledby="balance-title"
-      className="rounded-3xl border border-[#BCD6EF] bg-[#DCEBFA] p-7 shadow-bento"
+      className="rounded-3xl border border-blue-border bg-blue-tint p-7 shadow-bento"
     >
       <h2
         id="balance-title"
-        className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#46597A]"
+        className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-2"
       >
         <Wallet className="h-4 w-4" aria-hidden="true" />
         Uang tersedia keluarga
       </h2>
-      <p className="mt-4 text-4xl font-extrabold tracking-tight tabular-nums text-[#17304F] sm:text-5xl">
+      <p className="mt-4 text-4xl font-extrabold tracking-tight tabular-nums text-ink sm:text-5xl">
         {formatIDR(balanceMinor)}
       </p>
       {hasTransactions ? (
-        <p className="mt-3 text-sm text-[#46597A]">
+        <p className="mt-3 text-sm text-ink-2">
           Seluruh pemasukan aktif dikurangi seluruh pengeluaran aktif.
         </p>
       ) : (
-        <p className="mt-3 text-sm text-[#46597A]">
+        <p className="mt-3 text-sm text-ink-2">
           Belum ada transaksi.{" "}
           <Link
             href="/transactions?add=1"
-            className="font-semibold text-[#1D4F87] underline underline-offset-2"
+            className="font-semibold text-blue underline underline-offset-2"
           >
             Tambah transaksi
           </Link>{" "}

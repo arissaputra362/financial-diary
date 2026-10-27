@@ -3,7 +3,8 @@
 /*
   Design tokens for the Bento financial diary.
   Source of truth: docs/design/01-design-system-tokens.md (PM-approved 2026-10-20).
-  The app ships a single light theme, so no dark-mode override is defined.
+  The system color preference selects the active values; semantic utility names
+  stay the same in light and dark mode.
 */
 @theme {
   --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
@@ -15,9 +16,17 @@
   --color-blue: #1d4f87;
   --color-blue-tint: #dcebfa;
   --color-blue-wash: #eff4fa;
+  --color-blue-border: #bfd3e8;
+  --color-brand-blue: #1d4f87;
+  --color-brand-blue-hover: #173f6c;
+  --color-surface-subtle: #f8fafc;
   --color-green: #166534;
   --color-green-hover: #155c30;
+  --color-brand-green: #166534;
+  --color-brand-green-hover: #155c30;
   --color-mint: #dcfce7;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #b8dcc0;
   --color-bar-track: #e5edf5;
 
   /* Text */
@@ -34,6 +43,47 @@
   --color-input-border: #c9d6e4;
   --color-row-divider: #eaeef4;
   --color-chip-slate: #e6ecf4;
+  --color-danger-border: #f3c2c2;
+  --color-warning-border: #fdf3d7;
+  --color-brand-danger: #b91c1c;
+  --color-brand-danger-hover: #991b1b;
+  --color-scrim: #10243b;
+  --color-gold-art-backdrop: #fff8e7;
+  --color-gold-art-ink: #775315;
+  --color-gold-art-shadow: #9b741f;
+  --color-gold-accent: #8a5a00;
+  --color-focus-ring: #1d4f87;
+  --color-focus-halo: rgba(255, 255, 255, 0.9);
+
+  /* Data series remain distinct in either theme. */
+  --color-chart-1: #1d4f87;
+  --color-chart-2: #166534;
+  --color-chart-3: #14273f;
+  --color-chart-4: #46597a;
+  --color-chart-5: #5c7191;
+  --color-chart-6: #5c6c86;
+
+  /* Category badges keep their data color coding in both themes and print. */
+  --color-category-orange-bg: #ffedd5;
+  --color-category-orange-text: #c2410c;
+  --color-category-indigo-bg: #e0e7ff;
+  --color-category-indigo-text: #4338ca;
+  --color-category-blue-bg: #dbeafe;
+  --color-category-blue-text: #1d4ed8;
+  --color-category-pink-bg: #fce7f3;
+  --color-category-pink-text: #be185d;
+  --color-category-rose-bg: #ffe4e6;
+  --color-category-rose-text: #be123c;
+  --color-category-amber-bg: #fef3c7;
+  --color-category-amber-text: #b45309;
+  --color-category-purple-bg: #f3e8ff;
+  --color-category-purple-text: #7e22ce;
+  --color-category-emerald-bg: #d1fae5;
+  --color-category-emerald-text: #047857;
+  --color-category-teal-bg: #ccfbf1;
+  --color-category-teal-text: #0f766e;
+  --color-category-slate-bg: #f1f5f9;
+  --color-category-slate-text: #334155;
 
   /* Semantic status */
   --color-warning: #8a5a00;
@@ -49,6 +99,91 @@
   --shadow-hover: 0 14px 28px rgba(20, 39, 63, 0.1);
 }
 
+:root {
+  color-scheme: light;
+}
+
+:root[data-color-scheme="dark"] {
+  color-scheme: dark;
+
+  --color-canvas: #111b26;
+  --color-card: #192635;
+  --color-navy: #1c3045;
+  --color-blue: #8dbdf0;
+  --color-blue-tint: #233b53;
+  --color-blue-wash: #1d2d3d;
+  --color-blue-border: #3b5878;
+  --color-brand-blue-hover: #2f6da8;
+  --color-green: #64d18e;
+  --color-green-hover: #7be3a2;
+  --color-mint: #193d2b;
+  --color-success-bg: #193b2a;
+  --color-success-border: #315e45;
+  --color-bar-track: #354454;
+
+  --color-ink: #e9f0f7;
+  --color-ink-2: #bdc9d6;
+  --color-ink-3: #a7b5c5;
+  --color-placeholder: #a6b4c4;
+  --color-on-dark: #f7faff;
+  --color-on-dark-soft: #e3edf8;
+  --color-on-dark-muted: #b4c7dc;
+
+  --color-card-border: #35485b;
+  --color-input-border: #455a70;
+  --color-row-divider: #2c3c4d;
+  --color-chip-slate: #2b3b4c;
+  --color-surface-subtle: #202f3e;
+  --color-danger-border: #76434c;
+  --color-warning-border: #6b552c;
+  --color-scrim: #05090f;
+  --color-brand-danger-hover: #991b1b;
+  --color-gold-art-backdrop: #1d2a38;
+  --color-gold-art-ink: #e2c46f;
+  --color-gold-art-shadow: #d2aa4f;
+  --color-focus-ring: #8dbdf0;
+  --color-focus-halo: rgba(17, 27, 38, 0.95);
+
+  --color-chart-1: #8dbdf0;
+  --color-chart-2: #64d18e;
+  --color-chart-3: #c3a3ee;
+  --color-chart-4: #f2c56d;
+  --color-chart-5: #ec91a7;
+  --color-chart-6: #72d1c2;
+  --color-gold-accent: #f2c56d;
+  --color-category-orange-bg: #431407;
+  --color-category-orange-text: #fed7aa;
+  --color-category-indigo-bg: #1e1b4b;
+  --color-category-indigo-text: #c7d2fe;
+  --color-category-blue-bg: #172554;
+  --color-category-blue-text: #bfdbfe;
+  --color-category-pink-bg: #500724;
+  --color-category-pink-text: #fbcfe8;
+  --color-category-rose-bg: #4c0519;
+  --color-category-rose-text: #fecdd3;
+  --color-category-amber-bg: #451a03;
+  --color-category-amber-text: #fde68a;
+  --color-category-purple-bg: #3b0764;
+  --color-category-purple-text: #e9d5ff;
+  --color-category-emerald-bg: #022c22;
+  --color-category-emerald-text: #a7f3d0;
+  --color-category-teal-bg: #042f2e;
+  --color-category-teal-text: #99f6e4;
+  --color-category-slate-bg: #334155;
+  --color-category-slate-text: #e2e8f0;
+
+  --color-warning: #f2c56d;
+  --color-warning-bg: #44371f;
+  --color-danger: #ff8b8b;
+  --color-danger-bg: #482a31;
+
+  --shadow-bento: 0 10px 30px -5px rgba(0, 0, 0, 0.24),
+    0 0 1px 1px rgba(220, 235, 250, 0.05);
+  --shadow-floating-nav: 0 20px 40px -10px rgba(0, 0, 0, 0.55);
+  --shadow-pill: 0 4px 14px 0 rgba(0, 0, 0, 0.28);
+  --shadow-hover: 0 14px 28px rgba(0, 0, 0, 0.3);
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
@@ -61,9 +196,9 @@ body {
   visible on the navy navigation, where a blue-only ring would be too quiet.
 */
 :focus-visible {
-  outline: 2px solid #1d4f87;
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 4px var(--color-focus-halo);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -90,6 +225,80 @@ body {
   *::after {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  :root[data-color-scheme="dark"] {
+    color-scheme: light;
+    --color-canvas: #f1f5fa;
+    --color-card: #ffffff;
+    --color-navy: #14273f;
+    --color-blue: #1d4f87;
+    --color-blue-tint: #dcebfa;
+    --color-blue-wash: #eff4fa;
+    --color-blue-border: #bfd3e8;
+    --color-brand-blue-hover: #173f6c;
+    --color-green: #166534;
+    --color-green-hover: #155c30;
+    --color-mint: #dcfce7;
+    --color-success-bg: #f0fdf4;
+    --color-success-border: #b8dcc0;
+    --color-bar-track: #e5edf5;
+    --color-ink: #17304f;
+    --color-ink-2: #46597a;
+    --color-ink-3: #5c7191;
+    --color-placeholder: #5c6c86;
+    --color-on-dark: #ffffff;
+    --color-on-dark-soft: #d9e6f5;
+    --color-on-dark-muted: #9fb9d6;
+    --color-card-border: #d8e2ee;
+    --color-input-border: #c9d6e4;
+    --color-row-divider: #eaeef4;
+    --color-chip-slate: #e6ecf4;
+    --color-surface-subtle: #f8fafc;
+    --color-danger-border: #f3c2c2;
+    --color-warning-border: #fdf3d7;
+    --color-scrim: #10243b;
+    --color-gold-art-backdrop: #fff8e7;
+    --color-gold-art-ink: #775315;
+    --color-gold-art-shadow: #9b741f;
+    --color-gold-accent: #8a5a00;
+    --color-focus-ring: #1d4f87;
+    --color-focus-halo: rgba(255, 255, 255, 0.9);
+    --color-chart-1: #1d4f87;
+    --color-chart-2: #166534;
+    --color-chart-3: #14273f;
+    --color-chart-4: #46597a;
+    --color-chart-5: #5c7191;
+    --color-chart-6: #5c6c86;
+    --color-category-orange-bg: #ffedd5;
+    --color-category-orange-text: #c2410c;
+    --color-category-indigo-bg: #e0e7ff;
+    --color-category-indigo-text: #4338ca;
+    --color-category-blue-bg: #dbeafe;
+    --color-category-blue-text: #1d4ed8;
+    --color-category-pink-bg: #fce7f3;
+    --color-category-pink-text: #be185d;
+    --color-category-rose-bg: #ffe4e6;
+    --color-category-rose-text: #be123c;
+    --color-category-amber-bg: #fef3c7;
+    --color-category-amber-text: #b45309;
+    --color-category-purple-bg: #f3e8ff;
+    --color-category-purple-text: #7e22ce;
+    --color-category-emerald-bg: #d1fae5;
+    --color-category-emerald-text: #047857;
+    --color-category-teal-bg: #ccfbf1;
+    --color-category-teal-text: #0f766e;
+    --color-category-slate-bg: #f1f5f9;
+    --color-category-slate-text: #334155;
+    --color-warning: #8a5a00;
+    --color-warning-bg: #fdf3d7;
+    --color-danger: #b91c1c;
+    --color-danger-bg: #fdecec;
+    --shadow-bento: 0 10px 30px -5px rgba(20, 39, 63, 0.06),
+      0 0 1px 1px rgba(20, 39, 63, 0.03);
+    --shadow-floating-nav: 0 20px 40px -10px rgba(20, 39, 63, 0.35);
+    --shadow-pill: 0 4px 14px 0 rgba(20, 39, 63, 0.1);
+    --shadow-hover: 0 14px 28px rgba(20, 39, 63, 0.1);
   }
 
   body {

@@ -39,8 +39,8 @@ export function GoldAssetArtwork({ asset, size = "card" }: GoldAssetArtworkProps
     : getJewelryTypeLabel(asset.jewelryType);
 
   return (
-    <div className={`relative flex items-center justify-center overflow-hidden bg-linear-to-br from-[#FFF8E7] via-[#F8F1DE] to-[#EAF1F8] ${isDetail ? "h-44" : "h-32"}`}>
-      <div className="absolute inset-x-8 bottom-2 h-4 rounded-full bg-[#9B741F]/15 blur-md" />
+    <div className={`relative flex items-center justify-center overflow-hidden bg-gold-art-backdrop ${isDetail ? "h-44" : "h-32"}`}>
+      <div className="absolute inset-x-8 bottom-2 h-4 rounded-full bg-gold-art-shadow/15 blur-md" />
       <div className="relative flex flex-col items-center justify-center">
         {asset.type === "BULLION" ? (
           <BullionSilhouette id={id} className={isDetail ? "h-[4.6rem] w-36" : "h-16 w-28"} />
@@ -51,7 +51,7 @@ export function GoldAssetArtwork({ asset, size = "card" }: GoldAssetArtworkProps
             className={isDetail ? "h-16 w-24" : "h-14 w-20"}
           />
         )}
-        <span className="mt-0.5 text-[9px] font-extrabold tracking-[0.12em] text-[#775315] sm:text-[10px]">
+        <span className="mt-0.5 text-[9px] font-extrabold tracking-[0.12em] text-gold-art-ink sm:text-[10px]">
           {label}
         </span>
       </div>

@@ -35,19 +35,19 @@ export function WalletSummaryPair({
   if (loading) {
     return (
       <section className="space-y-4" aria-busy="true" aria-label="Memuat dompet">
-        <div className="h-40 animate-pulse rounded-3xl bg-[#E5EDF5] motion-reduce:animate-none" />
+        <div className="h-40 animate-pulse rounded-3xl bg-bar-track motion-reduce:animate-none" />
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="rounded-3xl border border-[#F3C2C2] bg-[#FDECEC] p-5 text-center">
-        <p className="text-sm font-semibold text-[#B91C1C]">{error}</p>
+      <section className="rounded-3xl border border-danger-border bg-danger-bg p-5 text-center">
+        <p className="text-sm font-semibold text-danger">{error}</p>
         <button
           type="button"
           onClick={onReload}
-          className="mt-3 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white hover:bg-[#155C30]"
+          className="mt-3 inline-flex min-h-11 items-center rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
         >
           Coba lagi
         </button>
@@ -62,20 +62,20 @@ export function WalletSummaryPair({
       </h2>
 
       <div className="flex items-center justify-between gap-3 px-1">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-[#17304F]">
-          <Wallet className="h-5 w-5 text-[#1D4F87]" aria-hidden="true" />
+        <h3 className="flex items-center gap-2 text-lg font-semibold text-ink">
+          <Wallet className="h-5 w-5 text-blue" aria-hidden="true" />
           Dompetmu
         </h3>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onOpenArchive}
-            className="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-semibold text-[#46597A] underline underline-offset-2 hover:text-[#17304F]"
+            className="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-semibold text-ink-2 underline underline-offset-2 hover:text-ink"
           >
             Dompet arsip
           </button>
           {wallets.length > 0 ? (
-          <span className="rounded-full bg-[#E6ECF4] px-3 py-1 text-xs font-semibold text-[#46597A]">
+          <span className="rounded-full bg-chip-slate px-3 py-1 text-xs font-semibold text-ink-2">
             {wallets.length} dompet aktif
           </span>
           ) : null}
@@ -83,13 +83,13 @@ export function WalletSummaryPair({
       </div>
 
       {wallets.length === 0 ? (
-        <div className="rounded-3xl border border-[#D8E2EE] bg-white p-6 text-center shadow-bento">
-          <p className="text-[15px] font-semibold text-[#17304F]">Belum ada dompet.</p>
-          <p className="mt-1 text-sm text-[#46597A]">Simpan uang ke tempat yang tepat.</p>
+        <div className="rounded-3xl border border-card-border bg-card p-6 text-center shadow-bento">
+          <p className="text-[15px] font-semibold text-ink">Belum ada dompet.</p>
+          <p className="mt-1 text-sm text-ink-2">Simpan uang ke tempat yang tepat.</p>
           <button
             type="button"
             onClick={onCreate}
-            className="mt-4 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white hover:bg-[#155C30]"
+            className="mt-4 inline-flex min-h-11 items-center rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
           >
             Buat dompet pertama
           </button>
@@ -111,11 +111,11 @@ export function WalletSummaryPair({
           <button
             type="button"
             onClick={onCreate}
-            className="flex min-h-40 w-[min(82vw,18rem)] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-[#166534] bg-white p-5 text-sm font-semibold text-[#166534] transition-colors hover:bg-[#EFF4FA] md:w-72"
+            className="flex min-h-40 w-[min(82vw,18rem)] shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-green bg-card p-5 text-sm font-semibold text-green transition-colors hover:bg-blue-wash md:w-72"
           >
             <span
               aria-hidden="true"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DCFCE7]"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-mint"
             >
               <Plus className="h-5 w-5" />
             </span>

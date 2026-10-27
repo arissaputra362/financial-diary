@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -110,23 +110,23 @@ export function GoldPageView() {
           <Link
             href="/home"
             aria-label="Kembali ke Beranda"
-            className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#5C7191] shadow-xs hover:bg-[#F1F5FA] md:flex"
+            className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-card-border bg-card text-ink-3 shadow-xs hover:bg-canvas md:flex"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
           <div className="min-w-0">
             <Link
               href="/profile"
-              className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
+              className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash md:hidden"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Kembali ke Profil
             </Link>
-            <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
-              <Coins className="h-5 w-5 shrink-0 text-amber-500" aria-hidden="true" />
+            <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-ink">
+              <Coins className="h-5 w-5 shrink-0 text-gold-accent" aria-hidden="true" />
               Tabungan Emas
             </h1>
-            <p className="mt-0.5 text-xs text-[#5C7191]">
+            <p className="mt-0.5 text-xs text-ink-3">
               Logam mulia batangan &amp; emas perhiasan keluarga
             </p>
           </div>
@@ -138,14 +138,14 @@ export function GoldPageView() {
             onClick={() => setAmountsVisible((visible) => !visible)}
             aria-label={amountsVisible ? "Sembunyikan nominal" : "Tampilkan nominal"}
             aria-pressed={amountsVisible}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#46597A] shadow-xs hover:bg-[#F1F5FA]"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-card-border bg-card text-ink-2 shadow-xs hover:bg-canvas"
           >
             {amountsVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
           </button>
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#155C30]"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-4 text-sm font-semibold text-white shadow-xs hover:bg-brand-green-hover"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Tambah Emas
@@ -155,7 +155,7 @@ export function GoldPageView() {
 
       {/* Undo Toast */}
       {undoItem ? (
-        <div className="flex items-center justify-between rounded-2xl bg-[#14273F] px-4 py-3 text-sm text-white shadow-lg animate-in fade-in">
+        <div className="flex items-center justify-between rounded-2xl bg-navy px-4 py-3 text-sm text-white shadow-lg animate-in fade-in">
           <span>&ldquo;{undoItem.name}&rdquo; telah dihapus.</span>
           <button
             type="button"
@@ -171,8 +171,8 @@ export function GoldPageView() {
       {antamPrice || data?.priceInfo?.isStale ? (
         <div className="flex flex-wrap gap-2">
           {antamPrice ? (
-            <div className="flex items-center gap-2 rounded-full border border-[#DCEBFA] bg-[#F1F5FA] px-3.5 py-1.5 text-[11px] font-medium text-[#17304F]">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="flex items-center gap-2 rounded-full border border-blue-tint bg-canvas px-3.5 py-1.5 text-[11px] font-medium text-ink">
+              <span className="inline-block h-2 w-2 rounded-full bg-green" />
               <span>
                 Antam buyback:{" "}
                 <strong className="tabular-nums">{amountsVisible ? formatIDR(antamPrice.buybackPriceMinor) : "****"}</strong>/gr
@@ -180,8 +180,8 @@ export function GoldPageView() {
             </div>
           ) : null}
           {ubsPrice ? (
-            <div className="flex items-center gap-2 rounded-full border border-[#DCEBFA] bg-[#F1F5FA] px-3.5 py-1.5 text-[11px] font-medium text-[#17304F]">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="flex items-center gap-2 rounded-full border border-blue-tint bg-canvas px-3.5 py-1.5 text-[11px] font-medium text-ink">
+              <span className="inline-block h-2 w-2 rounded-full bg-green" />
               <span>
                 UBS buyback:{" "}
                 <strong className="tabular-nums">{amountsVisible ? formatIDR(ubsPrice.buybackPriceMinor) : "****"}</strong>/gr
@@ -189,7 +189,7 @@ export function GoldPageView() {
             </div>
           ) : null}
           {data?.priceInfo?.isStale ? (
-            <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700">
+            <span className="flex items-center gap-1 rounded-full bg-warning-bg px-3 py-1 text-[11px] font-medium text-warning">
               <span aria-hidden="true">⚠</span>{" "}
               {data.priceInfo.prices.length > 0
                 ? `Harga terakhir ${data.priceInfo.prices[0].sourceDate}`
@@ -202,17 +202,17 @@ export function GoldPageView() {
       {/* Loading State */}
       {loading ? (
         <div className="flex h-48 items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#1D4F87] border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue border-t-transparent" />
         </div>
       ) : error ? (
         /* Error State */
-        <div className="rounded-3xl border border-[#D8E2EE] bg-white p-8 text-center shadow-bento">
-          <p className="text-sm font-semibold text-[#B91C1C]">{error}</p>
+        <div className="rounded-3xl border border-card-border bg-card p-8 text-center shadow-bento">
+          <p className="text-sm font-semibold text-danger">{error}</p>
           <div className="mt-4 flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={loadData}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#1D4F87] px-4 py-2 text-xs font-semibold text-white hover:bg-[#153D6B]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-blue px-4 py-2 text-xs font-semibold text-white hover:bg-brand-blue-hover"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Coba lagi
@@ -222,19 +222,19 @@ export function GoldPageView() {
       ) : data ? (
         <div className="space-y-5">
           {/* Portfolio Summary Card */}
-          <div className="rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[#46597A]">
+          <div className="rounded-3xl border border-card-border bg-card p-6 shadow-bento">
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-2">
               Total Portofolio Emas
             </p>
 
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-3xl font-extrabold tracking-tight tabular-nums text-[#17304F] sm:text-4xl">
+                <p className="text-3xl font-extrabold tracking-tight tabular-nums text-ink sm:text-4xl">
                   {amountsVisible ? formatIDR(data.totalEstimatedValueMinor) : "****"}
                 </p>
-                <p className="mt-1 text-xs text-[#46597A]">
+                <p className="mt-1 text-xs text-ink-2">
                   Taksiran nilai pasar · Modal beli:{" "}
-                  <span className="font-semibold tabular-nums text-[#17304F]">
+                  <span className="font-semibold tabular-nums text-ink">
                     {amountsVisible ? formatIDR(data.totalCostBasisMinor) : "****"}
                   </span>
                 </p>
@@ -244,8 +244,8 @@ export function GoldPageView() {
                 <div
                   className={`flex items-center gap-1.5 self-start rounded-full px-3 py-1.5 text-xs font-bold sm:self-auto ${
                     data.totalUnrealizedPnLMinor >= 0
-                      ? "bg-[#DCFCE7] text-[#166534]"
-                      : "bg-[#FDECEC] text-[#B91C1C]"
+                      ? "bg-mint text-green"
+                      : "bg-danger-bg text-danger"
                   }`}
                 >
                   {data.totalUnrealizedPnLMinor >= 0 ? (
@@ -265,16 +265,16 @@ export function GoldPageView() {
 
             {/* Gram Breakdown */}
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-xl bg-[#EFF4FA] px-3 py-1 font-semibold text-[#1D4F87]">
+              <span className="rounded-xl bg-blue-wash px-3 py-1 font-semibold text-blue">
                 Total: {formatGrams(data.totalWeightGrams)}
               </span>
-              <span className="rounded-xl bg-[#F8FAFC] px-3 py-1 text-[#46597A]">
+              <span className="rounded-xl bg-surface-subtle px-3 py-1 text-ink-2">
                 Batangan: {formatGrams(data.bullionWeightGrams)}
               </span>
-              <span className="rounded-xl bg-[#F8FAFC] px-3 py-1 text-[#46597A]">
+              <span className="rounded-xl bg-surface-subtle px-3 py-1 text-ink-2">
                 Perhiasan: {formatGrams(data.jewelryWeightGrams)}
               </span>
-              <span className="rounded-xl bg-[#F8FAFC] px-3 py-1 text-[#46597A]">
+              <span className="rounded-xl bg-surface-subtle px-3 py-1 text-ink-2">
                 {data.itemCount} item
               </span>
             </div>
@@ -282,18 +282,18 @@ export function GoldPageView() {
 
           {/* Asset List */}
           {data.assets.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-[#BCD6EF] bg-[#F8FAFC] p-10 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-500">
+            <div className="rounded-3xl border border-dashed border-blue-border bg-surface-subtle p-10 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-warning-bg text-gold-accent">
                 <Coins className="h-7 w-7" />
               </div>
-              <p className="mt-4 font-semibold text-[#17304F]">Belum ada catatan emas</p>
-              <p className="mt-1 text-xs text-[#5C7191]">
+              <p className="mt-4 font-semibold text-ink">Belum ada catatan emas</p>
+              <p className="mt-1 text-xs text-ink-3">
                 Catat emas batangan Antam/UBS atau perhiasan keluargamu agar tercatat rapi.
               </p>
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#166534] px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-[#155C30]"
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-brand-green px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-brand-green-hover"
               >
                 <Plus className="h-4 w-4" />
                 Catat Emas Pertama
@@ -303,7 +303,7 @@ export function GoldPageView() {
             <section aria-labelledby="gold-asset-list-title">
               <h2
                 id="gold-asset-list-title"
-                className="mb-3 text-xs font-semibold uppercase tracking-wider text-[#46597A]"
+                className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-2"
               >
                 Daftar Aset ({data.assets.length})
               </h2>
@@ -314,23 +314,23 @@ export function GoldPageView() {
                     key={item.id}
                     onClick={() => setSelectedAsset(item)}
                     aria-label={`Lihat detail ${item.name}`}
-                    className="group min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-[#D8E2EE] bg-white text-sm shadow-xs transition hover:-translate-y-0.5 hover:border-[#A9C8E8] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1D4F87]"
+                    className="group min-w-0 cursor-pointer overflow-hidden rounded-2xl border border-card-border bg-card text-sm shadow-xs transition hover:-translate-y-0.5 hover:border-blue-border hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue"
                   >
                     <GoldAssetArtwork asset={item} />
                     <div className="p-3 sm:p-4">
-                      <p className="line-clamp-2 min-h-10 text-base font-bold leading-5 text-[#17304F] sm:text-lg">
+                      <p className="line-clamp-2 min-h-10 text-base font-bold leading-5 text-ink sm:text-lg">
                         {item.name}
                       </p>
-                      <p className="mt-1 truncate text-xs font-medium text-[#5C7191] sm:text-sm">
+                      <p className="mt-1 truncate text-xs font-medium text-ink-3 sm:text-sm">
                         {formatGrams(item.weightGrams)} · {item.purityLabel}
                       </p>
-                      <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold sm:text-xs ${item.scope === "PERSONAL" ? "bg-[#EFF4FA] text-[#1D4F87]" : "bg-[#F0FDF4] text-[#166534]"}`}>
+                      <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[11px] font-semibold sm:text-xs ${item.scope === "PERSONAL" ? "bg-blue-wash text-blue" : "bg-success-bg text-green"}`}>
                         {item.scope === "PERSONAL" ? "Pribadi" : "Bersama"}
                       </span>
-                      <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#7185A0] sm:text-xs">
+                      <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-3 sm:text-xs">
                         Taksiran nilai
                       </p>
-                      <p className="mt-0.5 break-words text-base font-extrabold leading-tight tabular-nums text-[#17304F] sm:text-lg">
+                      <p className="mt-0.5 break-words text-base font-extrabold leading-tight tabular-nums text-ink sm:text-lg">
                         {amountsVisible ? formatIDR(item.estimatedValuationMinor) : "****"}
                       </p>
                     </div>

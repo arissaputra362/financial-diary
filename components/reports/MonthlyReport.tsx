@@ -304,14 +304,14 @@ export function MonthlyReport({
             }}
           />
 
-          <label className="flex min-h-11 w-full min-w-0 flex-none items-center gap-3 rounded-2xl border border-[#D8E2EE] bg-white px-3 text-sm font-semibold text-[#46597A] sm:w-auto sm:flex-1 sm:min-w-64">
+          <label className="flex min-h-11 w-full min-w-0 flex-none items-center gap-3 rounded-2xl border border-card-border bg-card px-3 text-sm font-semibold text-ink-2 sm:w-auto sm:flex-1 sm:min-w-64">
             <span className="shrink-0">Dompet</span>
             <select
               value={walletId}
               disabled={walletsLoading || Boolean(walletsError)}
               onChange={(event) => onWalletChange(event.target.value)}
               aria-label="Pilih dompet"
-              className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-[#17304F] outline-none disabled:text-[#46597A]"
+              className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-ink outline-none disabled:text-ink-2"
             >
               <option value="">
                 {walletsLoading
@@ -334,7 +334,7 @@ export function MonthlyReport({
               onClick={() => void prepareAndPrint()}
               disabled={preparing}
               aria-busy={preparing || undefined}
-              className="ml-auto inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] disabled:cursor-not-allowed disabled:text-[#46597A] disabled:hover:bg-transparent sm:w-auto sm:min-w-52"
+              className="ml-auto inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash disabled:cursor-not-allowed disabled:text-ink-2 disabled:hover:bg-transparent sm:w-auto sm:min-w-52"
             >
               <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
               {preparing ? "Menyiapkan detail..." : "Cetak atau simpan PDF"}
@@ -342,22 +342,22 @@ export function MonthlyReport({
           ) : null}
         </div>
         {printFailed ? (
-          <p role="status" className="text-xs text-[#B91C1C]">
+          <p role="status" className="text-xs text-danger">
             Detail transaksi belum bisa disiapkan.{" "}
             <button
               type="button"
               onClick={() => void prepareAndPrint()}
-              className="min-h-11 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+              className="min-h-11 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
             >
               Coba lagi
             </button>
           </p>
         ) : null}
         {personalUnavailable ? (
-          <p className="text-xs text-[#5C7191]">Kamu belum punya dompet pribadi.</p>
+          <p className="text-xs text-ink-3">Kamu belum punya dompet pribadi.</p>
         ) : null}
         {walletsError ? (
-          <p role="status" className="text-xs text-[#B91C1C]">
+          <p role="status" className="text-xs text-danger">
             {walletsError}
           </p>
         ) : null}
@@ -367,8 +367,8 @@ export function MonthlyReport({
         <ReportSkeleton />
       ) : error || !data ? (
         <Card variant="danger" className="text-center print:hidden">
-          <p className="text-lg font-semibold text-[#B91C1C]">Laporan belum bisa dimuat.</p>
-          <p className="mt-1 text-sm text-[#B91C1C]">
+          <p className="text-lg font-semibold text-danger">Laporan belum bisa dimuat.</p>
+          <p className="mt-1 text-sm text-danger">
             Kendala jaringan menghentikan pengambilan data.
           </p>
           <Button className="mt-4" onClick={() => setReloadToken((token) => token + 1)}>
@@ -378,14 +378,14 @@ export function MonthlyReport({
       ) : (
         <>
           <div className="space-y-5 print:space-y-2 print:break-after-page">
-            <h2 className="hidden text-2xl font-bold tracking-tight text-[#17304F] print:mb-1 print:block print:text-xl">
+            <h2 className="hidden text-2xl font-bold tracking-tight text-ink print:mb-1 print:block print:text-xl">
               Laporan {monthLabel}
             </h2>
             <BalanceCard report={data} month={month} />
             <MovementTrace report={data} />
             {data.transactionCount === 0 ? (
               <Card className="text-center print:hidden">
-                <p className="text-[15px] font-medium text-[#17304F]">
+                <p className="text-[15px] font-medium text-ink">
                   {data.wallet
                     ? `Belum ada transaksi pada dompet ${data.wallet.name} untuk ${monthLabel}.`
                     : `Belum ada transaksi pada ${monthLabel}.`}
@@ -459,12 +459,12 @@ function BalanceCard({ report, month }: { report: MonthlyReportDTO; month: strin
       variant="navy"
       className="w-full p-6 sm:p-8 print:break-inside-avoid print:p-3"
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-[#D9E6F5] print:text-[8pt]">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-on-dark-soft print:text-[8pt]">{label}</p>
       <p className="mt-2 whitespace-nowrap text-4xl font-bold tabular-nums tracking-tight text-white sm:text-[2.5rem] print:mt-0.5 print:text-2xl">
         {formatIDR(report.closingMinor)}
       </p>
-      <DeltaLine amountMinor={report.delta.closingMinor} className="mt-2 text-sm text-[#D9E6F5] print:mt-0.5 print:text-[8pt]" />
-      <p className="mt-3 text-xs text-[#9FB9D6] print:mt-0.5 print:text-[8pt]">Setelah seluruh pengeluaran tercatat.</p>
+      <DeltaLine amountMinor={report.delta.closingMinor} className="mt-2 text-sm text-on-dark-soft print:mt-0.5 print:text-[8pt]" />
+      <p className="mt-3 text-xs text-on-dark-muted print:mt-0.5 print:text-[8pt]">Setelah seluruh pengeluaran tercatat.</p>
     </Card>
   );
 }
@@ -477,8 +477,8 @@ function MovementTrace({ report }: { report: MonthlyReportDTO }) {
 
   return (
     <Card className="p-5 sm:p-6 print:break-inside-avoid print:p-3">
-      <h2 className="text-lg font-semibold text-[#17304F] print:text-sm">Jejak saldo</h2>
-      <dl className="mt-3 divide-y divide-[#EAEEF4]">
+      <h2 className="text-lg font-semibold text-ink print:text-sm">Jejak saldo</h2>
+      <dl className="mt-3 divide-y divide-row-divider">
         <TraceRow label="Saldo awal" value={report.openingMinor} />
         {hasNewWallet ? (
           <TraceRow
@@ -495,19 +495,19 @@ function MovementTrace({ report }: { report: MonthlyReportDTO }) {
         {hasTransferOut ? (
           <TraceRow label="Transfer keluar (antar dompet)" value={report.transferOutMinor} sign="−" />
         ) : null}
-        <div className="flex items-center justify-between gap-3 border-t-2 border-[#D8E2EE] bg-[#F7F9FC] px-3 py-3 print:px-2 print:py-1.5">
-          <dt className="text-sm font-bold text-[#17304F]">Saldo akhir</dt>
-          <dd className="whitespace-nowrap text-xl font-bold tabular-nums text-[#17304F] print:text-base">
+        <div className="flex items-center justify-between gap-3 border-t-2 border-card-border bg-surface-subtle px-3 py-3 print:px-2 print:py-1.5">
+          <dt className="text-sm font-bold text-ink">Saldo akhir</dt>
+          <dd className="whitespace-nowrap text-xl font-bold tabular-nums text-ink print:text-base">
             {formatIDR(report.closingMinor)}
           </dd>
         </div>
       </dl>
 
-      <p className="mt-3 text-xs text-[#5C7191] print:mt-2 print:text-[7pt]">
+      <p className="mt-3 text-xs text-ink-3 print:mt-2 print:text-[7pt]">
         Saldo akhir adalah hasil penambahan dan pengurangan di atas.
       </p>
       {hasTransfer ? (
-        <p className="mt-1 text-xs text-[#5C7191] print:text-[7pt]">
+        <p className="mt-1 text-xs text-ink-3 print:text-[7pt]">
           {report.wallet
             ? "Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Baris ini hanya menampilkan sisi dompet terpilih; sisi dompet pasangannya tidak ditampilkan."
             : `Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Antar dompet ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}, kedua sisi ditampilkan dan saling meniadakan. Transfer ke cakupan lain hanya menampilkan sisi ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}.`}
@@ -528,8 +528,8 @@ function TraceRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-3 py-2 print:px-2 print:py-1">
-      <dt className="min-w-0 text-sm text-[#46597A] print:text-[8pt]">{label}</dt>
-      <dd className="whitespace-nowrap text-base font-semibold tabular-nums text-[#17304F] print:text-[9pt]">
+      <dt className="min-w-0 text-sm text-ink-2 print:text-[8pt]">{label}</dt>
+      <dd className="whitespace-nowrap text-base font-semibold tabular-nums text-ink print:text-[9pt]">
         {sign ? `${sign} ` : ""}
         {formatIDR(value)}
       </dd>
@@ -563,7 +563,7 @@ function BreakdownCard({
         <span
           className={cn(
             "flex h-11 w-11 shrink-0 items-center justify-center rounded-full print:h-7 print:w-7",
-            income ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#DCEBFA] text-[#1D4F87]",
+            income ? "bg-mint text-green" : "bg-blue-tint text-blue",
           )}
           aria-hidden="true"
         >
@@ -573,35 +573,35 @@ function BreakdownCard({
             <ArrowUpRight className="h-5 w-5" />
           )}
         </span>
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#46597A] print:text-[8pt]">{title}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-2 print:text-[8pt]">{title}</p>
       </div>
 
       <p
         className={cn(
           "mt-3 whitespace-nowrap text-2xl font-semibold tabular-nums print:mt-1 print:text-lg",
-          income ? "text-[#166534]" : "text-[#17304F]",
+          income ? "text-green" : "text-ink",
         )}
       >
         {formatIDR(breakdown.totalMinor)}
       </p>
-      <DeltaLine amountMinor={delta} className="mt-1 text-xs text-[#46597A] print:text-[7pt]" />
+      <DeltaLine amountMinor={delta} className="mt-1 text-xs text-ink-2 print:text-[7pt]" />
 
       {breakdown.totalMinor === 0 &&
       breakdown.categories.length === 0 &&
       breakdown.uncategorizedMinor === 0 &&
       breakdown.otherCategoryCount === 0 ? (
-        <p className="mt-4 text-sm text-[#5C7191] print:mt-2 print:text-[8pt]">{emptyCopy}</p>
+        <p className="mt-4 text-sm text-ink-3 print:mt-2 print:text-[8pt]">{emptyCopy}</p>
       ) : (
         <CategoryDonutChart title={title} breakdown={breakdown} />
       )}
 
       <div className="mt-auto pt-4 print:pt-2">
-        <div className="flex items-baseline justify-between gap-3 border-t border-[#EAEEF4] pt-3 print:pt-1.5">
-          <span className="text-sm font-semibold text-[#46597A]">Subtotal</span>
+        <div className="flex items-baseline justify-between gap-3 border-t border-row-divider pt-3 print:pt-1.5">
+          <span className="text-sm font-semibold text-ink-2">Subtotal</span>
           <span
             className={cn(
               "whitespace-nowrap text-base font-bold tabular-nums print:text-sm",
-              income ? "text-[#166534]" : "text-[#17304F]",
+              income ? "text-green" : "text-ink",
             )}
           >
             {formatIDR(breakdown.totalMinor)}
@@ -612,7 +612,7 @@ function BreakdownCard({
       {actionHref ? (
         <Link
           href={actionHref}
-          className="mt-2 inline-flex min-h-11 items-center self-start rounded-full px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] print:hidden"
+          className="mt-2 inline-flex min-h-11 items-center self-start rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash print:hidden"
         >
           Lihat semua pengeluaran
         </Link>
@@ -630,7 +630,7 @@ function ReportFootnotes({
 }) {
   const walletLabel = report.wallet?.name ?? "Semua dompet";
   return (
-    <div className="space-y-1 px-1 text-xs text-[#5C7191] print:break-inside-avoid print:space-y-0 print:text-[7pt]">
+    <div className="space-y-1 px-1 text-xs text-ink-3 print:break-inside-avoid print:space-y-0 print:text-[7pt]">
       <p>
         Dihitung dari {report.transactionCount} transaksi, {longDate(report.periodStart)} sampai{" "}
         {longDate(report.periodEnd)}.
@@ -660,12 +660,12 @@ function PrintTransactionDetail({
 }) {
   return (
     <section className="hidden print:block print:break-before-page">
-      <h2 className="text-2xl font-bold text-[#17304F]">
+      <h2 className="text-2xl font-bold text-ink">
         Rincian transaksi {monthLabel}
       </h2>
       {sections.map((section) => (
         <div key={section.key} className="mt-6">
-          <h3 className="break-inside-avoid border-t border-[#EAEEF4] pt-3 text-xs font-semibold uppercase tracking-wider text-[#5C7191]">
+          <h3 className="break-inside-avoid border-t border-row-divider pt-3 text-xs font-semibold uppercase tracking-wider text-ink-3">
             {section.title}
           </h3>
           <ul>
@@ -673,8 +673,8 @@ function PrintTransactionDetail({
               <PrintDetailRow key={row.id} row={row} section={section.key} />
             ))}
           </ul>
-          <div className="flex items-baseline justify-between gap-3 break-inside-avoid border-t border-[#EAEEF4] pt-2">
-            <span className="text-sm font-semibold text-[#46597A]">Subtotal</span>
+          <div className="flex items-baseline justify-between gap-3 break-inside-avoid border-t border-row-divider pt-2">
+            <span className="text-sm font-semibold text-ink-2">Subtotal</span>
             <span
               className={cn(
                 "whitespace-nowrap text-sm font-semibold tabular-nums",
@@ -699,13 +699,13 @@ function PrintDetailRow({
 }) {
   const transfer = section === "transfer";
   return (
-    <li className="flex items-baseline gap-3 break-inside-avoid border-b border-[#EAEEF4] py-2">
-      <span className="w-16 shrink-0 text-sm text-[#5C7191]">
+    <li className="flex items-baseline gap-3 break-inside-avoid border-b border-row-divider py-2">
+      <span className="w-16 shrink-0 text-sm text-ink-3">
         {formatReportDetailDate(row.occurredAt)}
       </span>
-      <span className="min-w-0 flex-1 break-words text-sm text-[#17304F]">
+      <span className="min-w-0 flex-1 break-words text-sm text-ink">
         {transfer ? (
-          <span className="inline-flex rounded-full bg-[#EFF4FA] px-2 py-0.5 text-xs font-semibold text-[#1D4F87]">
+          <span className="inline-flex rounded-full bg-blue-wash px-2 py-0.5 text-xs font-semibold text-blue">
             {reportDetailDescription(row, true)}
           </span>
         ) : (
@@ -725,9 +725,9 @@ function PrintDetailRow({
 }
 
 function detailAmountColor(section: ReportDetailSection["key"]): string {
-  if (section === "income") return "text-[#166534]";
-  if (section === "transfer") return "text-[#1D4F87]";
-  return "text-[#17304F]";
+  if (section === "income") return "text-green";
+  if (section === "transfer") return "text-blue";
+  return "text-ink";
 }
 
 function ReportSkeleton() {

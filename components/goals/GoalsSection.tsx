@@ -218,8 +218,8 @@ export function GoalsSection() {
 
   if (loading) {
     return (
-      <section aria-labelledby="goals-title" className="rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento">
-        <h2 id="goals-title" className="text-lg font-semibold text-[#17304F]">
+      <section aria-labelledby="goals-title" className="rounded-3xl border border-card-border bg-card p-6 shadow-bento">
+        <h2 id="goals-title" className="text-lg font-semibold text-ink">
           Target tabungan
         </h2>
         <Skeleton className="mt-4 h-40 w-full" />
@@ -229,13 +229,13 @@ export function GoalsSection() {
 
   if (loadError) {
     return (
-      <section aria-labelledby="goals-title" className="rounded-3xl border border-[#F3C2C2] bg-[#FDECEC] p-6 text-center">
-        <p className="text-[15px] font-semibold text-[#B91C1C]">Target tabungan belum bisa dimuat.</p>
-        <p className="mt-1 text-sm text-[#46597A]">Periksa koneksimu lalu coba lagi.</p>
+      <section aria-labelledby="goals-title" className="rounded-3xl border border-danger-border bg-danger-bg p-6 text-center">
+        <p className="text-[15px] font-semibold text-danger">Target tabungan belum bisa dimuat.</p>
+        <p className="mt-1 text-sm text-ink-2">Periksa koneksimu lalu coba lagi.</p>
         <button
           type="button"
           onClick={() => setReloadToken((token) => token + 1)}
-          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-5 text-sm font-semibold text-white hover:bg-[#155C30]"
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
         >
           <RefreshCw className="h-4 w-4" aria-hidden="true" />
           Muat ulang target
@@ -251,14 +251,14 @@ export function GoalsSection() {
       id="goals"
       aria-labelledby="goals-title"
       data-testid="goals-section"
-      className="rounded-3xl border border-[#BBE5C7] bg-[#DCFCE7] p-6 shadow-bento"
+      className="rounded-3xl border border-success-border bg-mint p-6 shadow-bento"
     >
       <div className="flex items-start justify-between gap-3">
-        <h2 id="goals-title" className="flex items-center gap-2 text-lg font-semibold text-[#17304F]">
-          <Target className="h-5 w-5 text-[#166534]" aria-hidden="true" />
+        <h2 id="goals-title" className="flex items-center gap-2 text-lg font-semibold text-ink">
+          <Target className="h-5 w-5 text-green" aria-hidden="true" />
           Target tabungan
         </h2>
-        <span className="shrink-0 rounded-full bg-white/75 px-3 py-1 text-xs font-semibold text-[#46597A]">
+        <span className="shrink-0 rounded-full bg-card/75 px-3 py-1 text-xs font-semibold text-ink-2">
           {goals?.length ?? 0} aktif
         </span>
       </div>
@@ -268,36 +268,36 @@ export function GoalsSection() {
           {goals.map((goal) => {
             const isLate = goal.deadline !== null && goal.deadline < today;
             return (
-              <li key={goal.id} data-testid="goal-item" className="rounded-2xl bg-white/75 p-4">
+              <li key={goal.id} data-testid="goal-item" className="rounded-2xl bg-card/75 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="break-words text-sm font-bold leading-snug text-[#17304F]">{goal.name}</p>
+                    <p className="break-words text-sm font-bold leading-snug text-ink">{goal.name}</p>
                     {isLate ? (
                       <span
                         data-testid="goal-late-badge"
-                        className="mt-1 inline-block rounded-full bg-[#FDF3D7] px-2.5 py-0.5 text-[11px] font-semibold text-[#8A5A00]"
+                        className="mt-1 inline-block rounded-full bg-warning-bg px-2.5 py-0.5 text-[11px] font-semibold text-warning"
                       >
                         Melewati tenggat {formatDateLabel(goal.deadline as string)}
                       </span>
                     ) : null}
                   </div>
-                  <span className="shrink-0 text-sm font-bold tabular-nums text-[#166534]">{goal.progressPercent}%</span>
+                  <span className="shrink-0 text-sm font-bold tabular-nums text-green">{goal.progressPercent}%</span>
                 </div>
                 <div
-                  className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#E5EDF5]"
+                  className="mt-3 h-2.5 overflow-hidden rounded-full bg-bar-track"
                   role="img"
                   aria-label={`${goal.name} ${goal.progressPercent} persen`}
                 >
                   <div
-                    className="h-full rounded-full bg-[#166534] transition-all duration-500"
+                    className="h-full rounded-full bg-green transition-all duration-500"
                     style={{ width: `${goal.progressPercent}%` }}
                   />
                 </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs font-semibold text-[#46597A]">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs font-semibold text-ink-2">
                   <span className="whitespace-nowrap tabular-nums">
                     Terkumpul {formatIDR(goal.savedAmountMinor)}
                   </span>
-                  <span className="font-normal tabular-nums text-[#46597A]">
+                  <span className="font-normal tabular-nums text-ink-2">
                     dari {formatIDR(goal.targetAmountMinor)}
                     {goal.deadline ? ` * ${formatDateLabel(goal.deadline)}` : ""}
                     {` * genggam: ${formatIDR(goal.targetAmountMinor - goal.savedAmountMinor)} lagi`}
@@ -307,7 +307,7 @@ export function GoalsSection() {
                   <button
                     type="button"
                     onClick={() => startAdjust(goal, "add")}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[#BBE5C7] bg-white px-4 text-sm font-semibold text-[#166534] hover:bg-[#EFF4FA]"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-success-border bg-card px-4 text-sm font-semibold text-green hover:bg-blue-wash"
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
                     Catat progres
@@ -315,7 +315,7 @@ export function GoalsSection() {
                   <button
                     type="button"
                     onClick={() => startAdjust(goal, "subtract")}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-[#BFD3E8] bg-white px-4 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA]"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
                   >
                     <Minus className="h-4 w-4" aria-hidden="true" />
                     Koreksi progres
@@ -324,7 +324,7 @@ export function GoalsSection() {
                     type="button"
                     onClick={() => void handleTrash(goal)}
                     aria-label={`Hapus target ${goal.name}`}
-                    className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-[#5C7191] hover:bg-[#FDECEC] hover:text-[#B91C1C]"
+                    className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-ink-3 hover:bg-danger-bg hover:text-danger"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </button>
@@ -334,18 +334,18 @@ export function GoalsSection() {
           })}
         </ul>
       ) : (
-        <p className="mt-4 text-lg font-bold text-[#17304F]">Belum ada target tabungan</p>
+        <p className="mt-4 text-lg font-bold text-ink">Belum ada target tabungan</p>
       )}
       {goals && goals.length === 0 ? (
-        <p className="mt-1 text-sm text-[#46597A]">
+        <p className="mt-1 text-sm text-ink-2">
           Tentukan target pertama di samping, misal dana darurat atau liburan keluarga.
         </p>
       ) : null}
 
-      <form className="mt-6 space-y-3 rounded-2xl bg-white/75 p-4" onSubmit={handleCreate} noValidate>
-        <h3 className="text-sm font-bold text-[#17304F]">Buat target baru</h3>
+      <form className="mt-6 space-y-3 rounded-2xl bg-card/75 p-4" onSubmit={handleCreate} noValidate>
+        <h3 className="text-sm font-bold text-ink">Buat target baru</h3>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-xs font-semibold text-[#46597A]" htmlFor="goal-name">
+          <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-name">
             Nama target
             <input
               id="goal-name"
@@ -355,10 +355,10 @@ export function GoalsSection() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Contoh: Dana darurat"
-              className="mt-1 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 py-2 text-sm text-[#17304F] placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+              className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-2 text-sm text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
             />
           </label>
-          <label className="block text-xs font-semibold text-[#46597A]" htmlFor="goal-target">
+          <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-target">
             Nominal target (rupiah)
             <MoneyInput
               id="goal-target"
@@ -366,10 +366,10 @@ export function GoalsSection() {
               value={target}
               onValueChange={setTarget}
               placeholder="Contoh: 3000000"
-              className="mt-1 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 py-2 text-sm tabular-nums text-[#17304F] placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+              className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-2 text-sm tabular-nums text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
             />
           </label>
-          <label className="block text-xs font-semibold text-[#46597A]" htmlFor="goal-deadline">
+          <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-deadline">
             Batas waktu (opsional)
             <input
               id="goal-deadline"
@@ -377,16 +377,16 @@ export function GoalsSection() {
               type="date"
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
-              className="mt-1 min-h-11 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+              className="mt-1 min-h-11 w-full rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
             />
           </label>
         </div>
         {formError ? (
-          <p role="alert" className="text-xs text-[#B91C1C]">
+          <p role="alert" className="text-xs text-danger">
             {formError}
           </p>
         ) : (
-          <p className="text-xs text-[#5C6C86]">Batas waktu yang sudah lewat tetap boleh. Targetnya tampil dengan tanda terlambat.</p>
+          <p className="text-xs text-placeholder">Batas waktu yang sudah lewat tetap boleh. Targetnya tampil dengan tanda terlambat.</p>
         )}
         <Button
           type="submit"
@@ -403,7 +403,7 @@ export function GoalsSection() {
           type="button"
           onClick={toggleTrash}
           aria-expanded={showTrash}
-          className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-[#46597A] hover:bg-white/70"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink-2 hover:bg-card/70"
           data-testid="goals-trash-toggle"
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -413,17 +413,17 @@ export function GoalsSection() {
           trashLoading || !trash ? (
             <Skeleton className="mt-3 h-16 w-full" />
           ) : trash.length === 0 ? (
-            <p className="mt-3 text-sm text-[#46597A]">Tidak ada target di daftar terhapus.</p>
+            <p className="mt-3 text-sm text-ink-2">Tidak ada target di daftar terhapus.</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {trash.map((goal) => (
-                <li key={goal.id} data-testid="goals-trash-item" className="flex items-center justify-between gap-3 rounded-2xl bg-white/75 px-4 py-3">
-                  <span className="min-w-0 break-words text-sm font-semibold text-[#17304F]">{goal.name}</span>
+                <li key={goal.id} data-testid="goals-trash-item" className="flex items-center justify-between gap-3 rounded-2xl bg-card/75 px-4 py-3">
+                  <span className="min-w-0 break-words text-sm font-semibold text-ink">{goal.name}</span>
                   <button
                     type="button"
                     onClick={() => void handleRestore(goal)}
                     disabled={restoringId === goal.id}
-                    className="inline-flex min-h-11 rounded-full border border-[#BBE5C7] bg-white px-4 text-sm font-semibold text-[#166534] hover:bg-[#EFF4FA] disabled:cursor-not-allowed disabled:bg-[#E6ECF4] disabled:text-[#46597A]"
+                    className="inline-flex min-h-11 rounded-full border border-success-border bg-card px-4 text-sm font-semibold text-green hover:bg-blue-wash disabled:cursor-not-allowed disabled:bg-chip-slate disabled:text-ink-2"
                   >
                     {restoringId === goal.id ? "Memulihkan" : "Pulihkan"}
                   </button>
@@ -445,7 +445,7 @@ export function GoalsSection() {
 
       {adjust ? (
         <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-[#14273F]/40 sm:items-center sm:p-4"
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setAdjust(null);
           }}
@@ -457,37 +457,37 @@ export function GoalsSection() {
             aria-labelledby="goal-adjust-title"
             tabIndex={-1}
             data-testid="adjust-dialog"
-            className="w-full max-w-lg rounded-t-3xl border border-[#D8E2EE] bg-white p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+            className="w-full max-w-lg rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
           >
             <div className="flex items-center justify-between gap-3">
-              <h3 id="goal-adjust-title" className="text-lg font-semibold tracking-tight text-[#17304F]">
+              <h3 id="goal-adjust-title" className="text-lg font-semibold tracking-tight text-ink">
                 {adjust.direction === "add" ? "Catat progres" : "Koreksi progres"}
               </h3>
               <button
                 type="button"
                 onClick={() => setAdjust(null)}
                 aria-label="Tutup"
-                className="flex h-11 w-11 items-center justify-center rounded-full text-[#46597A] hover:bg-[#EFF4FA]"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
-            <p className="mt-1 text-sm font-semibold text-[#46597A]">{adjust.name}</p>
-            <label className="mt-5 block text-xs font-semibold text-[#46597A]" htmlFor="goal-adjust-amount">
+            <p className="mt-1 text-sm font-semibold text-ink-2">{adjust.name}</p>
+            <label className="mt-5 block text-xs font-semibold text-ink-2" htmlFor="goal-adjust-amount">
               Jumlah progres (rupiah)
               <MoneyInput
                 id="goal-adjust-amount"
                 value={adjustAmount}
                 onValueChange={setAdjustAmount}
-                className="mt-1 w-full rounded-2xl border border-[#C9D6E4] bg-white px-3 py-3 text-lg tabular-nums text-[#17304F] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+                className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-3 text-lg tabular-nums text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
               />
             </label>
             {adjustError ? (
-              <p role="alert" className="mt-2 text-xs text-[#B91C1C]">
+              <p role="alert" className="mt-2 text-xs text-danger">
                 {adjustError}
               </p>
             ) : (
-              <p className="mt-2 text-xs text-[#5C6C86]">
+              <p className="mt-2 text-xs text-placeholder">
                 Ini hanya memperbarui progres target, bukan saldo dompet atau transaksi.
                 Progres target tidak boleh minus.
               </p>

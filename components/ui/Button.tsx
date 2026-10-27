@@ -18,14 +18,14 @@ export interface ButtonProps
 /* Doc 01 §5.1: one filled green primary, outlined secondary, blue AI accent. */
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-[#166534] text-white shadow-pill hover:bg-[#155C30] active:scale-[0.98]",
+    "bg-brand-green text-white shadow-pill hover:bg-brand-green-hover active:scale-[0.98]",
   secondary:
-    "border border-[#BFD3E8] bg-white text-[#1D4F87] shadow-sm hover:bg-[#EFF4FA] active:scale-[0.98]",
+    "border border-blue-border bg-card text-blue shadow-sm hover:bg-blue-wash active:scale-[0.98]",
   ghost:
-    "text-[#46597A] hover:bg-[#EFF4FA] hover:text-[#17304F] active:scale-[0.98]",
+    "text-ink-2 hover:bg-blue-wash hover:text-ink active:scale-[0.98]",
   danger:
-    "bg-[#B91C1C] text-white shadow-sm hover:bg-[#991B1B] active:scale-[0.98]",
-  ai: "bg-[#1D4F87] text-white shadow-sm hover:bg-[#173F6C] active:scale-[0.98]",
+    "bg-brand-danger text-white shadow-sm hover:bg-brand-danger-hover active:scale-[0.98]",
+  ai: "bg-brand-blue text-white shadow-sm hover:bg-brand-blue-hover active:scale-[0.98]",
 };
 
 /* Every size keeps a tap target of at least 44px (doc 01 §6.4). */
@@ -58,7 +58,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={isLoading || undefined}
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all",
-          "disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[#E6ECF4] disabled:text-[#46597A] disabled:shadow-none disabled:active:scale-100",
+          "disabled:cursor-not-allowed disabled:border-transparent disabled:bg-chip-slate disabled:text-ink-2 disabled:shadow-none disabled:active:scale-100",
           variantClasses[variant],
           sizeClasses[size],
           className,

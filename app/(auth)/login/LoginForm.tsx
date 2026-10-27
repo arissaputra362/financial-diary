@@ -156,17 +156,17 @@ export function LoginForm({
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-[#D8E2EE] bg-white p-8 shadow-bento">
+        <div className="rounded-3xl border border-card-border bg-card p-8 shadow-bento">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-[#17304F]">
+            <h1 className="text-2xl font-bold tracking-tight text-ink">
               Financial Diary
             </h1>
-            <p className="mt-1 text-[#46597A]">Keuangan keluarga jadi lebih mudah.</p>
+            <p className="mt-1 text-ink-2">Keuangan keluarga jadi lebih mudah.</p>
           </div>
 
           <noscript>
             <div
-              className="mb-4 rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] p-3 text-sm text-[#B91C1C]"
+              className="mb-4 rounded-2xl border border-danger-border bg-danger-bg p-3 text-sm text-danger"
               role="alert"
             >
               JavaScript belum aktif di browser ini. Aktifkan JavaScript, lalu muat ulang halaman untuk masuk.
@@ -174,15 +174,15 @@ export function LoginForm({
           </noscript>
 
           {initialSignup && initialInviteCode && checkingSession && (
-            <div className="mb-6 rounded-2xl border border-[#D8E2EE] bg-[#EFF4FA] p-4 text-sm text-[#46597A]">
+            <div className="mb-6 rounded-2xl border border-card-border bg-blue-wash p-4 text-sm text-ink-2">
               Memeriksa sesi akun...
             </div>
           )}
 
           {initialSignup && initialInviteCode && !checkingSession && authenticatedUser && (
-            <div className="mb-6 rounded-2xl border border-[#B8DCC0] bg-[#F0F9F1] p-4">
-              <p className="font-semibold text-[#17304F]">Anda masih login</p>
-              <p className="mt-1 text-sm text-[#46597A]">
+            <div className="mb-6 rounded-2xl border border-success-border bg-success-bg p-4">
+              <p className="font-semibold text-ink">Anda masih login</p>
+              <p className="mt-1 text-sm text-ink-2">
                 Saat ini masuk sebagai {authenticatedUser.displayName} ({authenticatedUser.email}).
                 Link undangan ini digunakan untuk membuat akun anggota baru dan tidak akan mengubah akun yang sedang aktif.
               </p>
@@ -190,7 +190,7 @@ export function LoginForm({
                 <button
                   type="button"
                   onClick={() => router.push("/transactions")}
-                  className="min-h-11 rounded-full bg-[#166534] px-4 py-2 text-sm font-semibold text-white hover:bg-[#155C30]"
+                  className="min-h-11 rounded-full bg-brand-green px-4 py-2 text-sm font-semibold text-white hover:bg-brand-green-hover"
                   disabled={loading}
                 >
                   Kembali ke aplikasi
@@ -198,7 +198,7 @@ export function LoginForm({
                 <button
                   type="button"
                   onClick={handleUseInvite}
-                  className="min-h-11 rounded-full border border-[#B8DCC0] bg-white px-4 py-2 text-sm font-semibold text-[#166534] hover:bg-[#E8F3EB]"
+                  className="min-h-11 rounded-full border border-success-border bg-card px-4 py-2 text-sm font-semibold text-green hover:bg-success-bg"
                   disabled={loading}
                 >
                   {loading ? "Keluar..." : "Keluar dan gunakan undangan"}
@@ -210,7 +210,7 @@ export function LoginForm({
           {(!initialSignup || !initialInviteCode || (!checkingSession && !authenticatedUser)) && (
           <>
           <div
-            className="mb-6 flex rounded-full bg-[#EFF4FA] p-1"
+            className="mb-6 flex rounded-full bg-blue-wash p-1"
             role="group"
             aria-label="Pilih mode akun"
           >
@@ -218,10 +218,10 @@ export function LoginForm({
               type="button"
               onClick={() => setIsSignup(false)}
               aria-pressed={!isSignup}
-              className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/25 ${
+              className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue/25 ${
                 !isSignup
-                  ? "bg-white text-[#17304F] shadow-sm"
-                  : "text-[#46597A] hover:text-[#17304F]"
+                  ? "bg-card text-ink shadow-sm"
+                  : "text-ink-2 hover:text-ink"
               }`}
             >
               Masuk
@@ -230,10 +230,10 @@ export function LoginForm({
               type="button"
               onClick={() => setIsSignup(true)}
               aria-pressed={isSignup}
-              className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/25 ${
+              className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue/25 ${
                 isSignup
-                  ? "bg-white text-[#17304F] shadow-sm"
-                  : "text-[#46597A] hover:text-[#17304F]"
+                  ? "bg-card text-ink shadow-sm"
+                  : "text-ink-2 hover:text-ink"
               }`}
             >
               Buat akun
@@ -242,7 +242,7 @@ export function LoginForm({
 
           {error && (
             <div
-              className="mb-4 rounded-2xl border border-[#F3C2C2] bg-[#FDECEC] p-3 text-sm text-[#B91C1C]"
+              className="mb-4 rounded-2xl border border-danger-border bg-danger-bg p-3 text-sm text-danger"
               role="alert"
             >
               {error}
@@ -253,7 +253,7 @@ export function LoginForm({
               bundle fails to boot and the browser submits the form natively. */}
           <form method="post" onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
+              <label htmlFor="email" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-2">
                 Email
               </label>
               <input
@@ -263,7 +263,7 @@ export function LoginForm({
                 value={email}
                 onChange={(e) => setEmail(e.target.value.trim().toLowerCase())}
                 required
-                className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
+                className="w-full rounded-2xl border border-input-border px-4 py-3 text-ink outline-none transition-all placeholder:text-placeholder focus:border-blue focus:ring-4 focus:ring-blue/15"
                 placeholder="nama@contoh.com"
                 disabled={loading}
               />
@@ -271,7 +271,7 @@ export function LoginForm({
 
             {isSignup && (
               <div>
-                <label htmlFor="displayName" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
+                <label htmlFor="displayName" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-2">
                   Nama tampil
                 </label>
                 <input
@@ -282,7 +282,7 @@ export function LoginForm({
                   onChange={(e) => setDisplayName(e.target.value)}
                   required
                   maxLength={60}
-                  className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
+                  className="w-full rounded-2xl border border-input-border px-4 py-3 text-ink outline-none transition-all placeholder:text-placeholder focus:border-blue focus:ring-4 focus:ring-blue/15"
                   placeholder="Nama Anda"
                   disabled={loading}
                 />
@@ -290,7 +290,7 @@ export function LoginForm({
             )}
 
             <div className="relative">
-              <label htmlFor="password" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
+              <label htmlFor="password" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-2">
                 Kata sandi
               </label>
               <div className="relative">
@@ -302,14 +302,14 @@ export function LoginForm({
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={8}
-                  className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 pr-12 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
+                  className="w-full rounded-2xl border border-input-border px-4 py-3 pr-12 text-ink outline-none transition-all placeholder:text-placeholder focus:border-blue focus:ring-4 focus:ring-blue/15"
                   placeholder="Minimal 8 karakter"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[#5C7191] transition-colors hover:bg-[#EFF4FA] hover:text-[#17304F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#1D4F87]/25"
+                  className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-blue-wash hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue/25"
                   aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
                   aria-pressed={showPassword}
                 >
@@ -328,12 +328,12 @@ export function LoginForm({
             </div>
 
             {!isSignup && (
-              <label className="flex items-center gap-2 text-sm text-[#46597A]">
+              <label className="flex items-center gap-2 text-sm text-ink-2">
                 <input
                   type="checkbox"
                   checked={rememberEmail}
                   onChange={(e) => setRememberEmail(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#C9D6E4] text-[#166534] focus:ring-[#166534]/25"
+                  className="h-4 w-4 rounded border-input-border text-green focus:ring-green/25"
                 />
                 Ingat email saya di perangkat ini
               </label>
@@ -341,7 +341,7 @@ export function LoginForm({
 
             {isSignup && (
               <div>
-                <label htmlFor="inviteCode" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#46597A]">
+                <label htmlFor="inviteCode" className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-ink-2">
                   Kode undangan (opsional)
                 </label>
                 <input
@@ -349,11 +349,11 @@ export function LoginForm({
                   type="text"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  className="w-full rounded-2xl border border-[#C9D6E4] px-4 py-3 text-[#17304F] outline-none transition-all placeholder:text-[#5C6C86] focus:border-[#1D4F87] focus:ring-4 focus:ring-[#1D4F87]/15"
+                  className="w-full rounded-2xl border border-input-border px-4 py-3 text-ink outline-none transition-all placeholder:text-placeholder focus:border-blue focus:ring-4 focus:ring-blue/15"
                   placeholder="Masukkan kode undangan"
                   disabled={loading}
                 />
-                <p className="mt-1.5 text-xs text-[#5C7191]">
+                <p className="mt-1.5 text-xs text-ink-3">
                   Punya kode undangan? Masukkan untuk bergabung ke keluarga yang sudah ada. Tanpa kode, kamu akan membuat keluarga baru.
                 </p>
               </div>
@@ -369,12 +369,12 @@ export function LoginForm({
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-[#46597A]">
+          <p className="mt-6 text-center text-sm text-ink-2">
             {isSignup ? "Sudah punya akun? " : "Belum punya akun? "}
             <button
               type="button"
               onClick={() => setIsSignup(!isSignup)}
-              className="font-semibold text-[#1D4F87] hover:text-[#17304F]"
+              className="font-semibold text-blue hover:text-ink"
             >
               {isSignup ? "Masuk" : "Buat akun"}
             </button>

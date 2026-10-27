@@ -52,14 +52,14 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
   return (
     <section
       aria-labelledby="budget-title"
-      className="rounded-3xl border border-[#D8E2EE] bg-white p-6 shadow-bento"
+      className="rounded-3xl border border-card-border bg-card p-6 shadow-bento"
     >
       <div className="flex items-start justify-between gap-3">
-        <h2 id="budget-title" className="text-lg font-semibold text-[#17304F]">
+        <h2 id="budget-title" className="text-lg font-semibold text-ink">
           Anggaran bulan ini
         </h2>
         {activeBudget.isSet ? (
-          <span className="shrink-0 rounded-full bg-[#E6ECF4] px-3 py-1 text-xs font-semibold text-[#46597A]">
+          <span className="shrink-0 rounded-full bg-chip-slate px-3 py-1 text-xs font-semibold text-ink-2">
             {monthLabel(activeBudget.periodStart)}
           </span>
         ) : null}
@@ -78,30 +78,30 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
           <p
             className={
               longRemaining
-                ? "mt-4 whitespace-nowrap text-[clamp(1.1rem,4.5vw,1.875rem)] font-bold leading-tight tracking-tight tabular-nums text-[#17304F]"
-                : "mt-4 whitespace-nowrap text-[clamp(1.5rem,6vw,1.875rem)] font-bold leading-tight tracking-tight tabular-nums text-[#17304F]"
+                ? "mt-4 whitespace-nowrap text-[clamp(1.1rem,4.5vw,1.875rem)] font-bold leading-tight tracking-tight tabular-nums text-ink"
+                : "mt-4 whitespace-nowrap text-[clamp(1.5rem,6vw,1.875rem)] font-bold leading-tight tracking-tight tabular-nums text-ink"
             }
           >
             {formatIDR(activeBudget.remainingMinor ?? 0)}
           </p>
-          <p className="mt-0.5 text-sm font-medium text-[#46597A]">sisa anggaran</p>
+          <p className="mt-0.5 text-sm font-medium text-ink-2">sisa anggaran</p>
           <div
-            className="mt-4 h-3 overflow-hidden rounded-full bg-[#E5EDF5]"
+            className="mt-4 h-3 overflow-hidden rounded-full bg-bar-track"
             role="img"
             aria-label={`${spentPercent} persen anggaran terpakai`}
           >
             <div
-              className="h-full rounded-full bg-[#1D4F87]"
+              className="h-full rounded-full bg-blue"
               style={{ width: `${spentPercent}%` }}
             />
           </div>
-          <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs font-semibold text-[#46597A]">
+          <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs font-semibold text-ink-2">
             <span className="tabular-nums">{formatIDR(activeBudget.spentMinor)} sudah dipakai</span>
             <span className="tabular-nums">
               dari {formatIDR(activeBudget.budgetMinor ?? 0)} anggaran ({spentPercent}%)
             </span>
           </div>
-          <p className="mt-3 text-xs text-[#5C7191]">
+          <p className="mt-3 text-xs text-ink-3">
             {isPersonal
               ? "Dihitung dari dompet pribadimu."
               : "Dihitung dari dompet keluarga saja."}
@@ -109,21 +109,21 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
         </>
       ) : (
         <>
-          <p className="mt-4 text-lg font-bold text-[#17304F]">
+          <p className="mt-4 text-lg font-bold text-ink">
             {isPersonal ? "Belum ada anggaran pribadi bulan ini" : "Belum ada anggaran bulan ini"}
           </p>
-          <p className="mt-1 text-sm text-[#46597A]">
+          <p className="mt-1 text-sm text-ink-2">
             {isPersonal
               ? "Atur anggaran supaya pengeluaran pribadimu lebih terkendali."
               : "Atur anggaran supaya pengeluaran keluarga lebih terkendali."}
           </p>
           <Link
             href={isPersonal ? "/budget?scope=personal" : "/budget"}
-            className="mt-4 inline-flex min-h-11 items-center rounded-full bg-[#166534] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#155C30]"
+            className="mt-4 inline-flex min-h-11 items-center rounded-full bg-brand-green px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-green-hover"
           >
             Atur anggaran
           </Link>
-          <p className="mt-3 text-xs text-[#5C7191]">
+          <p className="mt-3 text-xs text-ink-3">
             {isPersonal
               ? "Dihitung dari dompet pribadimu."
               : "Dihitung dari dompet keluarga saja."}

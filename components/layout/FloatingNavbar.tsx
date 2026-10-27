@@ -46,7 +46,7 @@ export function FloatingNavbar() {
       <nav
         aria-label="Navigasi utama"
         data-nav="top"
-        className="flex w-full max-w-6xl items-center justify-between gap-2 rounded-full border border-white/10 bg-[#14273F]/95 px-3 py-2 text-white shadow-floating-nav backdrop-blur-md lg:px-4"
+        className="flex w-full max-w-6xl items-center justify-between gap-2 rounded-full border border-white/10 bg-navy/95 px-3 py-2 text-white shadow-floating-nav backdrop-blur-md lg:px-4"
       >
         <Link
           href="/home"
@@ -55,7 +55,7 @@ export function FloatingNavbar() {
         >
           <span
             aria-hidden="true"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DCEBFA] text-[#14273F]"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-tint text-ink"
           >
             <Wallet className="h-4 w-4" />
           </span>
@@ -80,7 +80,7 @@ export function FloatingNavbar() {
                 className={cn(
                   "flex min-h-11 items-center gap-1.5 rounded-full px-2.5 text-sm transition-colors lg:px-3 xl:px-4",
                   isActive
-                    ? "bg-[#DCEBFA] font-medium text-[#14273F]"
+                    ? "bg-blue-tint font-medium text-ink"
                     : "text-white/60 hover:text-white",
                 )}
               >
@@ -96,7 +96,7 @@ export function FloatingNavbar() {
             href="/transactions?add=1"
             onClick={openAddIntent}
             aria-label="Tambah transaksi"
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#166534] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#155C30] xl:px-4"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-green px-3 text-sm font-semibold text-white transition-colors hover:bg-brand-green-hover xl:px-4"
           >
             <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="hidden lg:inline">Tambah transaksi</span>
@@ -105,7 +105,7 @@ export function FloatingNavbar() {
           <Link
             href="/profile"
             aria-label="Buka profil kamu"
-            className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/20 bg-[#1D4F87] text-xs font-bold text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/20 bg-brand-blue text-xs font-bold text-white"
           >
             <User className="h-4 w-4" aria-hidden="true" />
           </Link>

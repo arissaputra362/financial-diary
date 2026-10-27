@@ -187,7 +187,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
     <>
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="space-y-5">
       <fieldset>
-        <legend className="text-xs font-medium uppercase tracking-wider text-[#46597A]">Jenis transaksi</legend>
+        <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Jenis transaksi</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {(
             initialRow
@@ -206,8 +206,8 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
               className={cn(
                 "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                 type === value
-                  ? "bg-[#1D4F87] text-white"
-                  : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]",
+                  ? "bg-brand-blue text-white"
+                  : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
               )}
             >
               {label}
@@ -223,19 +223,19 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
         error={fieldErrors.amountMinor?.[0]}
         helperText={type === "TRANSFER" ? "Masukkan sekali saja, kedua sisi dibuat otomatis." : undefined}
       >
-        <div className="flex items-center gap-2 rounded-2xl border border-[#C9D6E4] bg-white px-4 py-3 focus-within:border-[#1D4F87] focus-within:ring-4 focus-within:ring-[#1D4F87]/15">
-          <span className="text-lg font-semibold text-[#46597A]">Rp</span>
+        <div className="flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-blue focus-within:ring-4 focus-within:ring-blue/15">
+          <span className="text-lg font-semibold text-ink-2">Rp</span>
           <MoneyInput
             id="amount"
             value={amountDigits}
             onValueChange={setAmountDigits}
             placeholder="0"
             aria-invalid={fieldErrors.amountMinor ? true : undefined}
-            className="w-full min-w-0 bg-transparent text-2xl font-bold tabular-nums text-[#17304F] outline-none placeholder:text-[#5C6C86]/60"
+            className="w-full min-w-0 bg-transparent text-2xl font-bold tabular-nums text-ink outline-none placeholder:text-placeholder/60"
           />
         </div>
         {amountDigits ? (
-          <p className="text-xs text-[#5C7191]">Terbaca: {formatIDR(amountMinor)}</p>
+          <p className="text-xs text-ink-3">Terbaca: {formatIDR(amountMinor)}</p>
         ) : null}
       </Field>
 
@@ -265,7 +265,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
 
       {type !== "TRANSFER" ? (
         <fieldset>
-          <legend className="text-xs font-medium uppercase tracking-wider text-[#46597A]">Kategori</legend>
+          <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Kategori</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {categories.map((value) => {
               const selected = category === value;
@@ -279,8 +279,8 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
                   className={cn(
                     "flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all",
                     selected
-                      ? "border-[#1D4F87] bg-[#DCEBFA] text-[#1D4F87]"
-                      : "border-[#BFD3E8] bg-white text-[#46597A] hover:bg-[#EFF4FA]",
+                      ? "border-blue bg-blue-tint text-blue"
+                      : "border-blue-border bg-card text-ink-2 hover:bg-blue-wash",
                   )}
                 >
                   <span aria-hidden="true">{CATEGORY_EMOJI[value]}</span>
@@ -290,7 +290,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
             })}
           </div>
           {fieldErrors.category?.[0] ? (
-            <p role="alert" className="mt-1.5 text-xs text-[#B91C1C]">
+            <p role="alert" className="mt-1.5 text-xs text-danger">
               {fieldErrors.category[0]}
             </p>
           ) : null}
@@ -298,7 +298,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
       ) : null}
 
       <fieldset>
-        <legend className="text-xs font-medium uppercase tracking-wider text-[#46597A]">Tanggal</legend>
+        <legend className="text-xs font-medium uppercase tracking-wider text-ink-2">Tanggal</legend>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {(
             [
@@ -315,8 +315,8 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
               className={cn(
                 "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                 dateChoice === value
-                  ? "bg-[#1D4F87] text-white"
-                  : "border border-[#BFD3E8] bg-white text-[#1D4F87] hover:bg-[#EFF4FA]",
+                  ? "bg-brand-blue text-white"
+                  : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
               )}
             >
               {label}
@@ -329,12 +329,12 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
               value={customDate}
               max={todayJakarta()}
               onChange={(event) => setCustomDate(event.target.value)}
-              className="min-h-11 rounded-2xl border border-[#C9D6E4] bg-white px-3 text-sm text-[#17304F] accent-[#1D4F87] focus:border-[#1D4F87] focus:outline-none focus:ring-4 focus:ring-[#1D4F87]/15"
+              className="min-h-11 rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
             />
           ) : null}
         </div>
         {fieldErrors.occurredAt?.[0] ? (
-          <p role="alert" className="mt-1.5 text-xs text-[#B91C1C]">
+          <p role="alert" className="mt-1.5 text-xs text-danger">
             {fieldErrors.occurredAt[0]}
           </p>
         ) : null}
@@ -361,7 +361,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
       />
 
       {formError ? (
-        <p role="alert" className="rounded-2xl bg-[#FDECEC] px-4 py-3 text-sm text-[#B91C1C]">
+        <p role="alert" className="rounded-2xl bg-danger-bg px-4 py-3 text-sm text-danger">
           {formError}
         </p>
       ) : null}
@@ -376,10 +376,10 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
       </div>
 
       {!initialRow ? (
-        <p className="flex items-center justify-center gap-1.5 text-xs text-[#5C7191]">
+        <p className="flex items-center justify-center gap-1.5 text-xs text-ink-3">
           <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" />
           Ada struk?{" "}
-          <button type="button" onClick={() => onSwitchToScan?.()} className="font-semibold text-[#1D4F87] underline">
+          <button type="button" onClick={() => onSwitchToScan?.()} className="font-semibold text-blue underline">
             Scan struk
           </button>
         </p>
@@ -448,33 +448,33 @@ function WalletField({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wider text-[#46597A]">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-ink-2">{label}</p>
       <button
         type="button"
         onClick={onPick}
         aria-haspopup="dialog"
         className={cn(
-          "mt-1.5 flex min-h-12 w-full items-center justify-between gap-2 rounded-2xl border bg-white px-4 text-left",
-          error ? "border-[#B91C1C]" : "border-[#C9D6E4]",
+          "mt-1.5 flex min-h-12 w-full items-center justify-between gap-2 rounded-2xl border bg-card px-4 text-left",
+          error ? "border-danger" : "border-input-border",
         )}
       >
         {wallet ? (
           <span className="flex min-w-0 items-center gap-2">
             <ScopePill scope={wallet.scope} />
-            <span className="truncate text-[15px] font-semibold text-[#17304F]">{wallet.name}</span>
+            <span className="truncate text-[15px] font-semibold text-ink">{wallet.name}</span>
           </span>
         ) : (
-          <span className="flex items-center gap-2 text-[#46597A]">
+          <span className="flex items-center gap-2 text-ink-2">
             <WalletIcon className="h-4 w-4" aria-hidden="true" />
             <span className="text-sm">Pilih dompet</span>
           </span>
         )}
-        <span aria-hidden="true" className="text-[#5C7191]">
+        <span aria-hidden="true" className="text-ink-3">
           &gt;
         </span>
       </button>
       {error ? (
-        <p role="alert" className="mt-1.5 text-xs text-[#B91C1C]">
+        <p role="alert" className="mt-1.5 text-xs text-danger">
           {error}
         </p>
       ) : null}
