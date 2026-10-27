@@ -150,7 +150,7 @@ export default function FamilyView({
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4 px-1">
+        <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
             <Link
               href="/home"
@@ -160,24 +160,24 @@ export default function FamilyView({
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
             <div className="min-w-0">
-            <Link
-              href="/profile"
-              className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Kembali ke Profil
-            </Link>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
-              Kelola keluarga
-            </p>
-            <h1 className="mt-1 flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
-              <Users className="h-5 w-5 shrink-0 text-[#1D4F87]" aria-hidden="true" />
-              {householdName || "Keluarga"}
-            </h1>
-          </div>
+              <Link
+                href="/profile"
+                className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Kembali ke Profil
+              </Link>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5C7191]">
+                Kelola keluarga
+              </p>
+              <h1 className="mt-1 flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
+                <Users className="h-5 w-5 shrink-0 text-[#1D4F87]" aria-hidden="true" />
+                {householdName || "Keluarga"}
+              </h1>
+            </div>
           </div>
           {isOwner && (
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
               <Button
                 variant="secondary"
                 onClick={() => {

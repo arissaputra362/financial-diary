@@ -105,34 +105,34 @@ export function GoldPageView() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-6 pb-28 sm:px-6 lg:max-w-3xl">
       {/* Page Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
+      <div className="flex flex-col gap-4 px-1 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <Link
+            href="/home"
+            aria-label="Kembali ke Beranda"
+            className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#5C7191] shadow-xs hover:bg-[#F1F5FA] md:flex"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <div className="min-w-0">
             <Link
-              href="/home"
-              aria-label="Kembali ke Beranda"
-              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-[#5C7191] shadow-xs hover:bg-[#F1F5FA] md:flex"
+              href="/profile"
+              className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Kembali ke Profil
             </Link>
-            <div>
-              <Link
-                href="/profile"
-                className="mb-3 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-[#1D4F87] hover:bg-[#EFF4FA] md:hidden"
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                Kembali ke Profil
-              </Link>
-              <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
-                <Coins className="h-5 w-5 text-amber-500" aria-hidden="true" />
-                Tabungan Emas
-              </h1>
-              <p className="mt-0.5 text-xs text-[#5C7191]">
-                Logam mulia batangan &amp; emas perhiasan keluarga
-              </p>
-            </div>
+            <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#17304F]">
+              <Coins className="h-5 w-5 shrink-0 text-amber-500" aria-hidden="true" />
+              Tabungan Emas
+            </h1>
+            <p className="mt-0.5 text-xs text-[#5C7191]">
+              Logam mulia batangan &amp; emas perhiasan keluarga
+            </p>
           </div>
+        </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           <button
             type="button"
             onClick={() => setAmountsVisible((visible) => !visible)}
@@ -145,9 +145,9 @@ export function GoldPageView() {
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-[#166534] px-4 text-xs font-semibold text-white shadow-xs hover:bg-[#155C30]"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#166534] px-4 text-sm font-semibold text-white shadow-xs hover:bg-[#155C30]"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" aria-hidden="true" />
             Tambah Emas
           </button>
         </div>
