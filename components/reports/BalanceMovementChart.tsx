@@ -68,8 +68,8 @@ export interface BalanceMovementChartProps {
   monthLabel: string;
   /** True while the selected report period is the current Jakarta month. */
   isCurrentMonth: boolean;
-  /** "bersama" or "pribadi", used in the accessible name. */
-  scopeLabel: "bersama" | "pribadi";
+  /** Report scope, used in the accessible name. */
+  scopeLabel: "semua" | "bersama" | "pribadi";
 }
 
 /** Daily closing balances shown as a step-area chart with one date slider. */
