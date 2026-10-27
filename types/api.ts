@@ -194,7 +194,7 @@ export type DashboardDTO = {
 
 /* ── Monthly report (feat-reporting, AC-F7-1..15) ───────────────────── */
 
-export type ReportScopeDTO = "SHARED" | "PERSONAL";
+export type ReportScopeDTO = "ALL" | "SHARED" | "PERSONAL";
 
 export type ReportCategoryDTO = {
   /** Stored category label; never invented by the client. */

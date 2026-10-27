@@ -8,7 +8,7 @@ import { apiRequest } from "@/lib/api-client";
 import type { GoldPortfolioSummaryDTO } from "@/types/gold";
 
 interface GoldReportSectionProps {
-  scope: "personal" | "shared";
+  scope: "all" | "personal" | "shared";
   liquidBalanceMinor: number;
 }
 
@@ -18,13 +18,27 @@ export function GoldReportSection({ scope, liquidBalanceMinor }: GoldReportSecti
 
   useEffect(() => {
     let active = true;
-    const scopeParam = scope === "shared" ? "SHARING" : "PERSONAL";
-
-    apiRequest<GoldPortfolioSummaryDTO>(`/api/gold/assets?scope=${scopeParam}`)
-      .then((res) => {
+    const scopes = scope === "all" ? ["SHARING", "PERSONAL"] : [scope === "shared" ? "SHARING" : "PERSONAL"];
+    Promise.all(scopes.map((scopeParam) => apiRequest<GoldPortfolioSummaryDTO>(`/api/gold/assets?scope=${scopeParam}`)))
+      .then((responses) => {
         if (!active) return;
-        if (res.ok && res.data) {
-          setData(res.data);
+        const summaries = responses.flatMap((response) => response.ok && response.data ? [response.data] : []);
+        if (summaries.length) {
+          const [first] = summaries;
+          const totalCostBasisMinor = summaries.reduce((sum, item) => sum + item.totalCostBasisMinor, 0);
+          const totalUnrealizedPnLMinor = summaries.reduce((sum, item) => sum + item.totalUnrealizedPnLMinor, 0);
+          setData({
+            ...first,
+            totalEstimatedValueMinor: summaries.reduce((sum, item) => sum + item.totalEstimatedValueMinor, 0),
+            totalCostBasisMinor,
+            totalUnrealizedPnLMinor,
+            totalUnrealizedPnLPercent: totalCostBasisMinor > 0 ? (totalUnrealizedPnLMinor / totalCostBasisMinor) * 100 : 0,
+            totalWeightGrams: summaries.reduce((sum, item) => sum + item.totalWeightGrams, 0),
+            bullionWeightGrams: summaries.reduce((sum, item) => sum + item.bullionWeightGrams, 0),
+            jewelryWeightGrams: summaries.reduce((sum, item) => sum + item.jewelryWeightGrams, 0),
+            itemCount: summaries.reduce((sum, item) => sum + item.itemCount, 0),
+            assets: summaries.flatMap((item) => item.assets),
+          });
         }
       })
       .catch(() => {})

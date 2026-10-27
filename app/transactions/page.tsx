@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { ActivityView } from "@/components/transactions/ActivityView";
-import type { ActivityTypeFilter } from "@/components/transactions/activityUrl";
+import type { ActivityScopeFilter, ActivityTypeFilter } from "@/components/transactions/activityUrl";
 import { monthKeyRange, resolveMonthKey } from "@/lib/dates";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -11,8 +11,8 @@ function parseFilter(value: string | string[] | undefined): ActivityTypeFilter {
 
 /*
   Activity page (nav label "Activity", A-31). Trash is a tab on this page:
-  `/transactions?view=trash`. Ringkasan is the third tab:
-  `/transactions?view=ringkasan&month=YYYY-MM`. The selected month is
+  `/transactions?view=trash`. Ringkasan is a separate view opened from the
+  monthly summary card: `/transactions?view=ringkasan&month=YYYY-MM`. The selected month is
   deep-linked so refresh, back/forward, and shared links all restore the same
   view (invalid keys fall back to the current month). The Add flow is an action
   from here, not a route.
@@ -42,11 +42,15 @@ export default async function TransactionsPage({
       ? params.to
       : undefined;
   const filter = view === "active" ? parseFilter(params.filter) : "all";
+  const transactionScope: ActivityScopeFilter =
+    params.scope === "personal" || params.scope === "PERSONAL" ? "personal" :
+    params.scope === "shared" || params.scope === "SHARING" ? "shared" : "all";
   const walletId =
     typeof params.wallet === "string" && UUID_PATTERN.test(params.wallet)
       ? params.wallet
       : undefined;
-  const reportScope = view === "ringkasan" && params.scope === "personal" ? "personal" : "shared";
+  const reportScope = view === "ringkasan" && params.scope === "personal" ? "personal" :
+    view === "ringkasan" && params.scope === "shared" ? "shared" : "all";
   /* `?add=1` opens the add sheet: nav "Tambah" and the dashboard link here (A-27). */
   const initialAdd = params.add === "1";
   return (
@@ -62,6 +66,7 @@ export default async function TransactionsPage({
         initialTo={to}
         initialAdd={initialAdd}
         initialFilter={filter}
+        initialScope={transactionScope}
         initialWalletId={view === "active" ? walletId : undefined}
         initialReportScope={reportScope}
         initialReportWalletId={view === "ringkasan" ? walletId : undefined}

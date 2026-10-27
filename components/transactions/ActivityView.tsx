@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronLeft, ChevronRight, Plus, ReceiptText, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Plus, ReceiptText, SlidersHorizontal } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MonthlyReport, type ReportScope } from "@/components/reports/MonthlyReport";
 import { Button } from "@/components/ui/Button";
@@ -26,6 +26,7 @@ import {
   activityHref,
   activityListUrl,
   type ActivityTypeFilter,
+  type ActivityScopeFilter,
   type ActivityViewMode,
 } from "./activityUrl";
 import {
@@ -35,6 +36,7 @@ import {
 } from "./activityRows";
 import { TransactionDetailSheet } from "./TransactionDetailSheet";
 import { TransactionList } from "./TransactionList";
+import { ActivityMonthSummaryCard } from "./ActivityMonthSummaryCard";
 import { UndoToast } from "./UndoToast";
 import { categoryLabel, isTransferLeg } from "./categories";
 
@@ -47,6 +49,7 @@ export interface ActivityViewProps {
   initialFrom?: string;
   initialTo?: string;
   initialFilter?: ActivityTypeFilter;
+  initialScope?: ActivityScopeFilter;
   /** Active tab wallet filter, or the selected report wallet on Ringkasan. */
   initialWalletId?: string;
   initialReportScope?: ReportScope;
@@ -66,7 +69,7 @@ const FILTER_OPTIONS: ReadonlyArray<readonly [ListFilter, string]> = [
  * Activity page: grouped active list with soft delete + 5-second undo, month
  * navigation deep-linked as `?month=YYYY-MM` (server-side filter, A-14), type
  * filters, cursor pagination, a detail sheet, a Trash tab
- * (`/transactions?view=trash`, A-31), and the monthly report tab
+ * (`/transactions?view=trash`, A-31), and the monthly report view
  * (`?view=ringkasan`, AC-F7-1). Add is an in-page flow, never a nav item.
  * The page passes a key for view + month, so URL-driven view/month changes
  * restart with fresh state; the Add intent is handled separately (AC-F3-14).
@@ -79,8 +82,9 @@ export function ActivityView({
   initialTo,
   initialAdd = false,
   initialFilter = "all",
+  initialScope = "all",
   initialWalletId,
-  initialReportScope = "shared",
+  initialReportScope = "all",
   initialReportWalletId,
   initialData,
 }: ActivityViewProps) {
@@ -90,6 +94,7 @@ export function ActivityView({
   const [transactionToDelete, setTransactionToDelete] = useState<TransactionDTO | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
   const [listFilter, setListFilter] = useState<ListFilter>(() => filterFromUrl(initialFilter));
+  const [transactionScope, setTransactionScope] = useState<ActivityScopeFilter>(initialScope);
   const [walletId, setWalletId] = useState(initialWalletId ?? "");
   const [reportScope, setReportScope] = useState<ReportScope>(initialReportScope);
   const [reportWalletId, setReportWalletId] = useState(initialReportWalletId ?? "");
@@ -147,12 +152,14 @@ export function ActivityView({
       from?: string;
       to?: string;
       filter?: ListFilter;
+      scope?: ActivityScopeFilter;
       walletId?: string;
       reportScope?: ReportScope;
       reportWalletId?: string;
     }) => {
       const nextMonth = next.month ?? activeMonth;
       const nextFilter = next.filter ?? listFilter;
+      const nextTransactionScope = next.scope ?? transactionScope;
       const transactionWallet = next.walletId ?? walletId;
       const nextScope = next.reportScope ?? reportScope;
       const nextReportWallet = next.reportWalletId ?? reportWalletId;
@@ -166,6 +173,7 @@ export function ActivityView({
           from: next.view === "active" ? nextFrom : undefined,
           to: next.view === "active" ? nextTo : undefined,
           filter: next.view === "active" ? filterToUrl(nextFilter) : "all",
+          scope: next.view === "active" ? nextTransactionScope : "all",
           walletId:
             next.view === "active"
               ? transactionWallet
@@ -177,7 +185,7 @@ export function ActivityView({
         { scroll: false },
       );
     },
-    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletId, router, walletId],
+    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletId, router, transactionScope, walletId],
   );
 
   /*
@@ -279,6 +287,7 @@ export function ActivityView({
         from: dateFrom,
         to: dateTo,
         filter: filterToUrl(listFilter),
+        scope: transactionScope,
       }),
     )
       .then((response) => {
@@ -322,6 +331,7 @@ export function ActivityView({
     dateTo,
     initialData,
     listFilter,
+    transactionScope,
     reloadToken,
     router,
     view,
@@ -414,6 +424,7 @@ export function ActivityView({
     setRows([]);
     setNextCursor(null);
     setListFilter("all");
+    setTransactionScope("all");
     setWalletId("");
     resetDateFilter();
     setFilterPanelOpen(false);
@@ -423,6 +434,7 @@ export function ActivityView({
       view: "active",
       month: activeMonth,
       filter: "all",
+      scope: "all",
       walletId: "",
       from: "",
       to: "",
@@ -442,6 +454,7 @@ export function ActivityView({
           from: dateFrom,
           to: dateTo,
           filter: filterToUrl(listFilter),
+          scope: transactionScope,
         }),
       );
       if (response.status === 401) {
@@ -465,6 +478,7 @@ export function ActivityView({
   const changeView = (next: ActivityViewMode) => {
     setUndo(null);
     setListFilter("all");
+    setTransactionScope("all");
     setWalletId("");
     setDetail(null);
     setFilterPanelOpen(false);
@@ -484,9 +498,46 @@ export function ActivityView({
       view: next,
       month: activeMonth,
       filter: "all",
+      scope: "all",
       walletId: "",
       from: "",
       to: "",
+    });
+  };
+
+  const openFullReport = () => {
+    const selectedWallet = wallets.find((wallet) => wallet.id === walletId);
+    const walletMatchesScope =
+      transactionScope === "all" || !selectedWallet ||
+      (transactionScope === "personal" && selectedWallet.scope === "PERSONAL") ||
+      (transactionScope === "shared" && selectedWallet.scope === "SHARING");
+    const nextReportWalletId = walletMatchesScope ? walletId : "";
+    setView("ringkasan");
+    setReportScope(transactionScope);
+    setReportWalletId(nextReportWalletId);
+    setFilterPanelOpen(false);
+    setLoading(false);
+    writeUrl({
+      view: "ringkasan",
+      month: activeMonth,
+      reportScope: transactionScope,
+      reportWalletId: nextReportWalletId,
+    });
+  };
+
+  const returnToTransactions = () => {
+    setView("active");
+    setFilterPanelOpen(false);
+    initialDataConsumed.current = true;
+    setLoading(true);
+    writeUrl({
+      view: "active",
+      month: activeMonth,
+      filter: listFilter,
+      scope: transactionScope,
+      walletId,
+      from: dateFrom,
+      to: dateTo,
     });
   };
 
@@ -645,7 +696,7 @@ export function ActivityView({
       }
       if (view !== "ringkasan") return;
       const inScope = nextWallets.filter((wallet) =>
-        reportScope === "shared" ? wallet.scope === "SHARING" : wallet.scope === "PERSONAL",
+        reportScope === "all" || (reportScope === "shared" ? wallet.scope === "SHARING" : wallet.scope === "PERSONAL"),
       );
       if (reportScope === "personal" && inScope.length === 0) {
         setReportScope("shared");
@@ -695,20 +746,31 @@ export function ActivityView({
         : null;
   const activeFilterLabels = [
     listFilter === "all" ? null : FILTER_OPTIONS.find(([value]) => value === listFilter)?.[1] ?? null,
+    transactionScope === "all" ? null : transactionScope === "personal" ? "Pribadi" : "Bersama",
     appliedDateLabel,
     walletId ? `Dompet: ${selectedWalletName ?? "Terpilih"}` : null,
   ].filter((label): label is string => label !== null);
   const showFilters = view === "active" && !loading && !error;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <PageHeader
-        className="flex-row flex-wrap items-center justify-start gap-3 print:hidden"
-        actionsClassName="w-auto flex-row items-center gap-3"
+        className="flex-row flex-wrap items-center justify-between gap-3 print:hidden"
+        actionsClassName="ml-auto w-auto flex-row items-center gap-3"
         eyebrow="Financial Diary"
-        title="Aktivitas"
+        title={view === "ringkasan" ? "Ringkasan" : "Aktivitas"}
         icon={ReceiptText}
-        actions={
+        beforeTitle={view === "ringkasan" ? (
+          <button
+            type="button"
+            onClick={returnToTransactions}
+            className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Kembali ke transaksi
+          </button>
+        ) : undefined}
+        actions={view !== "ringkasan" ? (
           <Button
             ref={addTriggerRef}
             data-add-transaction-trigger
@@ -719,21 +781,19 @@ export function ActivityView({
             <span className="sm:hidden">Tambah</span>
             <span className="hidden sm:inline">Tambah transaksi</span>
           </Button>
-        }
+        ) : undefined}
       />
 
-      <div
-        className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2 print:hidden"
-        role="tablist"
-        aria-label="Tampilan aktivitas"
-      >
-        {(
-          [
+      {view !== "ringkasan" ? (
+        <div
+          className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2 print:hidden"
+          role="tablist"
+          aria-label="Tampilan aktivitas"
+        >
+          {([
             ["active", "Transaksi"],
-            ["ringkasan", "Ringkasan"],
             ["trash", "Trash"],
-          ] as const
-        ).map(([value, label]) => (
+          ] as const).map(([value, label]) => (
           <button
             key={value}
             id={`activity-tab-${value}`}
@@ -751,15 +811,17 @@ export function ActivityView({
           >
             {label}
           </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : null}
 
       <div
         id={`activity-panel-${view}`}
         role="tabpanel"
-        aria-labelledby={`activity-tab-${view}`}
+        aria-labelledby={view === "ringkasan" ? "activity-report-title" : `activity-tab-${view}`}
         className="space-y-5"
       >
+      {view === "ringkasan" ? <h2 id="activity-report-title" className="sr-only">Ringkasan lengkap</h2> : null}
       {view === "active" || view === "ringkasan" ? (
         <div
           className="flex items-center justify-between gap-2 rounded-full border border-card-border bg-card p-1.5 pl-5 print:hidden"
@@ -797,7 +859,7 @@ export function ActivityView({
       ) : null}
 
       {showFilters ? (
-        <div className="space-y-3 print:hidden">
+        <div className="space-y-2 print:hidden">
           <button
             type="button"
             aria-controls="activity-filter-panel"
@@ -827,6 +889,20 @@ export function ActivityView({
               className="space-y-4 rounded-2xl border border-card-border bg-card p-4"
             >
               <div className="space-y-2">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-ink-2">Cakupan</p>
+                  <div className="flex items-center gap-1 rounded-2xl bg-blue-wash p-1" role="group" aria-label="Cakupan transaksi">
+                    {([['all', 'Semua'], ['personal', 'Pribadi'], ['shared', 'Bersama']] as const).map(([value, label]) => (
+                      <button key={value} type="button" aria-pressed={transactionScope === value}
+                        onClick={() => {
+                          setRows([]); setNextCursor(null); setFilterLoading(true); setTransactionScope(value);
+                          writeUrl({ view: 'active', month: activeMonth, scope: value });
+                        }}
+                        className={cn('min-h-11 flex-1 rounded-full px-3 text-sm font-semibold transition-colors', transactionScope === value ? 'bg-card text-ink shadow-sm' : 'text-ink-2 hover:bg-card')}
+                      >{label}</button>
+                    ))}
+                  </div>
+                </div>
                 <p className="text-sm font-semibold text-ink-2">Jenis transaksi</p>
                 <div
                   className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1 sm:rounded-2xl sm:bg-blue-wash sm:p-1"
@@ -977,7 +1053,7 @@ export function ActivityView({
           ) : null}
 
           {!filterPanelOpen && activeFilterLabels.length > 0 ? (
-            <div className="space-y-2" aria-label="Filter aktif">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1" aria-label="Filter aktif">
               <div className="flex flex-wrap gap-2">
                 {activeFilterLabels.map((label) => (
                   <span
@@ -988,18 +1064,27 @@ export function ActivityView({
                   </span>
                 ))}
               </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={clearAllFilters}
-                  className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2 hover:text-ink"
-                >
-                  Hapus semua filter
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2 hover:text-ink"
+              >
+                Hapus semua filter
+              </button>
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {view === "active" ? (
+        <ActivityMonthSummaryCard
+          month={activeMonth}
+          scope={transactionScope}
+          walletId={walletId}
+          walletScope={wallets.find((wallet) => wallet.id === walletId)?.scope}
+          hasPersonalWallet={wallets.some((wallet) => wallet.scope === "PERSONAL")}
+          onOpenReport={openFullReport}
+        />
       ) : null}
 
       {monthPickerOpen ? (
@@ -1068,7 +1153,6 @@ export function ActivityView({
           walletId={reportWalletId}
           onScopeChange={changeReportScope}
           onWalletChange={changeReportWallet}
-          onAddTransaction={() => setSheetOpen(true)}
         />
       ) : (
         <>

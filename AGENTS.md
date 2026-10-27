@@ -88,6 +88,8 @@ financial-planner-project/
 └── package.json
 ```
 
+**Route structure note:** The tree above is partly historical. The current app has no `(dashboard)` route group; signed-in routes live directly in `app/home/`, `app/budget/`, `app/transactions/`, `app/family/`, `app/profile/`, and `app/gold/`.
+
 Tickets and agent communication live OUTSIDE the repo (not living documentation):
 - `../tickets/` — task tickets (T-001..T-008), work orders (WO-*), and the control document `TASK-PLAN.md`. Work-order detail, operational.
 - `../agent-comms/` — notices, minutes, delegation prompts between agents.
@@ -159,6 +161,47 @@ Wallets: `docs/design/06-wallets.md`
 - **Colocation.** Keep component-specific types, hooks, and helpers in the same folder as the component.
 - **API Routes return typed responses.** Define response types in `types/api.ts`.
 - **Environment variables** accessed only via `lib/env.ts` (validated with Zod). Never import `process.env` directly in components.
+
+### 6.1 Standard Page Structure and Navigation
+
+Use this section as the default when adding or reshaping a signed-in page. Match the existing route and component patterns before inventing a new layout.
+
+#### Route and shared shell
+
+- Put route entry points in `app/<route>/page.tsx` (for example `app/home/page.tsx`, `app/transactions/page.tsx`, and `app/gold/page.tsx`). This project currently uses direct route folders for signed-in pages; do not assume there is an `app/(dashboard)/` group.
+- Keep route entry points focused on route concerns: parse and validate search parameters, load server data when appropriate, and render the page inside `AppShell`.
+- Signed-in pages use `components/layout/AppShell.tsx`. It owns the responsive app navigation: floating navigation on desktop and bottom navigation on mobile. Do not add a second global navbar inside a page.
+- Keep page-specific views and their helpers in the matching domain folder, such as `components/transactions/`, `components/dashboard/`, `components/gold/`, or `components/family/`.
+
+#### Page heading
+
+- Use `components/layout/PageHeader.tsx` for the primary page heading. Keep the usual hierarchy: optional back action, eyebrow, title with icon, optional short description, and page actions.
+- Put a contextual back action in `PageHeader.beforeTitle`. The established mobile pattern is a lightweight link-style control with `ArrowLeft` and a clear destination label, as used by `components/gold/GoldPageView.tsx` and `components/family/FamilyView.tsx`.
+- Put the main action in `PageHeader.actions`, normally using the shared `Button` primitive. On narrow screens, keep the action aligned to the right when the design calls for a title/action row; use the existing flex classes rather than a second custom header.
+- A back control must name a concrete destination. Do not use `router.back()` where the page can be opened directly or its URL was changed with `router.replace()`.
+- When a page has a nested view such as a report, use an explicit return action. Preserve the originating month and useful filters when returning if the user expects to resume the previous list.
+
+#### Page body and responsive layout
+
+- Start the page body with a simple vertical rhythm (`space-y-5` or `space-y-6`) and group related content into purposeful cards. Use `components/ui/Card.tsx` for standard card surfaces and existing design tokens for colors, borders, and radii.
+- Build mobile layouts first. Keep controls at least 44px tall, avoid horizontal overflow, and account for the mobile bottom navigation by leaving the shared shell's bottom padding intact.
+- Use a two-column card layout only when both items remain readable on a phone. Allow headings and action rows to wrap, and keep money values tabular and readable at narrow widths.
+- Use a `role="tablist"` only for peer views that behave like tabs. Do not put a subordinate destination such as a full report into the main page tabs; link to it from the relevant summary card and provide a clear return control.
+
+#### State, URL, and data flow
+
+- Server Components are the default. Move interactive state into a page view component marked `"use client"` only when it needs hooks, event handlers, or browser APIs.
+- Keep URL state for views, selected periods, and shareable filters when the page already follows that convention. Parse and validate it in the route entry point; use one URL writer in the client view so actions do not silently drop other active parameters.
+- Keep data loading and mutations in the page/domain view or a colocated hook. Render loading, error, empty, and populated states; never replace a failed request with realistic-looking zero values.
+- Render monetary totals from server DTOs or explicit server aggregates. Do not sum a partially paginated transaction list to represent a page total.
+- Reuse the existing primitives in `components/ui/` and shared layout components. Add a new shared primitive only when multiple pages need the same behavior.
+
+#### Reference implementations
+
+- Shared signed-in shell and page heading: `components/layout/AppShell.tsx`, `components/layout/PageHeader.tsx`.
+- Dashboard composition: `components/dashboard/DashboardView.tsx`.
+- Activity list, filters, and nested monthly report flow: `components/transactions/ActivityView.tsx`.
+- Back-link placement and mobile style: `components/gold/GoldPageView.tsx`, `components/family/FamilyView.tsx`.
 
 ## 7. Antislop Rules (Mandatory)
 

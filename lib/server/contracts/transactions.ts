@@ -132,6 +132,7 @@ export const listTransactionsQuerySchema = z.object({
   type: z.enum(STORED_TRANSACTION_TYPES).optional(),
   source: z.enum(TRANSACTION_SOURCES).optional(),
   walletId: z.string().uuid("Data tidak ditemukan.").optional(),
+  scope: z.enum(["PERSONAL", "SHARING"]).optional(),
   from: dateOnlySchema.optional(),
   to: dateOnlySchema.optional(),
   cursor: cursorSchema.optional(),

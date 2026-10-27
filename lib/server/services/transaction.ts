@@ -217,6 +217,7 @@ export class TransactionService {
       type: query.type,
       source: query.source,
       walletId: query.walletId,
+      walletScope: query.scope,
       from: query.from ? startOfJakartaDay(query.from) : undefined,
       to: query.to ? endOfJakartaDay(query.to) : undefined,
       cursor: query.cursor ?? null,

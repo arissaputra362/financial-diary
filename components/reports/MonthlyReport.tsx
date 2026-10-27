@@ -33,7 +33,7 @@ import {
   type ReportDetailSection,
 } from "./reportDetail";
 
-export type ReportScope = "shared" | "personal";
+export type ReportScope = "all" | "shared" | "personal";
 
 export interface MonthlyReportProps {
   month: string;
@@ -44,7 +44,6 @@ export interface MonthlyReportProps {
   walletId: string;
   onScopeChange: (scope: ReportScope) => void;
   onWalletChange: (walletId: string) => void;
-  onAddTransaction: () => void;
 }
 
 const longDateFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -65,9 +64,61 @@ function monthNameOnly(month: string): string {
 }
 
 function scopeWallets(wallets: WalletDTO[], scope: ReportScope): WalletDTO[] {
+  if (scope === "all") return wallets;
   const wanted = scope === "shared" ? "SHARING" : "PERSONAL";
   /* Archived wallets stay selectable: archive is not deletion (AC-F7-8). */
   return wallets.filter((wallet) => wallet.scope === wanted);
+}
+
+function combineReports(reports: MonthlyReportDTO[]): MonthlyReportDTO {
+  const [first, second] = reports;
+  const combineBreakdown = (key: "income" | "expense") => {
+    const entries = new Map<string, number>();
+    for (const report of reports) {
+      for (const item of report[key].categories) {
+        entries.set(item.name, (entries.get(item.name) ?? 0) + item.amountMinor);
+      }
+    }
+    const sorted = [...entries].map(([name, amountMinor]) => ({ name, amountMinor }))
+      .sort((a, b) => b.amountMinor - a.amountMinor || a.name.localeCompare(b.name, "id"));
+    const categories = sorted.slice(0, 4);
+    return {
+      totalMinor: reports.reduce((sum, report) => sum + report[key].totalMinor, 0),
+      categories,
+      uncategorizedMinor: reports.reduce((sum, report) => sum + report[key].uncategorizedMinor, 0),
+      otherCategoryCount: reports.reduce((sum, report) => sum + report[key].otherCategoryCount, 0) + Math.max(0, sorted.length - 4),
+      otherAmountMinor: reports.reduce((sum, report) => sum + report[key].otherAmountMinor, 0) + sorted.slice(4).reduce((sum, row) => sum + row.amountMinor, 0),
+    };
+  };
+  const daily = new Map<string, number>();
+  for (const report of reports) {
+    for (const point of report.dailyBalances) daily.set(point.date, (daily.get(point.date) ?? 0) + point.closingMinor);
+  }
+  const add = (key: "openingMinor" | "newWalletOpeningMinor" | "moneyInMinor" | "moneyOutMinor" | "transferInMinor" | "transferOutMinor" | "transferNetMinor" | "closingMinor" | "transactionCount") =>
+    reports.reduce((sum, report) => sum + report[key], 0);
+  const sumDelta = (key: "closingMinor" | "moneyInMinor" | "moneyOutMinor") =>
+    first.delta[key] === null && second.delta[key] === null
+      ? null
+      : (first.delta[key] ?? 0) + (second.delta[key] ?? 0);
+  return {
+    ...first,
+    scope: "ALL",
+    wallet: null,
+    openingMinor: add("openingMinor"),
+    newWalletOpeningMinor: add("newWalletOpeningMinor"),
+    moneyInMinor: add("moneyInMinor"),
+    moneyOutMinor: add("moneyOutMinor"),
+    transferInMinor: add("transferInMinor"),
+    transferOutMinor: add("transferOutMinor"),
+    transferNetMinor: add("transferNetMinor"),
+    closingMinor: add("closingMinor"),
+    transactionCount: add("transactionCount"),
+    hasBackdatedNewWallet: reports.some((report) => report.hasBackdatedNewWallet),
+    delta: { closingMinor: sumDelta("closingMinor"), moneyInMinor: sumDelta("moneyInMinor"), moneyOutMinor: sumDelta("moneyOutMinor") },
+    income: combineBreakdown("income"),
+    expense: combineBreakdown("expense"),
+    dailyBalances: [...daily].map(([date, closingMinor]) => ({ date, closingMinor })),
+  };
 }
 
 export function MonthlyReport({
@@ -79,7 +130,6 @@ export function MonthlyReport({
   walletId,
   onScopeChange,
   onWalletChange,
-  onAddTransaction,
 }: MonthlyReportProps) {
   const router = useRouter();
   const [result, setResult] = useState<{
@@ -106,7 +156,7 @@ export function MonthlyReport({
     instead of rendering a misleading empty or error result.
   */
   const waitingForScope =
-    (scope === "personal" && walletsLoading) ||
+    (walletsLoading && (scope === "all" || scope === "personal" || Boolean(walletId))) ||
     (scope === "personal" && personalUnavailable) ||
     (Boolean(walletId) && !walletsLoading && !walletsError && selectedWallet === null);
   const requestKey = `${month}|${scope}|${walletId}|${reloadToken}`;
@@ -121,31 +171,36 @@ export function MonthlyReport({
     let active = true;
     const controller = new AbortController();
 
-    const params = new URLSearchParams({ month, scope });
-    if (walletId) params.set("walletId", walletId);
-
-    apiRequest<MonthlyReportDTO>(`/api/reports/monthly?${params.toString()}`, {
-      signal: controller.signal,
-    })
+    const selectedWalletScope = available.find((wallet) => wallet.id === walletId)?.scope;
+    const scopesToLoad = scope === "all"
+      ? walletId ? [selectedWalletScope === "PERSONAL" ? "personal" : "shared"] : hasPersonalWallet ? ["shared", "personal"] : ["shared"]
+      : [scope];
+    Promise.all(scopesToLoad.map((reportScope) => {
+      const params = new URLSearchParams({ month, scope: reportScope });
+      if (walletId) params.set("walletId", walletId);
+      return apiRequest<MonthlyReportDTO>(`/api/reports/monthly?${params.toString()}`, { signal: controller.signal });
+    }))
       .then((response) => {
         if (!active) return;
-        if (response.status === 401) {
+        const failed = response.find((item) => item.status === 401 || item.status === 403 || !item.ok || !item.data);
+        if (failed?.status === 401) {
           router.push("/login");
           return;
         }
-        if (response.status === 403) {
+        if (failed?.status === 403) {
           router.push("/waiting-for-approval");
           return;
         }
-        if (!response.ok || !response.data) {
+        if (failed) {
           setResult({
             key: requestKey,
             data: null,
-            error: response.data?.error?.message ?? "Laporan belum bisa dimuat.",
+            error: failed.data?.error?.message ?? "Laporan belum bisa dimuat.",
           });
           return;
         }
-        setResult({ key: requestKey, data: response.data, error: null });
+        const reports = response.map((item) => item.data!);
+        setResult({ key: requestKey, data: reports.length === 1 ? reports[0] : combineReports(reports), error: null });
       })
       .catch(() => {
         if (!active || controller.signal.aborted) return;
@@ -216,6 +271,7 @@ export function MonthlyReport({
             view: "active",
             month,
             walletId: walletId || undefined,
+            scope,
             cursor,
           }),
           { signal: controller.signal },
@@ -268,7 +324,7 @@ export function MonthlyReport({
       document.title = originalTitle;
     };
     window.addEventListener("afterprint", restoreTitle, { once: true });
-    const scopeLabel = scope === "shared" ? "Bersama" : "Pribadi";
+    const scopeLabel = scope === "all" ? "Semua" : scope === "shared" ? "Bersama" : "Pribadi";
     const walletLabel = (data.wallet?.name ?? "Semua dompet")
       .replace(/[<>:"/\\|?*\u0000-\u001F]/g, " ")
       .replace(/\s+/g, " ")
@@ -291,6 +347,7 @@ export function MonthlyReport({
             label="Lingkup laporan"
             value={scope}
             options={[
+              { value: "all", label: "Semua" },
               {
                 value: "personal",
                 label: "Pribadi",
@@ -390,9 +447,6 @@ export function MonthlyReport({
                     ? `Belum ada transaksi pada dompet ${data.wallet.name} untuk ${monthLabel}.`
                     : `Belum ada transaksi pada ${monthLabel}.`}
                 </p>
-                <Button className="mt-4" onClick={onAddTransaction}>
-                  Tambah transaksi
-                </Button>
               </Card>
             ) : (
               <div className="grid gap-5 lg:grid-cols-2 print:grid-cols-2 print:gap-2">
@@ -402,6 +456,13 @@ export function MonthlyReport({
                   breakdown={data.income}
                   delta={data.delta.moneyInMinor}
                   monthLabel={monthLabel}
+                  actionHref={activityHref({
+                    view: "active",
+                    month,
+                    filter: "in",
+                    scope,
+                    walletId: walletId || undefined,
+                  })}
                 />
                 <BreakdownCard
                   title="Pengeluaran"
@@ -413,8 +474,10 @@ export function MonthlyReport({
                     view: "active",
                     month,
                     filter: "out",
+                    scope,
                     walletId: walletId || undefined,
                   })}
+                  actionLabel="Lihat semua pengeluaran"
                 />
               </div>
             )}
@@ -423,7 +486,7 @@ export function MonthlyReport({
               data={data.dailyBalances}
               monthLabel={monthLabel}
               isCurrentMonth={data.isCurrentMonth}
-              scopeLabel={scope === "shared" ? "bersama" : "pribadi"}
+              scopeLabel={scope === "all" ? "semua" : scope === "shared" ? "bersama" : "pribadi"}
             />
             <GoldReportSection scope={scope} liquidBalanceMinor={data.closingMinor} />
             <ReportFootnotes report={data} scope={scope} />
@@ -512,7 +575,9 @@ function MovementTrace({ report }: { report: MonthlyReportDTO }) {
         <p className="mt-1 text-xs text-ink-3 print:text-[7pt]">
           {report.wallet
             ? "Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Baris ini hanya menampilkan sisi dompet terpilih; sisi dompet pasangannya tidak ditampilkan."
-            : `Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Antar dompet ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}, kedua sisi ditampilkan dan saling meniadakan. Transfer ke cakupan lain hanya menampilkan sisi ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}.`}
+            : report.scope === "ALL"
+              ? "Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Semua sisi transfer yang dapat kamu akses ditampilkan."
+              : `Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Antar dompet ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}, kedua sisi ditampilkan dan saling meniadakan. Transfer ke cakupan lain hanya menampilkan sisi ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}.`}
         </p>
       ) : null}
     </Card>
@@ -546,6 +611,7 @@ function BreakdownCard({
   delta,
   monthLabel,
   actionHref,
+  actionLabel,
 }: {
   title: "Pemasukan" | "Pengeluaran";
   type: "income" | "expense";
@@ -553,6 +619,7 @@ function BreakdownCard({
   delta: number | null;
   monthLabel: string;
   actionHref?: string;
+  actionLabel?: "Lihat semua pemasukan" | "Lihat semua pengeluaran";
 }) {
   const income = type === "income";
   const emptyCopy = income
@@ -616,7 +683,7 @@ function BreakdownCard({
           href={actionHref}
           className="mt-2 inline-flex min-h-11 items-center self-start rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash print:hidden"
         >
-          Lihat semua pengeluaran
+          {actionLabel ?? (income ? "Lihat semua pemasukan" : "Lihat semua pengeluaran")}
         </Link>
       ) : null}
     </Card>
@@ -639,7 +706,7 @@ function ReportFootnotes({
       </p>
       <p>Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran.</p>
       <p>
-        Cakupan: {scope === "shared" ? "Bersama" : "Pribadi"}, {walletLabel}.
+        Cakupan: {scope === "all" ? "Semua" : scope === "shared" ? "Bersama" : "Pribadi"}, {walletLabel}.
       </p>
       {report.hasBackdatedNewWallet ? (
         <p>Ada dompet yang dibuat belakangan dan memiliki transaksi bertanggal lebih awal.</p>

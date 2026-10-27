@@ -8,7 +8,7 @@ import { categoryLabel } from "@/components/transactions/categories";
 import { mergeActivityRows } from "@/components/transactions/activityRows";
 import type { TransactionDTO, TransactionListDTO } from "@/types/api";
 
-export type ReportDetailScope = "shared" | "personal";
+export type ReportDetailScope = "all" | "shared" | "personal";
 export type ReportDetailSectionKey = "income" | "expense" | "transfer";
 
 export interface ReportDetailTotals {
@@ -52,6 +52,7 @@ export function isReportTransferRow(row: TransactionDTO): boolean {
   the visible SHARING leg and belong to the shared report.
 */
 function belongsToReportScope(row: TransactionDTO, scope: ReportDetailScope): boolean {
+  if (scope === "all") return true;
   if (scope === "personal") return row.wallet?.scope === "PERSONAL";
   return row.wallet?.scope === "SHARING" || isRedactedTransferLeg(row);
 }

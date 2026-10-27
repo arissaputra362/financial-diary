@@ -101,6 +101,7 @@ export interface ListFilters {
   from?: Date;
   to?: Date;
   walletId?: string;
+  walletScope?: WalletScopeValue;
   cursor?: string | null;
   limit?: number;
 }
@@ -467,6 +468,7 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         householdId: actor.householdId,
         ...ACTIVE,
         ...visibility(actor),
+        ...(filters.walletScope ? { AND: [{ wallet: { is: { scope: filters.walletScope } } }] } : {}),
         ...(filters.walletId ? { walletId: filters.walletId } : {}),
         ...(filters.type ? { type: filters.type } : {}),
         ...(filters.source ? { source: filters.source } : {}),
