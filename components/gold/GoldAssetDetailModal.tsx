@@ -85,6 +85,11 @@ export function GoldAssetDetailModal({ asset, amountsVisible, deleting, onClose,
                 : "****"} ({amountsVisible ? `${asset.unrealizedPnLPercent}%` : "****"}) dari modal beli
             </p>
           </div>
+          {asset.type === "JEWELRY" ? (
+            <p className="mt-2 px-1 text-xs leading-relaxed text-ink-3">
+              Estimasi berdasarkan kadar emas dan harga buyback acuan. Harga aktual dapat berbeda di setiap toko.
+            </p>
+          ) : null}
 
           <dl className="mt-4 divide-y divide-row-divider rounded-2xl border border-row-divider px-4">
             {rows.map(([label, value]) => (
