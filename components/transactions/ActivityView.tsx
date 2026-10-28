@@ -686,7 +686,12 @@ export function ActivityView({
   */
   useEffect(() => {
     validateSelectionsRef.current = (nextWallets) => {
-      if (view === "active" && walletId && !nextWallets.some((wallet) => wallet.id === walletId)) {
+      const selectedTransactionWallet = nextWallets.find((wallet) => wallet.id === walletId);
+      const walletMatchesTransactionScope =
+        transactionScope === "all" || !selectedTransactionWallet ||
+        (transactionScope === "personal" && selectedTransactionWallet.scope === "PERSONAL") ||
+        (transactionScope === "shared" && selectedTransactionWallet.scope === "SHARING");
+      if (view === "active" && walletId && (!selectedTransactionWallet || !walletMatchesTransactionScope)) {
         setWalletId("");
         setLoading(true);
         setReloadToken((token) => token + 1);
@@ -732,8 +737,13 @@ export function ActivityView({
     hiding them except when one is the current selection from a shared URL.
   */
   const transactionWallets = useMemo(
-    () => wallets.filter((wallet) => wallet.archivedAt === null || wallet.id === walletId),
-    [walletId, wallets],
+    () => wallets.filter((wallet) =>
+      (wallet.archivedAt === null || wallet.id === walletId) &&
+      (transactionScope === "all" ||
+        (transactionScope === "personal" && wallet.scope === "PERSONAL") ||
+        (transactionScope === "shared" && wallet.scope === "SHARING")),
+    ),
+    [transactionScope, walletId, wallets],
   );
 
   const selectedWalletName = transactionWallets.find((wallet) => wallet.id === walletId)?.name;
@@ -895,8 +905,14 @@ export function ActivityView({
                     {([['all', 'Semua'], ['personal', 'Pribadi'], ['shared', 'Bersama']] as const).map(([value, label]) => (
                       <button key={value} type="button" aria-pressed={transactionScope === value}
                         onClick={() => {
+                          const selected = wallets.find((wallet) => wallet.id === walletId);
+                          const walletMatchesScope = !selected || value === "all" ||
+                            (value === "personal" && selected.scope === "PERSONAL") ||
+                            (value === "shared" && selected.scope === "SHARING");
+                          const nextWalletId = walletMatchesScope ? walletId : "";
                           setRows([]); setNextCursor(null); setFilterLoading(true); setTransactionScope(value);
-                          writeUrl({ view: 'active', month: activeMonth, scope: value });
+                          if (!walletMatchesScope) setWalletId("");
+                          writeUrl({ view: 'active', month: activeMonth, scope: value, walletId: nextWalletId });
                         }}
                         className={cn('min-h-11 flex-1 rounded-full px-3 text-sm font-semibold transition-colors', transactionScope === value ? 'bg-card text-ink shadow-sm' : 'text-ink-2 hover:bg-card')}
                       >{label}</button>
