@@ -109,6 +109,11 @@ For deployment architecture decisions, see [`docs/adr/ADR-007-free-tier-deployme
 - [`docs/erd/`](./docs/erd/) — Data models and workflow diagrams.
 - [`docs/qa/`](./docs/qa/) — QA matrices, fixtures, and historical QA reports.
 
+## Agent Resources
+
+- Prisma guidance for coding agents is available in [`.agents/skills/`](./.agents/skills/) and mirrored for Windsurf in [`.windsurf/skills/`](./.windsurf/skills/). [`skills-lock.json`](./skills-lock.json) records the installed skill versions.
+- [`reports/state-coverage.json`](./reports/state-coverage.json) records the latest UI state marker scan across the source files. It checks for loading, empty, error, disabled, focus, selected, submitting, and success markers; it is a source scan, not a behavioral UI test.
+
 ## Security
 
 - Never commit `.env` files, API keys, authentication secrets, or Blob access tokens.
