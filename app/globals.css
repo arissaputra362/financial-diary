@@ -103,6 +103,18 @@
   color-scheme: light;
 }
 
+/* Paint the first frame from the device preference before the theme bootstrap
+   can read a saved light/dark override from local storage. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-color-scheme]) {
+    color-scheme: dark;
+
+    --color-canvas: #111b26;
+    --color-card: #192635;
+    --color-ink: #e9f0f7;
+  }
+}
+
 :root[data-color-scheme="dark"] {
   color-scheme: dark;
 

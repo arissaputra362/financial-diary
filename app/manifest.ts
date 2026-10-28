@@ -7,8 +7,10 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Catat pemasukan, pengeluaran, dan tujuan menabung keluarga.",
     start_url: "/transactions",
     display: "standalone",
-    background_color: "#F6F9FC",
-    theme_color: "#17304F",
+    // Native PWA splash screens use one manifest color. Match the light canvas;
+    // browser chrome follows the media-aware theme-color metadata in layout.tsx.
+    background_color: "#F1F5FA",
+    theme_color: "#F1F5FA",
     lang: "id",
     icons: [
       {
