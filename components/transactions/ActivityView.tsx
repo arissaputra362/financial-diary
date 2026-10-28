@@ -988,7 +988,7 @@ export function ActivityView({
                 <p className="mt-1 text-xs text-ink-3">
                   Pilih rentang di dalam {monthKeyLabel(activeMonth)}.
                 </p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
                     Dari
                     <input
@@ -996,7 +996,7 @@ export function ActivityView({
                       value={draftFrom}
                       max={draftTo || monthKeyRange(activeMonth).to}
                       onChange={(event) => setDraftFrom(event.target.value)}
-                      className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+                      className="min-h-11 w-full min-w-0 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                     />
                   </label>
                   <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
@@ -1007,7 +1007,7 @@ export function ActivityView({
                       min={draftFrom || monthKeyRange(activeMonth).from}
                       max={monthKeyRange(activeMonth).to}
                       onChange={(event) => setDraftTo(event.target.value)}
-                      className="min-h-11 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+                      className="min-h-11 w-full min-w-0 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
                     />
                   </label>
                 </div>
