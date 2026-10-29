@@ -194,7 +194,7 @@ export function TransactionDetailSheet({
               <span aria-hidden="true">{categoryEmoji(row.category)}</span> {categoryLabel(row.category)}
             </DetailRow>
           ) : null}
-          <DetailRow label="Tanggal">{formatDateTimeLabel(row.occurredAt)}</DetailRow>
+          <DetailRow label="Tanggal">{formatDateLabel(row.occurredAt)}</DetailRow>
           {row.merchant ? <DetailRow label="Toko">{row.merchant}</DetailRow> : null}
           {row.note ? <DetailRow label="Catatan">{row.note}</DetailRow> : null}
           {row.wallet ? (
