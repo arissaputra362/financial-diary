@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { formatDateRangeLabel } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import type { MonthlyBudgetDTO } from "@/types/api";
@@ -12,17 +13,6 @@ const SCOPE_OPTIONS: ReadonlyArray<{ value: BudgetScope; label: string }> = [
   { value: "PERSONAL", label: "Pribadi" },
   { value: "SHARED", label: "Bersama" },
 ];
-
-const monthFormatter = new Intl.DateTimeFormat("id-ID", {
-  month: "long",
-  year: "numeric",
-  timeZone: "Asia/Jakarta",
-});
-
-function monthLabel(periodStart: string): string {
-  const date = new Date(`${periodStart}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? periodStart : monthFormatter.format(date);
-}
 
 export interface BudgetCardProps {
   /** Household cap (SHARED), unchanged meaning. */
@@ -54,15 +44,13 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
       aria-labelledby="budget-title"
       className="rounded-3xl border border-card-border bg-card p-6 shadow-bento"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <h2 id="budget-title" className="text-lg font-semibold text-ink">
-          Anggaran bulan ini
+          Anggaran periode ini
         </h2>
-        {activeBudget.isSet ? (
-          <span className="shrink-0 rounded-full bg-chip-slate px-3 py-1 text-xs font-semibold text-ink-2">
-            {monthLabel(activeBudget.periodStart)}
-          </span>
-        ) : null}
+        <span className="shrink-0 rounded-full bg-chip-slate px-3 py-1 text-xs font-semibold text-ink-2">
+          {formatDateRangeLabel(activeBudget.periodStart, activeBudget.periodEnd)}
+        </span>
       </div>
 
       <SegmentedControl
@@ -110,7 +98,7 @@ export function BudgetCard({ budget, personalBudget }: BudgetCardProps) {
       ) : (
         <>
           <p className="mt-4 text-lg font-bold text-ink">
-            {isPersonal ? "Belum ada anggaran pribadi bulan ini" : "Belum ada anggaran bulan ini"}
+            {isPersonal ? "Belum ada anggaran pribadi untuk periode ini" : "Belum ada anggaran untuk periode ini"}
           </p>
           <p className="mt-1 text-sm text-ink-2">
             {isPersonal

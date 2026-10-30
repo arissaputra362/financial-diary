@@ -8,8 +8,11 @@
 import { randomUUID } from "node:crypto";
 import type {
   AggregateScope,
+  BudgetCycleRepository,
+  BudgetCycleSettingsRecord,
   BudgetRepository,
   GoalRepository,
+  PersonalBudgetCycleRepository,
   PersonalBudgetRepository,
   TransactionRecord,
   TransactionRepository,
@@ -36,6 +39,7 @@ export type FakeBudgetRow = {
   periodStart: Date;
   amountMinor: number;
   createdByUserId: string;
+  deletedAt?: Date | null;
 };
 export type FakePersonalBudgetRow = {
   id: string;
@@ -44,6 +48,7 @@ export type FakePersonalBudgetRow = {
   periodStart: Date;
   amountMinor: number;
   createdByUserId: string;
+  deletedAt?: Date | null;
 };
 
 /** Default wallet every fixture transaction points at unless overridden. */
@@ -55,10 +60,22 @@ export interface DashboardFakeStore {
   goals: FakeGoalRow[];
   budgets: FakeBudgetRow[];
   personalBudgets: FakePersonalBudgetRow[];
+  /** Keyed by householdId. Missing means the CALENDAR_MONTH default. */
+  householdCycles: Map<string, BudgetCycleSettingsRecord>;
+  /** Keyed by userId. Missing means the CALENDAR_MONTH default. */
+  personalCycles: Map<string, BudgetCycleSettingsRecord>;
 }
 
 export function createDashboardFakeStore(): DashboardFakeStore {
-  return { transactions: [], wallets: [], goals: [], budgets: [], personalBudgets: [] };
+  return {
+    transactions: [],
+    wallets: [],
+    goals: [],
+    budgets: [],
+    personalBudgets: [],
+    householdCycles: new Map(),
+    personalCycles: new Map(),
+  };
 }
 
 const notUsed = async (): Promise<never> => {
@@ -72,6 +89,8 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
   goal: GoalRepository;
   budget: BudgetRepository;
   personalBudget: PersonalBudgetRepository;
+  householdCycle: BudgetCycleRepository;
+  personalCycle: PersonalBudgetCycleRepository;
 } {
   const activeInHousehold = (householdId: string) =>
     store.transactions.filter((row) => row.householdId === householdId && row.deletedAt === null);
@@ -151,6 +170,19 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
         )
         .filter((row) => matchesScope(row, scope))
         .reduce((total, row) => total + row.amountMinor, 0);
+    },
+    async sumTransfersFromSharedToPersonal(householdId, range) {
+      const personalGroups = new Set(
+        store.transactions
+          .filter((row) => row.householdId === householdId && row.deletedAt === null && row.type === "MONEY_IN" && row.transferGroupId)
+          .filter((row) => store.wallets.find((wallet) => wallet.id === row.walletId)?.scope === "PERSONAL")
+          .map((row) => row.transferGroupId),
+      );
+      return store.transactions
+        .filter((row) => row.householdId === householdId && row.deletedAt === null && row.type === "MONEY_OUT" && row.transferGroupId !== null)
+        .filter((row) => row.occurredAt >= range.from && row.occurredAt <= range.to && personalGroups.has(row.transferGroupId))
+        .filter((row) => store.wallets.find((wallet) => wallet.id === row.walletId)?.scope === "SHARING")
+        .reduce((sum, row) => sum + row.amountMinor, 0);
     },
     async listByDay(householdId, range, scope) {
       ensureWallet(householdId);
@@ -256,7 +288,7 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
   const budget: BudgetRepository = {
     async findByPeriod(householdId, periodStart) {
       const row = store.budgets.find(
-        (item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime(),
+        (item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime() && !item.deletedAt,
       );
       return row ? { id: row.id, amountMinor: row.amountMinor, periodStart: row.periodStart } : null;
     },
@@ -266,6 +298,7 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
       );
       if (existing) {
         existing.amountMinor = amountMinor;
+        existing.deletedAt = null;
         return { id: existing.id, amountMinor };
       }
       const created: FakeBudgetRow = {
@@ -278,6 +311,18 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
       store.budgets.push(created);
       return { id: created.id, amountMinor };
     },
+    async softDeleteByPeriod(householdId, periodStart) {
+      const row = store.budgets.find((item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime() && !item.deletedAt);
+      if (!row) return false;
+      row.deletedAt = new Date();
+      return true;
+    },
+    async restoreByPeriod(householdId, periodStart) {
+      const row = store.budgets.find((item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime() && !!item.deletedAt);
+      if (!row) return false;
+      row.deletedAt = null;
+      return true;
+    },
   };
 
   const personalBudget: PersonalBudgetRepository = {
@@ -286,7 +331,7 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
         (item) =>
           item.householdId === householdId &&
           item.userId === userId &&
-          item.periodStart.getTime() === periodStart.getTime(),
+          item.periodStart.getTime() === periodStart.getTime() && !item.deletedAt,
       );
       return row ? { id: row.id, amountMinor: row.amountMinor, periodStart: row.periodStart } : null;
     },
@@ -299,6 +344,7 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
       );
       if (existing) {
         existing.amountMinor = amountMinor;
+        existing.deletedAt = null;
         return { id: existing.id, amountMinor };
       }
       const created: FakePersonalBudgetRow = {
@@ -312,9 +358,48 @@ export function createDashboardFake(store: DashboardFakeStore = createDashboardF
       store.personalBudgets.push(created);
       return { id: created.id, amountMinor };
     },
+    async softDeleteByPeriod(householdId, userId, periodStart) {
+      const row = store.personalBudgets.find((item) => item.householdId === householdId && item.userId === userId && item.periodStart.getTime() === periodStart.getTime() && !item.deletedAt);
+      if (!row) return false;
+      row.deletedAt = new Date();
+      return true;
+    },
+    async restoreByPeriod(householdId, userId, periodStart) {
+      const row = store.personalBudgets.find((item) => item.householdId === householdId && item.userId === userId && item.periodStart.getTime() === periodStart.getTime() && !!item.deletedAt);
+      if (!row) return false;
+      row.deletedAt = null;
+      return true;
+    },
   };
 
-  return { store, transaction, wallet, goal, budget, personalBudget };
+  const householdCycle: BudgetCycleRepository = {
+    async findHousehold(householdId) {
+      return store.householdCycles.get(householdId) ?? null;
+    },
+    async updateHousehold(householdId, input) {
+      store.householdCycles.set(householdId, { ...input });
+    },
+  };
+
+  const personalCycle: PersonalBudgetCycleRepository = {
+    async findByUser(_householdId, userId) {
+      return store.personalCycles.get(userId) ?? null;
+    },
+    async updateUser(userId, input) {
+      store.personalCycles.set(userId, { ...input });
+    },
+  };
+
+  return {
+    store,
+    transaction,
+    wallet,
+    goal,
+    budget,
+    personalBudget,
+    householdCycle,
+    personalCycle,
+  };
 }
 
 /** Builds a stored transaction with sensible defaults for dashboard fixtures. */

@@ -41,12 +41,13 @@ terjadi. Server adalah sumber kebenaran; client tidak menghitung ulang angka.
 - Yang terjadi: `budgetMinor` dari budget bulan berjalan (periode kalender timezone
   aplikasi — keputusan D-7: Asia/Jakarta, bukan jam proses server UTC); sebelum wallet
   feature `spentMinor` memakai MONEY_OUT aktif household; setelah wallet feature
-  (AC-F6-8), `spentMinor` hanya memakai MONEY_OUT aktif pada wallet Sharing (termasuk
-  wallet Sharing terarsip) dalam periode, tanpa kaki transfer; `remainingMinor` = budget
+  (AC-F6-8), `spentMinor` memakai MONEY_OUT aktif pada wallet Sharing (termasuk
+  wallet Sharing terarsip) dalam periode, ditambah transfer keluar dari wallet Sharing
+  yang masuk ke wallet Pribadi; `remainingMinor` = budget
   − spent. Budget bulan
   berjalan belum di-set → kartu budget menampilkan state "atur budget" (bukan angka 0
   yang menyesatkan) dengan CTA ke halaman `/budget`.
-- Yang tidak boleh terjadi: kaki TRANSFER dihitung sebagai spending; periode memakai
+- Yang tidak boleh terjadi: kaki masuk transfer ikut dihitung sebagai spending; periode memakai
   timezone proses server (UTC); transaksi 1 Okt 00:00 WIB menambah spentMinor bulan
   September meski disimpan sebelum tengah malam UTC.
 
@@ -86,13 +87,70 @@ terjadi. Server adalah sumber kebenaran; client tidak menghitung ulang angka.
   satu user punya dua baris budget pribadi pada bulan yang sama; scope personal
   memakai wallet milik user lain; perubahan mode mengubah data aktivitas.
 
+### AC-2d (AC-F2-2d): Siklus budget Bersama dan Pribadi
+
+- Kondisi: user membuka `/budget` atau dashboard dan scope budget punya siklus
+  yang berbeda dari bulan kalender.
+- Yang terjadi:
+  - Setiap scope punya satu siklus independen: `CALENDAR_MONTH` (default),
+    `FIXED_DAY`, atau `END_OF_MONTH`.
+  - `CALENDAR_MONTH`: tanggal 1 sampai hari terakhir bulan yang sama.
+  - `FIXED_DAY`: tanggal 1-28 sampai sehari sebelum tanggal itu bulan berikutnya.
+    Contoh tanggal 10: 10 Oktober sampai 9 November.
+  - `END_OF_MONTH`: hari terakhir bulan sampai sehari sebelum hari terakhir
+    bulan berikutnya. Contoh: 31 Oktober sampai 29 November, lalu 30 November
+    sampai 30 Desember.
+  - Semua batas dihitung server-side dari kalender Asia/Jakarta, dengan rentang
+    inklusif. `period_start` menjadi kunci budget per periode.
+  - `PUT /api/budget/cycle` body `{ scope?, mode, day? }` mengubah siklus satu
+    scope. `FIXED_DAY` wajib `day` 1-28. Scope `shared` OWNER-only; `personal`
+    hanya untuk diri sendiri.
+  - Kalau periode berjalan **sudah punya budget**, perubahan dijadwalkan mulai
+    batas siklus baru berikutnya setelah hari ini supaya nominal dan angka
+    periode yang sedang dilihat tidak bergeser.
+  - Kalau periode berjalan **belum punya budget**, perubahan langsung berlaku
+    pada periode berjalan; tidak ada nominal yang perlu dilindungi. Contoh:
+    belum ada budget bulanan, lalu memilih tanggal 10 pada 15 Oktober, periode
+    langsung menjadi 10 Oktober sampai 9 November dengan status "belum diatur".
+  - Budget baru untuk periode berikutnya berstatus "belum diatur" dan tidak
+    mewarisi nominal periode sebelumnya.
+  - `MonthlyBudgetDTO` menambah `cycle` dan `nextCycle` (dengan `effectiveFrom`)
+    supaya UI menampilkan siklus aktif dan perubahan yang menunggu.
+  - Label budget di `/budget` dan dashboard menampilkan rentang tanggal sebenarnya
+    (`periodStart` sampai `periodEnd`), bukan hanya nama bulan.
+- Yang tidak boleh terjadi: perubahan siklus menggeser periode berjalan yang
+  sudah punya budget; budget periode lama otomatis dipakai untuk periode baru;
+  member mengubah siklus Bersama; user mengubah siklus Pribadi user lain;
+  `FIXED_DAY` memakai tanggal 29-31; periode dihitung dari timezone proses server.
+
+- UX pembuatan pertama: bila periode belum memiliki budget, form nominal
+  menyertakan pilihan siklus dengan satu aksi `Simpan budget`. Siklus diterapkan
+  dahulu pada periode kosong, lalu nominal disimpan pada periode tersebut. Setelah
+  budget berjalan, perubahan nominal dan penjadwalan siklus memiliki aksi terpisah
+  agar tanggal efektif perubahan siklus terlihat jelas.
+
+### AC-2e: Hapus budget periode berjalan
+
+- Kondisi: budget untuk periode aktif telah diatur dan pengguna berwenang memilih
+  `Hapus budget periode ini`.
+- Yang terjadi: aplikasi meminta konfirmasi yang menyebut scope dan tanggal periode.
+  Setelah dikonfirmasi, budget diarsipkan secara soft delete dan tampilan kembali ke
+  status belum diatur; transaksi dan agregat pengeluaran tetap utuh. Toast undo
+  selama 5 detik dapat memulihkan budget yang baru dihapus. Owner boleh menghapus
+  budget Bersama, setiap user hanya budget Pribadinya sendiri.
+- Yang tidak boleh terjadi: hard delete, penghapusan transaksi, penghapusan budget
+  periode lain, atau user menghapus budget pribadi anggota lain.
+
 ### AC-3 (AC-F2-4): TRANSFER bukan spending
 
 - Kondisi: household hanya punya transfer bulan ini.
-- Yang terjadi: sebelum wallet feature, spentMinor = 0. Setelah wallet feature,
-  spentMinor tetap 0 untuk transfer dan expense pada wallet Pribadi; transfer sisi
-  Sharing tetap terlihat secara umum di aktivitas sesuai AC-F6-6.
-- Yang tidak boleh terjadi: transfer dihitung ganda sebagai pengeluaran.
+- Yang terjadi: transfer antar wallet Sharing tetap netral terhadap budget. Transfer
+  dari wallet Sharing ke wallet Pribadi mengurangi budget Bersama sebesar kaki keluar;
+  kaki masuk Pribadi tidak menambah spent budget Pribadi. Expense pada wallet Pribadi
+  tetap tidak memengaruhi budget Bersama. Kaki transfer tetap tidak muncul sebagai
+  pengeluaran di grafik/rekap transaksi, dan sisi Sharing tetap mengikuti AC-F6-6.
+- Yang tidak boleh terjadi: kaki masuk dihitung sebagai pengeluaran, transfer internal
+  Sharing mengurangi budget, atau satu transfer lintas scope dihitung dua kali.
 
 ### AC-4 (AC-F2-5): Grafik per hari + tab periode
 
@@ -197,6 +255,15 @@ terjadi. Server adalah sumber kebenaran; client tidak menghitung ulang angka.
 - API error saat load → error state + retry, bukan layar putih.
 - Periode mengikuti kalender Asia/Jakarta (D-7), bukan jam perangkat user dan bukan
   timezone proses server (UTC).
+- Siklus budget diubah saat periode berjalan sudah punya budget → periode tetap,
+  perubahan menunggu batas siklus baru berikutnya. Contoh tanggal 10 yang diubah
+  pada 15 Oktober berlaku mulai 10 November.
+- Siklus budget diubah saat periode berjalan belum punya budget → siklus baru
+  langsung dipakai pada periode berjalan, tanpa menunggu bulan berikutnya.
+- Siklus `END_OF_MONTH` melewati Februari → akhir periode mengikuti hari terakhir
+  bulan berjalan (28/29 Februari, 30/31 untuk bulan lain), bukan tanggal tetap.
+- Belum ada budget pada periode dengan siklus baru → state "atur budget", bukan
+  memakai nominal periode sebelumnya.
 - Session expired saat idle → request berikutnya 401 → login ulang → dashboard memuat.
 - Emoji/RTL pada note/merchant → wrap normal tanpa overflow di 390px.
 

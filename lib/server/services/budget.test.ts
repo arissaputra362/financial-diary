@@ -26,7 +26,14 @@ function setup(): { service: BudgetService; store: DashboardFakeStore } {
   const fake = createDashboardFake(store);
   return {
     store,
-    service: new BudgetService(fake.budget, fake.personalBudget, fake.transaction, new PeriodService()),
+    service: new BudgetService(
+      fake.budget,
+      fake.personalBudget,
+      fake.transaction,
+      fake.householdCycle,
+      fake.personalCycle,
+      new PeriodService(),
+    ),
   };
 }
 
@@ -186,6 +193,135 @@ describe("BudgetService personal scope (AC-F2-2c)", () => {
     expect(memberRow?.amountMinor).toBe(400_000);
     expect(ownerRow?.amountMinor).toBe(700_000);
     expect(ctx.store.personalBudgets).toHaveLength(2);
+  });
+
+  it("keeps the calendar month cycle as the default", async () => {
+    const dto = await ctx.service.get(HOUSEHOLD, NOW);
+    expect(dto.cycle).toEqual({ mode: "CALENDAR_MONTH", day: null });
+    expect(dto.nextCycle).toBeNull();
+  });
+
+  it("applies a cycle immediately when the current period has no budget yet", async () => {
+    const dto = await ctx.service.updateCycle(
+      OWNER,
+      HOUSEHOLD,
+      { mode: "FIXED_DAY", day: 10 },
+      "SHARED",
+      NOW,
+    );
+    expect(dto.periodStart).toBe("2026-10-10");
+    expect(dto.periodEnd).toBe("2026-11-09");
+    expect(dto.cycle).toEqual({ mode: "FIXED_DAY", day: 10 });
+    expect(dto.nextCycle).toBeNull();
+    expect(dto.isSet).toBe(false);
+    expect(ctx.store.householdCycles.get(HOUSEHOLD)).toMatchObject({
+      mode: "FIXED_DAY",
+      day: 10,
+      pendingMode: null,
+      pendingEffectiveFrom: null,
+    });
+  });
+
+  it("schedules a shared cycle change for the next boundary when this period already has a budget", async () => {
+    ctx.store.budgets.push({
+      id: "b-oct",
+      householdId: HOUSEHOLD,
+      periodStart: new Date("2026-10-01T00:00:00Z"),
+      amountMinor: 1_000_000,
+      createdByUserId: OWNER_ID,
+    });
+    const dto = await ctx.service.updateCycle(
+      OWNER,
+      HOUSEHOLD,
+      { mode: "FIXED_DAY", day: 10 },
+      "SHARED",
+      NOW,
+    );
+    expect(dto.periodStart).toBe("2026-10-01");
+    expect(dto.periodEnd).toBe("2026-10-31");
+    expect(dto.cycle).toEqual({ mode: "CALENDAR_MONTH", day: null });
+    expect(dto.nextCycle).toEqual({
+      mode: "FIXED_DAY",
+      day: 10,
+      effectiveFrom: "2026-11-10",
+    });
+  });
+
+  it("uses the pending cycle from its effective date and starts unset", async () => {
+    ctx.store.budgets.push({
+      id: "b-oct",
+      householdId: HOUSEHOLD,
+      periodStart: new Date("2026-10-01T00:00:00Z"),
+      amountMinor: 1_000_000,
+      createdByUserId: OWNER_ID,
+    });
+    await ctx.service.updateCycle(OWNER, HOUSEHOLD, { mode: "FIXED_DAY", day: 10 }, "SHARED", NOW);
+
+    const before = await ctx.service.get(HOUSEHOLD, new Date("2026-11-05T05:00:00Z"));
+    expect(before.periodStart).toBe("2026-11-01");
+    expect(before.periodEnd).toBe("2026-11-30");
+
+    const after = await ctx.service.get(HOUSEHOLD, new Date("2026-11-10T05:00:00Z"));
+    expect(after.periodStart).toBe("2026-11-10");
+    expect(after.periodEnd).toBe("2026-12-09");
+    expect(after.cycle).toEqual({ mode: "FIXED_DAY", day: 10 });
+    expect(after.nextCycle).toBeNull();
+    expect(after.isSet).toBe(false);
+    expect(after.budgetMinor).toBeNull();
+  });
+
+  it("rejects a member changing the shared cycle", async () => {
+    await expect(
+      ctx.service.updateCycle(MEMBER, HOUSEHOLD, { mode: "END_OF_MONTH", day: null }, "SHARED", NOW),
+    ).rejects.toMatchObject({ statusCode: 403, code: "ACCESS_DENIED" });
+  });
+
+  it("lets a member change only their own personal cycle", async () => {
+    ctx.store.personalBudgets.push({
+      id: "pb-member-oct",
+      householdId: HOUSEHOLD,
+      userId: MEMBER_ID,
+      periodStart: new Date("2026-10-01T00:00:00Z"),
+      amountMinor: 400_000,
+      createdByUserId: MEMBER_ID,
+    });
+    const personal = await ctx.service.updateCycle(
+      MEMBER,
+      HOUSEHOLD,
+      { mode: "FIXED_DAY", day: 5 },
+      "PERSONAL",
+      NOW,
+    );
+    expect(personal.nextCycle).toEqual({
+      mode: "FIXED_DAY",
+      day: 5,
+      effectiveFrom: "2026-11-05",
+    });
+    expect(ctx.store.householdCycles.size).toBe(0);
+    expect(ctx.store.personalCycles.get(MEMBER_ID)?.pendingMode).toBe("FIXED_DAY");
+    expect(ctx.store.personalCycles.has(OWNER_ID)).toBe(false);
+  });
+
+  it("applies a personal cycle immediately when this period has no personal budget", async () => {
+    const personal = await ctx.service.updateCycle(
+      MEMBER,
+      HOUSEHOLD,
+      { mode: "END_OF_MONTH", day: null },
+      "PERSONAL",
+      NOW,
+    );
+    expect(personal.periodStart).toBe("2026-09-30");
+    expect(personal.periodEnd).toBe("2026-10-30");
+    expect(personal.cycle).toEqual({ mode: "END_OF_MONTH", day: null });
+    expect(personal.nextCycle).toBeNull();
+    expect(ctx.store.personalCycles.get(MEMBER_ID)?.mode).toBe("END_OF_MONTH");
+    expect(ctx.store.householdCycles.size).toBe(0);
+  });
+
+  it("rejects a fixed day outside 1 to 28", async () => {
+    await expect(
+      ctx.service.updateCycle(OWNER, HOUSEHOLD, { mode: "FIXED_DAY", day: 29 }, "SHARED", NOW),
+    ).rejects.toMatchObject({ statusCode: 422 });
   });
 
   it("never sums personal and shared amounts", async () => {

@@ -10,6 +10,7 @@ import {
 } from "@/lib/server/testing/dashboard-fakes";
 import { GET as dashboardGet } from "./route";
 import { GET as budgetGet, PUT as budgetPut } from "../budget/route";
+import { PUT as budgetCyclePut } from "../budget/cycle/route";
 
 vi.mock("@/lib/server/auth", () => ({
   createServices: vi.fn(),
@@ -26,7 +27,14 @@ function buildHarness(role = "OWNER") {
   const store = createDashboardFakeStore();
   const fake = createDashboardFake(store);
   const periods = new PeriodService();
-  const budget = new BudgetService(fake.budget, fake.personalBudget, fake.transaction, periods);
+  const budget = new BudgetService(
+    fake.budget,
+    fake.personalBudget,
+    fake.transaction,
+    fake.householdCycle,
+    fake.personalCycle,
+    periods,
+  );
   const context: AuthenticatedContext = {
     state: {
       user: { id: USER, email: "ana@example.com", displayName: "Ana" },
@@ -226,5 +234,54 @@ describe("GET/PUT /api/budget", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: { fieldErrors: { amountMinor: ["Budget harus lebih dari 0."] } },
     });
+  });
+
+  it("schedules a shared cycle change and returns nextCycle when this period has a budget (AC-F2-2d)", async () => {
+    harness.store.budgets.push({
+      id: "b-current",
+      householdId: HOUSEHOLD,
+      periodStart: new PeriodService().currentMonth().budgetPeriodStart,
+      amountMinor: 1_000_000,
+      createdByUserId: USER,
+    });
+    const response = await budgetCyclePut(
+      jsonRequest({ mode: "FIXED_DAY", day: 10 }),
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.cycle).toEqual({ mode: "CALENDAR_MONTH", day: null });
+    expect(body.nextCycle).toMatchObject({ mode: "FIXED_DAY", day: 10 });
+    expect(typeof body.nextCycle.effectiveFrom).toBe("string");
+  });
+
+  it("applies a shared cycle immediately when this period has no budget (AC-F2-2d)", async () => {
+    const response = await budgetCyclePut(
+      jsonRequest({ mode: "FIXED_DAY", day: 10 }),
+    );
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.cycle).toEqual({ mode: "FIXED_DAY", day: 10 });
+    expect(body.nextCycle).toBeNull();
+    expect(body.isSet).toBe(false);
+  });
+
+  it("rejects a fixed cycle day above 28 (AC-F2-2d)", async () => {
+    const response = await budgetCyclePut(
+      jsonRequest({ mode: "FIXED_DAY", day: 29 }),
+    );
+    expect(response.status).toBe(422);
+  });
+
+  it("lets a member change the personal cycle but not the shared cycle (AC-F2-2d)", async () => {
+    harness = buildHarness("MEMBER");
+    vi.mocked(authenticatedRequest).mockResolvedValue(harness.context);
+    const personal = await budgetCyclePut(
+      jsonRequest({ mode: "END_OF_MONTH", scope: "personal" }),
+    );
+    expect(personal.status).toBe(200);
+    await expect(personal.json()).resolves.toMatchObject({ scope: "PERSONAL" });
+
+    const shared = await budgetCyclePut(jsonRequest({ mode: "END_OF_MONTH" }));
+    expect(shared.status).toBe(403);
   });
 });

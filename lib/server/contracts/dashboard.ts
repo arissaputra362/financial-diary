@@ -38,6 +38,32 @@ export const budgetUpsertSchema = z.object({
   scope: budgetScopeSchema.optional(),
 });
 
+/** PUT /api/budget/cycle body (AC-F2-2d). */
+export const budgetCycleUpdateSchema = z
+  .object({
+    scope: budgetScopeSchema.optional(),
+    mode: z.enum(["CALENDAR_MONTH", "FIXED_DAY", "END_OF_MONTH"], {
+      message: "Siklus budget tidak dikenal.",
+    }),
+    day: z
+      .number({ message: "Tanggal harus berupa angka." })
+      .int("Tanggal harus bilangan bulat.")
+      .min(1, "Tanggal harus antara 1 dan 28.")
+      .max(28, "Tanggal harus antara 1 dan 28.")
+      .nullable()
+      .optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.mode === "FIXED_DAY" && (value.day === null || value.day === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["day"],
+        message: "Pilih tanggal antara 1 dan 28.",
+      });
+    }
+  });
+
 export type DashboardQuery = z.infer<typeof dashboardQuerySchema>;
 export type BudgetQuery = z.infer<typeof budgetQuerySchema>;
 export type BudgetUpsertInput = z.infer<typeof budgetUpsertSchema>;
+export type BudgetCycleUpdateInput = z.infer<typeof budgetCycleUpdateSchema>;

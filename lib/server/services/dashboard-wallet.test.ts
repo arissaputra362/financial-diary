@@ -61,7 +61,14 @@ function setup(): { service: DashboardService; store: DashboardFakeStore } {
     fakeTransaction({ householdId: HOUSEHOLD, walletId: WP2, type: "MONEY_IN", amountMinor: 900, occurredAt: NOW }),
   );
   const periods = new PeriodService();
-  const budget = new BudgetService(fake.budget, fake.personalBudget, fake.transaction, periods);
+  const budget = new BudgetService(
+    fake.budget,
+    fake.personalBudget,
+    fake.transaction,
+    fake.householdCycle,
+    fake.personalCycle,
+    periods,
+  );
   return {
     store,
     service: new DashboardService({ transaction: fake.transaction, wallet: fake.wallet }, fake.goal, budget, periods),

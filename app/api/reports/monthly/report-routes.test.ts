@@ -79,6 +79,8 @@ function buildHarness(options: { personal?: boolean; role?: string } = {}) {
     dashboardFake.budget,
     dashboardFake.personalBudget,
     dashboardFake.transaction,
+    dashboardFake.householdCycle,
+    dashboardFake.personalCycle,
     periods,
   );
   const dashboard = new DashboardService(

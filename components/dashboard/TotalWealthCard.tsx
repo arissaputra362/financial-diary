@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Coins, Eye, EyeOff, RefreshCw, Wallet } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { formatDateRangeLabel } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import type { MonthlyBudgetDTO } from "@/types/api";
 import type { GoldPortfolioSummaryDTO } from "@/types/gold";
@@ -180,7 +181,10 @@ export function TotalWealthCard({
         </>
       )}
       <div className="mt-5 border-t border-white/15 pt-4">
-        <p className="text-xs font-semibold text-white/90">Pengeluaran bulan ini</p>
+        <p className="text-xs font-semibold text-white/90">Pengeluaran periode ini</p>
+        <p className="mt-0.5 text-[11px] text-on-dark-muted">
+          {formatDateRangeLabel(budget.periodStart, budget.periodEnd)}
+        </p>
         <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">
           {amountsVisible ? formatIDR(budget.spentMinor) : "****"}
         </p>

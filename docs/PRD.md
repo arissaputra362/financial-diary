@@ -223,7 +223,9 @@ catatan keluarga tetap akurat tanpa membuka data pribadi saya.
   kartu per-wallet berpenanda scope; saldo wallet terarsip tetap dalam total dan ringkasan
   menjelaskan bahwa total mencakup wallet di Arsip.
 - [ ] AC-F6-8: Budget dan pengeluaran household hanya menghitung MONEY_OUT aktif pada
-  wallet Sharing (termasuk wallet Sharing yang diarsipkan); kaki transfer tidak dihitung.
+  wallet Sharing (termasuk wallet Sharing yang diarsipkan). Transfer dari wallet Sharing
+  ke wallet Pribadi juga mengurangi budget Bersama sebesar kaki keluar; transfer antar
+  wallet Sharing tetap netral. Kaki masuk transfer tidak dihitung sebagai pengeluaran.
 - [ ] AC-F6-9: Transaksi pre-wallet dimigrasikan ke satu wallet Sharing default per
   household, saldo awal Rp0, tanpa kehilangan/duplikasi saldo.
 - [ ] AC-F6-10: OCR tidak memilih wallet; pengguna memilih wallet saat review. Receipt

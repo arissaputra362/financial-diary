@@ -41,6 +41,8 @@ function makeBudget(
     spentMinor,
     remainingMinor: amountMinor === null ? null : amountMinor - spentMinor,
     currencyCode: "IDR",
+    cycle: { mode: "CALENDAR_MONTH", day: null },
+    nextCycle: null,
   };
 }
 

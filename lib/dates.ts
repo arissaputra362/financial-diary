@@ -111,6 +111,11 @@ export function shiftMonthKey(key: string, delta: -1 | 1): string {
   return date.toISOString().slice(0, 7);
 }
 
+/** Inclusive date range label, e.g. "1 Okt 2026 sampai 31 Okt 2026". */
+export function formatDateRangeLabel(start: string, end: string): string {
+  return `${formatDateLabel(start)} sampai ${formatDateLabel(end)}`;
+}
+
 /** Human label for a month key, e.g. "Oktober 2026". */
 export function monthKeyLabel(key: string): string {
   const [year, month] = parseMonthKey(key);

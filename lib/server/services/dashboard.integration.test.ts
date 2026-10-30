@@ -10,9 +10,11 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { PrismaClient } from "@/lib/generated/prisma/client";
 import {
+  createBudgetCycleRepository,
   createBudgetRepository,
   createGoalRepository,
   createLedgerRepositories,
+  createPersonalBudgetCycleRepository,
   createPersonalBudgetRepository,
 } from "../repositories/ledger";
 import { BudgetService } from "./budget";
@@ -35,6 +37,8 @@ function buildServices(prisma: PrismaClient) {
     createBudgetRepository(prisma),
     createPersonalBudgetRepository(prisma),
     repos.transaction,
+    createBudgetCycleRepository(prisma),
+    createPersonalBudgetCycleRepository(prisma),
     periods,
   );
   const dashboard = new DashboardService(

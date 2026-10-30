@@ -206,6 +206,8 @@ export interface TransactionRepository {
   restoreGroup(householdId: string, transferGroupId: string): Promise<number>;
   listTrash(actor: WalletActor, cursor?: string | null, limit?: number): Promise<Paged<TransactionRecord>>;
   sumByType(householdId: string, range: { type: "MONEY_IN" | "MONEY_OUT"; from: Date; to: Date }, scope?: AggregateScope): Promise<number>;
+  /** Shared budget usage for transfer out legs whose paired inflow enters a personal wallet. */
+  sumTransfersFromSharedToPersonal(householdId: string, range: { from: Date; to: Date }): Promise<number>;
   listByDay(householdId: string, range: { from: Date; to: Date }, scope?: AggregateScope): Promise<Array<{ date: Date; amountMinor: number }>>;
   /**
    * Dashboard-only combined spending read. It returns both wallet scopes in one
@@ -377,6 +379,8 @@ export interface AdvisorInsightRepository {
 export interface BudgetRepository {
   findByPeriod(householdId: string, periodStart: Date): Promise<{ id: string; amountMinor: number; periodStart: Date } | null>;
   upsert(householdId: string, periodStart: Date, amountMinor: number, userId: string): Promise<{ id: string; amountMinor: number }>;
+  softDeleteByPeriod(householdId: string, periodStart: Date, userId: string): Promise<boolean>;
+  restoreByPeriod(householdId: string, periodStart: Date): Promise<boolean>;
 }
 
 /**
@@ -387,6 +391,43 @@ export interface BudgetRepository {
 export interface PersonalBudgetRepository {
   findByPeriod(householdId: string, userId: string, periodStart: Date): Promise<{ id: string; amountMinor: number; periodStart: Date } | null>;
   upsert(householdId: string, userId: string, periodStart: Date, amountMinor: number, createdByUserId: string): Promise<{ id: string; amountMinor: number }>;
+  softDeleteByPeriod(householdId: string, userId: string, periodStart: Date, deletedByUserId: string): Promise<boolean>;
+  restoreByPeriod(householdId: string, userId: string, periodStart: Date): Promise<boolean>;
+}
+
+/* ── Budget cycle settings (AC-F2-2d) ─────────────────────────────────────── */
+
+export type BudgetCycleModeValue = "CALENDAR_MONTH" | "FIXED_DAY" | "END_OF_MONTH";
+
+/**
+ * Effective-dated cycle settings. `mode`/`day` are the cycle currently in use;
+ * a future `pending*` row becomes active from `pendingEffectiveFrom`, so a
+ * change never rewrites the history of an already-visible period.
+ */
+export interface BudgetCycleSettingsRecord {
+  mode: BudgetCycleModeValue;
+  day: number | null;
+  pendingMode: BudgetCycleModeValue | null;
+  pendingDay: number | null;
+  pendingEffectiveFrom: Date | null;
+}
+
+export interface BudgetCycleWrite {
+  mode: BudgetCycleModeValue;
+  day: number | null;
+  pendingMode: BudgetCycleModeValue | null;
+  pendingDay: number | null;
+  pendingEffectiveFrom: Date | null;
+}
+
+export interface BudgetCycleRepository {
+  findHousehold(householdId: string): Promise<BudgetCycleSettingsRecord | null>;
+  updateHousehold(householdId: string, input: BudgetCycleWrite): Promise<void>;
+}
+
+export interface PersonalBudgetCycleRepository {
+  findByUser(householdId: string, userId: string): Promise<BudgetCycleSettingsRecord | null>;
+  updateUser(userId: string, input: BudgetCycleWrite): Promise<void>;
 }
 
 export interface IdempotencyRepository {
@@ -560,6 +601,36 @@ export function createTransactionRepository(db: Db): TransactionRepository {
         _sum: { amountMinor: true },
       });
       return Number(result._sum.amountMinor ?? 0);
+    },
+    async sumTransfersFromSharedToPersonal(householdId, range) {
+      const outLegs = await db.transaction.findMany({
+        where: {
+          householdId,
+          ...ACTIVE,
+          type: "MONEY_OUT",
+          transferGroupId: { not: null },
+          occurredAt: { gte: range.from, lte: range.to },
+          wallet: { is: { scope: "SHARING" } },
+        },
+        select: { amountMinor: true, transferGroupId: true },
+      });
+      const groupIds = [...new Set(outLegs.map((row) => row.transferGroupId).filter((id): id is string => id !== null))];
+      if (groupIds.length === 0) return 0;
+      const personalInLegs = await db.transaction.findMany({
+        where: {
+          householdId,
+          ...ACTIVE,
+          type: "MONEY_IN",
+          transferGroupId: { in: groupIds },
+          wallet: { is: { scope: "PERSONAL" } },
+        },
+        select: { transferGroupId: true },
+      });
+      const personalGroups = new Set(personalInLegs.map((row) => row.transferGroupId));
+      return outLegs.reduce(
+        (sum, row) => sum + (row.transferGroupId && personalGroups.has(row.transferGroupId) ? Number(row.amountMinor) : 0),
+        0,
+      );
     },
     async listByDay(householdId, range, scope) {
       /* Excludes transfer legs so the spending chart never plots a transfer (A-45). */
@@ -976,15 +1047,29 @@ export function createBudgetRepository(db: Db): BudgetRepository {
       const row = await db.householdBudget.findUnique({
         where: { householdId_periodStart: { householdId, periodStart } },
       });
-      return row ? { id: row.id, amountMinor: Number(row.amountMinor), periodStart: row.periodStart } : null;
+      return row && row.deletedAt === null ? { id: row.id, amountMinor: Number(row.amountMinor), periodStart: row.periodStart } : null;
     },
     async upsert(householdId, periodStart, amountMinor, userId) {
       const row = await db.householdBudget.upsert({
         where: { householdId_periodStart: { householdId, periodStart } },
         create: { householdId, periodStart, amountMinor, createdByUserId: userId },
-        update: { amountMinor },
+        update: { amountMinor, deletedAt: null },
       });
       return { id: row.id, amountMinor: Number(row.amountMinor) };
+    },
+    async softDeleteByPeriod(householdId, periodStart, _userId) {
+      const result = await db.householdBudget.updateMany({
+        where: { householdId, periodStart, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+      return result.count > 0;
+    },
+    async restoreByPeriod(householdId, periodStart) {
+      const result = await db.householdBudget.updateMany({
+        where: { householdId, periodStart, deletedAt: { not: null } },
+        data: { deletedAt: null },
+      });
+      return result.count > 0;
     },
   };
 }
@@ -995,15 +1080,105 @@ export function createPersonalBudgetRepository(db: Db): PersonalBudgetRepository
       const row = await db.personalBudget.findUnique({
         where: { householdId_userId_periodStart: { householdId, userId, periodStart } },
       });
-      return row ? { id: row.id, amountMinor: Number(row.amountMinor), periodStart: row.periodStart } : null;
+      return row && row.deletedAt === null ? { id: row.id, amountMinor: Number(row.amountMinor), periodStart: row.periodStart } : null;
     },
     async upsert(householdId, userId, periodStart, amountMinor, createdByUserId) {
       const row = await db.personalBudget.upsert({
         where: { householdId_userId_periodStart: { householdId, userId, periodStart } },
         create: { householdId, userId, periodStart, amountMinor, createdByUserId },
-        update: { amountMinor },
+        update: { amountMinor, deletedAt: null },
       });
       return { id: row.id, amountMinor: Number(row.amountMinor) };
+    },
+    async softDeleteByPeriod(householdId, userId, periodStart, _deletedByUserId) {
+      const result = await db.personalBudget.updateMany({
+        where: { householdId, userId, periodStart, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+      return result.count > 0;
+    },
+    async restoreByPeriod(householdId, userId, periodStart) {
+      const result = await db.personalBudget.updateMany({
+        where: { householdId, userId, periodStart, deletedAt: { not: null } },
+        data: { deletedAt: null },
+      });
+      return result.count > 0;
+    },
+  };
+}
+
+export function createBudgetCycleRepository(db: Db): BudgetCycleRepository {
+  return {
+    async findHousehold(householdId) {
+      const row = await db.household.findUnique({
+        where: { id: householdId },
+        select: {
+          budgetCycleMode: true,
+          budgetCycleDay: true,
+          budgetCyclePendingMode: true,
+          budgetCyclePendingDay: true,
+          budgetCyclePendingEffectiveFrom: true,
+        },
+      });
+      return row
+        ? {
+            mode: row.budgetCycleMode,
+            day: row.budgetCycleDay,
+            pendingMode: row.budgetCyclePendingMode,
+            pendingDay: row.budgetCyclePendingDay,
+            pendingEffectiveFrom: row.budgetCyclePendingEffectiveFrom,
+          }
+        : null;
+    },
+    async updateHousehold(householdId, input) {
+      await db.household.update({
+        where: { id: householdId },
+        data: {
+          budgetCycleMode: input.mode,
+          budgetCycleDay: input.day,
+          budgetCyclePendingMode: input.pendingMode,
+          budgetCyclePendingDay: input.pendingDay,
+          budgetCyclePendingEffectiveFrom: input.pendingEffectiveFrom,
+        },
+      });
+    },
+  };
+}
+
+export function createPersonalBudgetCycleRepository(db: Db): PersonalBudgetCycleRepository {
+  return {
+    async findByUser(_householdId, userId) {
+      const row = await db.user.findUnique({
+        where: { id: userId },
+        select: {
+          personalBudgetCycleMode: true,
+          personalBudgetCycleDay: true,
+          personalBudgetCyclePendingMode: true,
+          personalBudgetCyclePendingDay: true,
+          personalBudgetCyclePendingEffectiveFrom: true,
+        },
+      });
+      return row
+        ? {
+            mode: row.personalBudgetCycleMode,
+            day: row.personalBudgetCycleDay,
+            pendingMode: row.personalBudgetCyclePendingMode,
+            pendingDay: row.personalBudgetCyclePendingDay,
+            pendingEffectiveFrom: row.personalBudgetCyclePendingEffectiveFrom,
+          }
+        : null;
+    },
+    async updateUser(userId, input) {
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          personalBudgetCycleMode: input.mode,
+          personalBudgetCycleDay: input.day,
+          personalBudgetCyclePendingMode: input.pendingMode,
+          personalBudgetCyclePendingDay: input.pendingDay,
+          personalBudgetCyclePendingEffectiveFrom: input.pendingEffectiveFrom,
+        },
+      });
     },
   };
 }

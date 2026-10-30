@@ -20,7 +20,8 @@ Detail teknis final (Prisma schema file, migration SQL) ditulis oleh backend dev
 - Timestamps: `timestamptz` UTC (eksplisit `@db.Timestamptz` — jangan pakai default Prisma).
 - Uang: `Int` minor units. **Skala IDR: minor = 1 rupiah (scale 0)** — `integer` Postgres
   aman sampai ~2,1 miliar rupiah per baris. Dilarang pakai `Decimal`/`Float` untuk uang.
-- Soft delete: `deleted_at` hanya di `transaction` dan `savings_goal`. Tidak ada hard delete
+- Soft delete: data pengguna yang dapat dihapus memakai `deleted_at`, termasuk
+  `transaction`, `savings_goal`, `household_budget`, dan `personal_budget`. Tidak ada hard delete.
   untuk data user di MVP.
 - Multi-tenant: semua tabel data ledger membawa `household_id`. Isolasi di-enforce di
   layer repository (injeksi `householdId`), bukan hanya di ERD.
@@ -215,6 +216,11 @@ erDiagram
 | email | varchar | **UNIQUE**, NOT NULL | dinormalisasi (lowercase + trim) di aplikasi |
 | password_hash | varchar | NOT NULL | hash server-side, jangan pernah plaintext |
 | display_name | varchar | NOT NULL | |
+| personal_budget_cycle_mode | enum `BudgetCycleMode` | NOT NULL, default `CALENDAR_MONTH` | siklus budget Pribadi (AC-F2-2d) |
+| personal_budget_cycle_day | int | nullable, CHECK 1-28 saat `FIXED_DAY` | anchor tanggal |
+| personal_budget_cycle_pending_mode | enum `BudgetCycleMode` | nullable | perubahan menunggu |
+| personal_budget_cycle_pending_day | int | nullable | anchor perubahan |
+| personal_budget_cycle_pending_effective_from | date | nullable | batas siklus baru |
 | created_at / updated_at | timestamptz | NOT NULL | UTC |
 
 ### 3.2 `household`
@@ -224,6 +230,11 @@ erDiagram
 | id | uuid | PK | |
 | name | varchar | NOT NULL | |
 | owner_user_id | uuid | FK → user, NOT NULL | owner juga punya membership APPROVED |
+| budget_cycle_mode | enum `BudgetCycleMode` | NOT NULL, default `CALENDAR_MONTH` | siklus budget Bersama (AC-F2-2d) |
+| budget_cycle_day | int | nullable, CHECK 1-28 saat `FIXED_DAY` | anchor tanggal |
+| budget_cycle_pending_mode | enum `BudgetCycleMode` | nullable | perubahan menunggu |
+| budget_cycle_pending_day | int | nullable | anchor perubahan |
+| budget_cycle_pending_effective_from | date | nullable | batas siklus baru |
 | created_at / updated_at | timestamptz | NOT NULL | |
 
 Index: `idx(owner_user_id)`.
@@ -444,15 +455,16 @@ insight terbaru per household, hapus yang expired > 30 hari.
 |---|---|---|---|
 | id | uuid | PK | |
 | household_id | uuid | FK → household, NOT NULL | |
-| period_start | date | NOT NULL | awal bulan, timezone aplikasi |
+| period_start | date | NOT NULL | awal periode menurut siklus, timezone aplikasi |
 | amount_minor | int | NOT NULL, CHECK > 0 | |
 | currency_code | char(3) | NOT NULL, default `IDR` | |
 | created_by_user_id | uuid | FK → user, NOT NULL | |
 | created_at / updated_at | timestamptz | NOT NULL | |
+| deleted_at | timestamptz | nullable | budget dihapus secara non-destruktif |
 
-**Constraint:** `UNIQUE(household_id, period_start)` — sekaligus lookup index.
-`period_end` TIDAK disimpan (derived: period_start + 1 bulan) — tanggal akhir yang
-disimpan cenderung drift. Upsert by `(household_id, period_start)`.
+**Constraint:** `UNIQUE(household_id, period_start)` - sekaligus lookup index.
+`period_end` TIDAK disimpan (derived dari siklus scope pada `household`/`user`) —
+tanggal akhir yang disimpan cenderung drift. Upsert by `(household_id, period_start)`.
 
 ### 3.12b `personal_budget` (tabel BARU, T-015)
 
@@ -461,15 +473,16 @@ disimpan cenderung drift. Upsert by `(household_id, period_start)`.
 | id | uuid | PK | |
 | household_id | uuid | FK → household, NOT NULL | |
 | user_id | uuid | FK → user, NOT NULL | pemilik budget pribadi |
-| period_start | date | NOT NULL | awal bulan, timezone aplikasi |
+| period_start | date | NOT NULL | awal periode menurut siklus, timezone aplikasi |
 | amount_minor | int | NOT NULL, CHECK > 0 | |
 | currency_code | char(3) | NOT NULL, default `IDR` | |
 | created_by_user_id | uuid | FK → user, NOT NULL | |
 | created_at / updated_at | timestamptz | NOT NULL | |
+| deleted_at | timestamptz | nullable | budget dihapus secara non-destruktif |
 
-**Constraint:** `UNIQUE(household_id, user_id, period_start)` — lookup sekaligus
-pengaman satu baris per user per bulan. Index tambahan `(user_id, period_start)`.
-`period_end` tidak disimpan. Tidak ada soft delete.
+**Constraint:** `UNIQUE(household_id, user_id, period_start)` - lookup sekaligus
+pengaman satu baris per user per periode. Index tambahan `(user_id, period_start)`.
+`period_end` tidak disimpan (derived dari siklus pribadi user).
 
 **Akses:** hanya `user_id` pemilik yang boleh membaca atau menulis. Tidak ada
 owner override dan tidak ada parameter `userId` dari client; scope personal

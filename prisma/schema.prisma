@@ -81,42 +81,53 @@ enum JewelryType {
   OTHER
 }
 
+enum BudgetCycleMode {
+  CALENDAR_MONTH
+  FIXED_DAY
+  END_OF_MONTH
+}
+
 // ─── Auth & household ─────────────────────────────────────────────────────────
 
 /// ERD §3.1
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique @db.VarChar
-  passwordHash String   @map("password_hash") @db.VarChar
-  displayName  String   @map("display_name") @db.VarChar
-  createdAt    DateTime @map("created_at") @db.Timestamptz @default(now())
-  updatedAt    DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+  id                                      String           @id @default(uuid()) @db.Uuid
+  email                                   String           @unique @db.VarChar
+  passwordHash                            String           @map("password_hash") @db.VarChar
+  displayName                             String           @map("display_name") @db.VarChar
+  createdAt                               DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                               DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  personalBudgetCycleMode                 BudgetCycleMode  @default(CALENDAR_MONTH) @map("personal_budget_cycle_mode")
+  personalBudgetCycleDay                  Int?             @map("personal_budget_cycle_day")
+  personalBudgetCyclePendingMode          BudgetCycleMode? @map("personal_budget_cycle_pending_mode")
+  personalBudgetCyclePendingDay           Int?             @map("personal_budget_cycle_pending_day")
+  personalBudgetCyclePendingEffectiveFrom DateTime?        @map("personal_budget_cycle_pending_effective_from") @db.Date
 
-  householdsOwned     Household[]        @relation("HouseholdOwner")
-  membershipsInvited  Membership[]       @relation("MembershipInvitedBy")
-  membershipsApproved Membership[]       @relation("MembershipApprovedBy")
-  membershipsDeclined Membership[]       @relation("MembershipDeclinedBy")
-  membershipsRevoked  Membership[]       @relation("MembershipRevokedBy")
-  memberships         Membership[]
-  invitesCreated      Invite[]           @relation("InviteCreatedBy")
-  invitesRedeemed     Invite[]           @relation("InviteRedeemedBy")
-  membershipEvents    MembershipEvent[]
-  sessions            Session[]
-  transactionsCreated Transaction[]      @relation("TransactionCreatedBy")
-  transactionsDeleted Transaction[]      @relation("TransactionDeletedBy")
-  walletsCreated      Wallet[]           @relation("WalletCreatedBy")
-  walletsArchived     Wallet[]           @relation("WalletArchivedBy")
-  goalsCreated        SavingsGoal[]      @relation("GoalCreatedBy")
-  goalsDeleted        SavingsGoal[]      @relation("GoalDeletedBy")
-  receiptsUploaded    Receipt[]          @relation("ReceiptUploadedBy")
-  insightsRequested   AdvisorInsight[]
-  budgetsCreated      HouseholdBudget[]
-  personalBudgets     PersonalBudget[]   @relation("PersonalBudgetOwner")
-  personalBudgetsCreated PersonalBudget[] @relation("PersonalBudgetCreatedBy")
-  idempotencyKeys     IdempotencyKey[]
-  customInstitutions  UserCustomInstitution[]
-  goldAssetsCreated   GoldAsset[]        @relation("GoldAssetCreatedBy")
-  goldAssetsDeleted   GoldAsset[]        @relation("GoldAssetDeletedBy")
+  householdsOwned        Household[]             @relation("HouseholdOwner")
+  membershipsInvited     Membership[]            @relation("MembershipInvitedBy")
+  membershipsApproved    Membership[]            @relation("MembershipApprovedBy")
+  membershipsDeclined    Membership[]            @relation("MembershipDeclinedBy")
+  membershipsRevoked     Membership[]            @relation("MembershipRevokedBy")
+  memberships            Membership[]
+  invitesCreated         Invite[]                @relation("InviteCreatedBy")
+  invitesRedeemed        Invite[]                @relation("InviteRedeemedBy")
+  membershipEvents       MembershipEvent[]
+  sessions               Session[]
+  transactionsCreated    Transaction[]           @relation("TransactionCreatedBy")
+  transactionsDeleted    Transaction[]           @relation("TransactionDeletedBy")
+  walletsCreated         Wallet[]                @relation("WalletCreatedBy")
+  walletsArchived        Wallet[]                @relation("WalletArchivedBy")
+  goalsCreated           SavingsGoal[]           @relation("GoalCreatedBy")
+  goalsDeleted           SavingsGoal[]           @relation("GoalDeletedBy")
+  receiptsUploaded       Receipt[]               @relation("ReceiptUploadedBy")
+  insightsRequested      AdvisorInsight[]
+  budgetsCreated         HouseholdBudget[]
+  personalBudgets        PersonalBudget[]        @relation("PersonalBudgetOwner")
+  personalBudgetsCreated PersonalBudget[]        @relation("PersonalBudgetCreatedBy")
+  idempotencyKeys        IdempotencyKey[]
+  customInstitutions     UserCustomInstitution[]
+  goldAssetsCreated      GoldAsset[]             @relation("GoldAssetCreatedBy")
+  goldAssetsDeleted      GoldAsset[]             @relation("GoldAssetDeletedBy")
 
   @@index([email])
   @@map("user")
@@ -124,13 +135,18 @@ model User {
 
 /// ERD §3.2
 model Household {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String   @db.VarChar
-  ownerUserId String   @map("owner_user_id") @db.Uuid
-  createdAt   DateTime @map("created_at") @db.Timestamptz @default(now())
-  updatedAt   DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+  id                              String           @id @default(uuid()) @db.Uuid
+  name                            String           @db.VarChar
+  ownerUserId                     String           @map("owner_user_id") @db.Uuid
+  createdAt                       DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  budgetCycleMode                 BudgetCycleMode  @default(CALENDAR_MONTH) @map("budget_cycle_mode")
+  budgetCycleDay                  Int?             @map("budget_cycle_day")
+  budgetCyclePendingMode          BudgetCycleMode? @map("budget_cycle_pending_mode")
+  budgetCyclePendingDay           Int?             @map("budget_cycle_pending_day")
+  budgetCyclePendingEffectiveFrom DateTime?        @map("budget_cycle_pending_effective_from") @db.Date
 
-  owner            User         @relation("HouseholdOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  owner            User              @relation("HouseholdOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   memberships      Membership[]
   invites          Invite[]
   membershipEvents MembershipEvent[]
@@ -166,8 +182,8 @@ model Membership {
   revokedAt        DateTime?        @map("revoked_at") @db.Timestamptz
   revokedByUserId  String?          @map("revoked_by_user_id") @db.Uuid
   decisionReason   String?          @map("decision_reason") @db.VarChar
-  createdAt        DateTime         @map("created_at") @db.Timestamptz @default(now())
-  updatedAt        DateTime         @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   household  Household         @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   user       User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -193,7 +209,7 @@ model Invite {
   redeemedAt       DateTime? @map("redeemed_at") @db.Timestamptz
   redeemedByUserId String?   @map("redeemed_by_user_id") @db.Uuid
   revokedAt        DateTime? @map("revoked_at") @db.Timestamptz
-  createdAt        DateTime  @map("created_at") @db.Timestamptz @default(now())
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   household   Household    @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   createdBy   User         @relation("InviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -214,7 +230,7 @@ model MembershipEvent {
   previousStatus MembershipStatus?   @map("previous_status")
   nextStatus     MembershipStatus?   @map("next_status")
   reason         String?             @db.VarChar
-  createdAt      DateTime            @map("created_at") @db.Timestamptz @default(now())
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz
 
   membership Membership @relation(fields: [membershipId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   household  Household  @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -233,8 +249,8 @@ model Session {
   tokenVersion String    @map("token_version") @db.VarChar
   expiresAt    DateTime  @map("expires_at") @db.Timestamptz
   revokedAt    DateTime? @map("revoked_at") @db.Timestamptz
-  createdAt    DateTime  @map("created_at") @db.Timestamptz @default(now())
-  lastSeenAt   DateTime  @map("last_seen_at") @db.Timestamptz @default(now())
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  lastSeenAt   DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
@@ -263,8 +279,8 @@ model Transaction {
   walletId        String            @map("wallet_id") @db.Uuid
   deletedAt       DateTime?         @map("deleted_at") @db.Timestamptz
   deletedByUserId String?           @map("deleted_by_user_id") @db.Uuid
-  createdAt       DateTime          @map("created_at") @db.Timestamptz @default(now())
-  updatedAt       DateTime          @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   createdBy User      @relation("TransactionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -284,27 +300,27 @@ model Transaction {
 /// Institution references are additive and optional (T-011 / A-52..A-55): manual
 /// means both ids are null; the XOR CHECK is added in raw SQL.
 model Wallet {
-  id                  String      @id @default(uuid()) @db.Uuid
-  householdId         String      @map("household_id") @db.Uuid
-  createdByUserId     String      @map("created_by_user_id") @db.Uuid
-  scope               WalletScope
-  name                String      @db.VarChar
-  purpose             String?     @db.VarChar
-  openingBalanceMinor Decimal    @default(0) @map("opening_balance_minor") @db.Decimal(18, 2)
-  officialInstitutionId String?   @map("official_institution_id") @db.Uuid
-  customInstitutionId   String?   @map("custom_institution_id") @db.Uuid
-  archivedAt          DateTime?   @map("archived_at") @db.Timestamptz
-  archivedByUserId    String?     @map("archived_by_user_id") @db.Uuid
-  systemKey           String?     @map("system_key") @db.VarChar
-  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt           DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  id                    String      @id @default(uuid()) @db.Uuid
+  householdId           String      @map("household_id") @db.Uuid
+  createdByUserId       String      @map("created_by_user_id") @db.Uuid
+  scope                 WalletScope
+  name                  String      @db.VarChar
+  purpose               String?     @db.VarChar
+  openingBalanceMinor   Decimal     @default(0) @map("opening_balance_minor") @db.Decimal(18, 2)
+  officialInstitutionId String?     @map("official_institution_id") @db.Uuid
+  customInstitutionId   String?     @map("custom_institution_id") @db.Uuid
+  archivedAt            DateTime?   @map("archived_at") @db.Timestamptz
+  archivedByUserId      String?     @map("archived_by_user_id") @db.Uuid
+  systemKey             String?     @map("system_key") @db.VarChar
+  createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  household    Household     @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  createdBy    User          @relation("WalletCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  archivedBy   User?         @relation("WalletArchivedBy", fields: [archivedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  household           Household              @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  createdBy           User                   @relation("WalletCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivedBy          User?                  @relation("WalletArchivedBy", fields: [archivedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   officialInstitution BankInstitution?       @relation("WalletOfficialInstitution", fields: [officialInstitutionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   customInstitution   UserCustomInstitution? @relation("WalletCustomInstitution", fields: [customInstitutionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  transactions Transaction[]
+  transactions        Transaction[]
 
   @@unique([householdId, systemKey])
   @@unique([householdId, id])
@@ -365,8 +381,8 @@ model SavingsGoal {
   deadline          DateTime? @db.Date
   deletedAt         DateTime? @map("deleted_at") @db.Timestamptz
   deletedByUserId   String?   @map("deleted_by_user_id") @db.Uuid
-  createdAt         DateTime  @map("created_at") @db.Timestamptz @default(now())
-  updatedAt         DateTime  @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   createdBy User      @relation("GoalCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -385,7 +401,7 @@ model Receipt {
   mimeType         String   @map("mime_type") @db.VarChar
   sizeBytes        Int      @map("size_bytes")
   storageKey       String   @map("storage_key") @db.VarChar
-  createdAt        DateTime @map("created_at") @db.Timestamptz @default(now())
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   household    Household     @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   uploadedBy   User          @relation("ReceiptUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -409,7 +425,7 @@ model OcrJob {
   resultJson  Json?        @map("result_json")
   confidence  Float?
   errorCode   String?      @map("error_code") @db.VarChar
-  createdAt   DateTime     @map("created_at") @db.Timestamptz @default(now())
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
   completedAt DateTime?    @map("completed_at") @db.Timestamptz
 
   receipt Receipt @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -432,7 +448,7 @@ model AdvisorInsight {
   summary           String
   actionsJson       Json     @map("actions_json")
   limitations       String?
-  generatedAt       DateTime @map("generated_at") @db.Timestamptz @default(now())
+  generatedAt       DateTime @default(now()) @map("generated_at") @db.Timestamptz
   expiresAt         DateTime @map("expires_at") @db.Timestamptz
 
   household   Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -450,8 +466,9 @@ model HouseholdBudget {
   amountMinor     Decimal  @map("amount_minor") @db.Decimal(18, 2)
   currencyCode    String   @default("IDR") @map("currency_code") @db.Char(3)
   createdByUserId String   @map("created_by_user_id") @db.Uuid
-  createdAt       DateTime @map("created_at") @db.Timestamptz @default(now())
-  updatedAt       DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
 
   household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   createdBy User      @relation(fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -471,8 +488,9 @@ model PersonalBudget {
   amountMinor     Decimal  @map("amount_minor") @db.Decimal(18, 2)
   currencyCode    String   @default("IDR") @map("currency_code") @db.Char(3)
   createdByUserId String   @map("created_by_user_id") @db.Uuid
-  createdAt       DateTime @map("created_at") @db.Timestamptz @default(now())
-  updatedAt       DateTime @map("updated_at") @db.Timestamptz @default(now()) @updatedAt
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz
 
   household Household @relation(fields: [householdId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   user      User      @relation("PersonalBudgetOwner", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -491,7 +509,7 @@ model IdempotencyKey {
   requestHash    String   @map("request_hash") @db.VarChar
   responseStatus Int?     @map("response_status")
   responseBody   Json?    @map("response_body")
-  createdAt      DateTime @map("created_at") @db.Timestamptz @default(now())
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
   expiresAt      DateTime @map("expires_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -509,7 +527,7 @@ model GoldAsset {
   createdByUserId  String        @map("created_by_user_id") @db.Uuid
   scope            WalletScope   @default(PERSONAL)
   type             GoldAssetType
-  jewelryType      JewelryType?   @map("jewelry_type")
+  jewelryType      JewelryType?  @map("jewelry_type")
   brand            GoldBrand     @default(OTHER)
   brandCustomName  String?       @map("brand_custom_name") @db.VarChar(100)
   name             String        @db.VarChar(150)
@@ -550,9 +568,9 @@ model GoldMarketPrice {
 }
 
 model GoldPriceFetchState {
-  providerKey       String   @id @map("provider_key") @db.VarChar(80)
-  lastAttemptDate  DateTime @map("last_attempt_date") @db.Date
-  lastError         String?  @map("last_error") @db.VarChar(200)
+  providerKey     String   @id @map("provider_key") @db.VarChar(80)
+  lastAttemptDate DateTime @map("last_attempt_date") @db.Date
+  lastError       String?  @map("last_error") @db.VarChar(200)
 
   @@map("gold_price_fetch_state")
 }

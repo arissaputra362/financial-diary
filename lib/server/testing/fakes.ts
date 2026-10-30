@@ -46,6 +46,7 @@ export type FakeGoalBudgetRow = {
   periodStart: Date;
   amountMinor: number;
   createdByUserId: string;
+  deletedAt?: Date | null;
 };
 
 export type FakeStore = {
@@ -220,6 +221,19 @@ function transactionApis(store: FakeStore): TransactionRepository {
         }
       }
       return total;
+    },
+    async sumTransfersFromSharedToPersonal(householdId, range) {
+      const personalGroups = new Set(
+        store.transactions
+          .filter((row) => row.householdId === householdId && row.deletedAt === null && row.type === "MONEY_IN" && row.transferGroupId !== null)
+          .filter((row) => store.wallets.find((wallet) => wallet.id === row.walletId)?.scope === "PERSONAL")
+          .map((row) => row.transferGroupId),
+      );
+      return store.transactions
+        .filter((row) => row.householdId === householdId && row.deletedAt === null && row.type === "MONEY_OUT" && row.transferGroupId !== null)
+        .filter((row) => row.occurredAt >= range.from && row.occurredAt <= range.to && personalGroups.has(row.transferGroupId))
+        .filter((row) => store.wallets.find((wallet) => wallet.id === row.walletId)?.scope === "SHARING")
+        .reduce((sum, row) => sum + row.amountMinor, 0);
     },
     async listByDay() {
       return [];
@@ -735,7 +749,7 @@ function budgetApis(store: FakeStore): BudgetRepository {
   return {
     async findByPeriod(householdId, periodStart) {
       const row = store.budgets.find(
-        (item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime(),
+        (item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime() && !item.deletedAt,
       );
       return row ?? null;
     },
@@ -743,11 +757,24 @@ function budgetApis(store: FakeStore): BudgetRepository {
       const existing = store.budgets.find((item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime());
       if (existing) {
         existing.amountMinor = amountMinor;
+        existing.deletedAt = null;
         return { id: existing.id, amountMinor };
       }
       const row = { id: randomUUID(), householdId, periodStart, amountMinor, createdByUserId: userId };
       store.budgets.push(row);
       return { id: row.id, amountMinor };
+    },
+    async softDeleteByPeriod(householdId, periodStart) {
+      const row = store.budgets.find((item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime() && !item.deletedAt);
+      if (!row) return false;
+      row.deletedAt = new Date();
+      return true;
+    },
+    async restoreByPeriod(householdId, periodStart) {
+      const row = store.budgets.find((item) => item.householdId === householdId && item.periodStart.getTime() === periodStart.getTime() && !!item.deletedAt);
+      if (!row) return false;
+      row.deletedAt = null;
+      return true;
     },
   };
 }

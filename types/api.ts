@@ -140,6 +140,14 @@ export type SpendingDayDTO = {
  * `scope` identifies which independent budget this DTO describes; the two
  * scopes are never summed.
  */
+export type BudgetCycleModeDTO = "CALENDAR_MONTH" | "FIXED_DAY" | "END_OF_MONTH";
+
+export type BudgetCycleDTO = {
+  mode: BudgetCycleModeDTO;
+  /** 1-28 for FIXED_DAY, otherwise null. */
+  day: number | null;
+};
+
 export type MonthlyBudgetDTO = {
   periodStart: string;
   periodEnd: string;
@@ -149,6 +157,10 @@ export type MonthlyBudgetDTO = {
   spentMinor: number;
   remainingMinor: number | null;
   currencyCode: string;
+  /** Cycle that owns the period above (AC-F2-2d). */
+  cycle: BudgetCycleDTO;
+  /** A cycle change that starts at the next period boundary, if any. */
+  nextCycle: (BudgetCycleDTO & { effectiveFrom: string }) | null;
 };
 
 /** Lean goal projection for the dashboard card (AC-F2-9). */

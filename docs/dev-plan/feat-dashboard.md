@@ -68,6 +68,7 @@ CHECK lama `transaction_transfer_group_consistency` dihapus oleh migrasi
 | currency_code | char(3) | NOT NULL, default `IDR` | |
 | created_by_user_id | uuid | FK → user, NOT NULL | |
 | created_at / updated_at | timestamptz | NOT NULL | |
+| deleted_at | timestamptz | nullable | soft delete budget periode |
 
 Constraint: `UNIQUE(household_id, period_start)` (sekaligus lookup index). `period_end`
 TIDAK disimpan (derived: period_start + 1 bulan).
@@ -84,10 +85,34 @@ TIDAK disimpan (derived: period_start + 1 bulan).
 | currency_code | char(3) | NOT NULL, default `IDR` | |
 | created_by_user_id | uuid | FK → user, NOT NULL | selalu user session |
 | created_at / updated_at | timestamptz | NOT NULL | |
+| deleted_at | timestamptz | nullable | soft delete budget periode |
 
 Constraint: `UNIQUE(household_id, user_id, period_start)`. Akses budget pribadi
 selalu memakai `user_id` dari session; tidak ada parameter client untuk memilih
 user lain.
+
+### Siklus budget per scope (AC-F2-2d — migrasi `20261030090000_budget_cycle`)
+
+| Kolom | Tipe | Constraint | Keterangan |
+|---|---|---|---|
+| `household.budget_cycle_mode` / `user.personal_budget_cycle_mode` | enum `BudgetCycleMode` | NOT NULL, default `CALENDAR_MONTH` | siklus aktif |
+| `..._cycle_day` | int | nullable, CHECK 1-28 saat `FIXED_DAY`, null untuk mode lain | anchor `FIXED_DAY` |
+| `..._cycle_pending_mode` | enum, nullable | CHECK konsisten dengan pending day/date | perubahan yang menunggu |
+| `..._cycle_pending_day` | int, nullable | CHECK 1-28 saat pending `FIXED_DAY` | anchor pending |
+| `..._cycle_pending_effective_from` | date, nullable | CHECK terisi bersama pending mode | batas siklus baru |
+
+Siklus aktif dan pending disimpan terpisah supaya perubahan tidak menulis ulang
+periode yang sudah punya budget. `pending_effective_from` = batas pertama siklus
+baru **setelah hari ini**; untuk `FIXED_DAY` tanggal 10 yang diubah 15 Oktober,
+nilainya 10 November. Saat tanggal itu tiba, service memakai siklus pending sebagai
+siklus aktif (dan mempromosikannya saat ada perubahan berikutnya).
+
+Kalau periode berjalan belum punya baris budget, perubahan siklus tidak dijadwalkan
+sebagai pending: siklus baru langsung disimpan sebagai aktif, karena tidak ada
+nominal periode berjalan yang perlu dilindungi.
+
+`period_start` tetap menjadi kunci budget; periode baru dengan siklus baru tidak
+mewarisi nominal periode lama.
 
 ### Tabel: `savings_goal` (ringkasan goals di dashboard)
 
@@ -111,13 +136,16 @@ Index: `idx(household_id, deleted_at, deadline)`.
 
 ### Repository Interface (`lib/server/repositories/`)
 
-- `TransactionRepository.sumByType(householdId, { type, from, to }, scope?): number` — agregat aktif, **exclude transfer legs** (`transferGroupId IS NOT NULL` — AC-F2-4); `scope` membatasi `SHARING` atau `PERSONAL` milik user
+- `TransactionRepository.sumByType(householdId, { type, from, to }, scope?): number` — agregat MONEY_IN/OUT reguler aktif tanpa kaki transfer; scope membatasi `SHARING` atau `PERSONAL` milik user
+- `TransactionRepository.sumTransfersFromSharedToPersonal(householdId, { from, to }): number` — kaki keluar transfer aktif dari wallet Sharing yang pasangan masuknya menuju wallet Personal, khusus tambahan spent budget Bersama
 - `TransactionRepository.listActive(householdId, filters): { rows, nextCursor }` — keyset
 - `TransactionRepository.listByDay(householdId, { from, to }, scope?): { date, amountMinor }[]` — **exclude transfer legs** (AC-F2-4); `scope` membatasi `SHARING` atau `PERSONAL` milik user
 - `BudgetRepository.findByPeriod(householdId, periodStart): HouseholdBudget | null`
 - `BudgetRepository.upsert(householdId, periodStart, amountMinor, userId): HouseholdBudget`
 - `PersonalBudgetRepository.findByPeriod(householdId, userId, periodStart): PersonalBudget | null`
 - `PersonalBudgetRepository.upsert(householdId, userId, periodStart, amountMinor, createdByUserId): PersonalBudget`
+- `BudgetCycleRepository.findHousehold(householdId)` + `updateHousehold(householdId, write)`
+- `PersonalBudgetCycleRepository.findByUser(householdId, userId)` + `updateUser(userId, write)`
 - `GoalRepository.listActive(householdId): SavingsGoal[]`
 
 Semua method **wajib** menerima `householdId` scope dan default filter `deleted_at IS NULL`
@@ -132,9 +160,13 @@ Semua method **wajib** menerima `householdId` scope dan default filter `deleted_
 
 - `DashboardService.get(householdId): DashboardDTO`
 - `BudgetService.get(householdId): MonthlyBudgetDTO`
-- `BudgetService.upsert(actor, householdId, amountMinor): MonthlyBudgetDTO` (owner-only)
+- `BudgetService.getPersonal(actor): MonthlyBudgetDTO`
+- `BudgetService.upsert(actor, householdId, amountMinor, scope?): MonthlyBudgetDTO` (shared owner-only)
+- `BudgetService.updateCycle(actor, householdId, cycle, scope?): MonthlyBudgetDTO`
 - `TransactionService.list(householdId, filters): { rows: TransactionDTO[], nextCursor }`
 - `PeriodService.currentMonth(now): { start, end }` — kalender Asia/Jakarta
+- `PeriodService.periodFor(now, cycle): MonthPeriod` — periode menurut siklus
+- `PeriodService.nextStartFor(today, cycle): YYYY-MM-DD` — batas siklus berikutnya
 - `PeriodService.lastNDays(now, n): { start, end, buckets }`
 
 ### HTTP Contract
@@ -144,6 +176,7 @@ Semua method **wajib** menerima `householdId` scope dan default filter `deleted_
 | `/api/dashboard` | GET | Approved | - | `DashboardDTO` |
 | `/api/budget` | GET | Approved | `scope=shared\|personal` (default `shared`) | `MonthlyBudgetDTO` |
 | `/api/budget` | PUT | Approved / Owner untuk shared | `{ amountMinor, scope? }` | `MonthlyBudgetDTO` |
+| `/api/budget/cycle` | PUT | Approved / Owner untuk shared | `{ scope?, mode, day? }` | `MonthlyBudgetDTO` |
 | `/api/transactions` | GET | Approved | query: `type, source, from, to, cursor, limit` | `{ rows, nextCursor }` |
 
 `DashboardDTO` mempertahankan `monthlyBudget` dan `spending` sebagai scope Bersama,
@@ -156,6 +189,8 @@ Mode pada kartu budget dan grafik independen, keduanya default Bersama.
 | Field | Rules | Pesan error (bahasa awam) |
 |---|---|---|
 | amountMinor (PUT /api/budget) | required, int, > 0 | "Budget harus lebih dari 0." |
+| mode (PUT /api/budget/cycle) | required, in `CALENDAR_MONTH\|FIXED_DAY\|END_OF_MONTH` | "Siklus budget tidak dikenal." |
+| day (PUT /api/budget/cycle) | `FIXED_DAY` wajib int 1-28; mode lain null/absen | "Tanggal harus antara 1 dan 28." |
 | type (query) | optional, in `MONEY_IN\|MONEY_OUT` | "Jenis transaksi tidak dikenal." |
 | source (query) | optional, in `MANUAL\|OCR` | "Sumber transaksi tidak dikenal." |
 | from / to (query) | optional, `YYYY-MM-DD` (kalender Asia/Jakarta) | "Tanggal tidak valid." |
@@ -299,14 +334,24 @@ Tidak ada soft delete.
 - BudgetView mengambil kedua scope (dua request paralel) dan mengirim scope saat
   menyimpan.
 - Member melihat mode Bersama read-only dan dapat mengisi mode Pribadi.
+- BudgetView menambah kartu siklus per scope: tiga pilihan mode, input tanggal
+  1-28 untuk `FIXED_DAY`, dan pesan `nextCycle.effectiveFrom`. Member melihat
+  siklus Bersama read-only; siklus Pribadi dapat diubah sendiri.
+- Label budget menampilkan rentang `periodStart` sampai `periodEnd` (juga di
+  `BudgetCard` dan ringkasan pengeluaran dashboard), bukan hanya nama bulan.
 - Label dan helper mengikuti design 02 §5 Card 7/8.
 
 ### Test
 
 - Unit: BudgetService shared vs personal, permission, cross-user isolation.
+- Unit siklus: `PeriodService.periodFor` untuk `FIXED_DAY`/`END_OF_MONTH` termasuk
+  leap February dan `nextStartFor`; jadwal perubahan tidak menggeser periode aktif;
+  periode baru berstatus `isSet:false`; member tidak bisa mengubah siklus Bersama;
+  siklus Pribadi hanya milik user session.
 - Integration: unique per user/periode, agregasi personal hanya wallet milik user,
-  wallet terarsip tetap dihitung, transfer dikecualikan.
-- Route: scope invalid, member PUT shared 403, member PUT personal 200.
+  wallet terarsip tetap dihitung, transfer dikecualikan, constraint siklus.
+- Route: scope invalid, member PUT shared 403, member PUT personal 200, validasi
+  `day` 1-28, `PUT /api/budget/cycle` mengembalikan `nextCycle`.
 - E2E: toggle independen, default Bersama, persistence reload, read-only member,
   390/768/1280 tanpa overflow.
 
@@ -314,6 +359,10 @@ Tidak ada soft delete.
 
 | Tanggal | Task selesai | Catatan / deviasi dari plan |
 |---|---|---|
+| 2026-10-30 | AC-F2-2d siklus budget: enum + kolom siklus/pending pada `household`/`user`, repository siklus, `PeriodService.periodFor`/`nextStartFor`, `PUT /api/budget/cycle`, field `cycle`/`nextCycle`, kartu siklus di `/budget`, label rentang tanggal di BudgetCard dan ringkasan pengeluaran dashboard | Saat periode berjalan sudah punya budget, perubahan dijadwalkan pada batas siklus baru pertama setelah hari ini (mis. tanggal 10 diubah 15 Okt berlaku 10 Nov). Saat periode berjalan belum punya budget, siklus baru langsung berlaku karena tidak ada nominal yang dilindungi. Periode baru berstatus belum diatur. Laporan bulanan tetap kalender bulan karena kontrak `MonthlyReportDTO` tidak diubah; rentang aktualnya sudah tampil di catatan laporan. |
+| 2026-10-30 | Form budget pertama menggabungkan pilihan siklus dan nominal dengan satu aksi `Simpan budget`; siklus disimpan dahulu ketika periode masih kosong, lalu nominal ditulis ke periode aktual. Budget yang sudah berjalan tetap memakai aksi terpisah untuk nominal dan jadwal siklus. | UX pembuatan tidak lagi memaksa dua proses simpan; perubahan siklus yang punya nominal tetap menunjukkan tanggal efektif dan tidak menggeser angka periode berjalan. |
+| 2026-10-30 | Penghapusan budget periode aktif: kolom `deleted_at`, repository soft delete/restore, `DELETE /api/budget?scope=...`, `POST /api/budget/restore`, konfirmasi scope/periode dan toast undo 5 detik di `/budget` | AC-F2-2e: hanya budget scope/periode aktif yang diarsipkan; transaksi tidak berubah. Owner-only untuk Bersama dan self-only untuk Pribadi. |
+| 2026-10-30 | Budget Bersama menambah agregat transfer keluar Sharing→Personal berdasarkan pasangan `transfer_group_id`; transfer Sharing→Sharing tetap netral dan transfer masuk Pribadi tidak dihitung ulang | AC-F2-4 / AC-F6-8: uang yang keluar dari dana bersama ke dompet pribadi mengurangi budget bersama, tanpa menganggapnya sebagai expense di grafik atau budget pribadi. |
 | 2026-10-25 | Ringkasan Beranda disatukan dalam satu kartu dengan tab Bersama/Pribadi | Atas arahan pengguna, tab kini mengganti saldo, taksiran emas, pengeluaran bulan ini, pengeluaran hari ini, dan sisa anggaran dalam scope yang sama. Kartu saldo berulang di bawah dihapus; daftar dompet dan akses dompet arsip tetap tersedia. |
 | 2026-10-01 | T-003: schema Transaction/HouseholdBudget/SavingsGoal + repository (listActive, sumByType, listByDay, budget findByPeriod/upsert, goal listActive) | Persis ERD §3.7/3.8/3.12; agregat aktif selalu exclude deleted_at; UNIQUE(household_id, period_start); kontrak list query (cursor/limit A-14) di `lib/server/contracts/transactions.ts` |
 | 2026-10-06 | PM update: dev plan diselaraskan dengan BUG-001 fix T-006 — enum TRANSFER dihapus dari schema doc, CHECK lama dihapus, catatan transfer exclusion (AC-F2-4) ditambahkan ke Repository Interface | `sumByType` + `listByDay` WAJIB exclude `transferGroupId: null` saat T-005 implementasi. QA flag: `agent-comms/2026-10-06-qa-t006-retest-report.md` §Risiko #1 |
@@ -328,6 +377,8 @@ Tidak ada soft delete.
 | 2026-10-06 | Dashboard = satu endpoint agregasi `GET /api/dashboard?period=7D\|30D\|90D`; client merender angka verbatim tanpa recompute | Spec AC-F2-1/AC-F2-5/AC-F2-6: server sumber kebenaran; `period` hanya mengubah window grafik, tidak mengubah kartu saldo/budget/goals | Tidak (sesuai spec) |
 | 2026-10-06 | Transfer leg dikecualikan di repository: `sumByType` dan `listByDay` menambah filter `transferGroupId: null` | AC-F2-4: transfer bukan spending; saldo tetap net nol karena kedua kaki dikecualikan dari agregat. Follow-up BUG-001 (QA T-006 §Risiko #1) | Tidak |
 | 2026-10-06 | `PeriodService` menurunkan semua batas periode dari kalender Asia/Jakarta (offset tetap +07:00, tanpa DST): `start`/`end` = instant UTC inklusif untuk filter `occurred_at`, `budgetPeriodStart` = UTC-midnight untuk key `@db.Date`; bucketing `byDay` dilakukan di aplikasi, bukan DB | D-7/A-13: hindari timezone proses server (UTC) dan jam perangkat; hari tanpa pengeluaran tetap muncul bernilai 0 (AC-F2-5) | Tidak |
+| 2026-10-30 | Siklus budget disimpan sebagai pasangan aktif + pending dengan `pending_effective_from`; `nextStartFor` memakai batas pertama siklus baru setelah hari ini; bila periode berjalan belum punya budget, siklus baru langsung menjadi aktif | AC-F2-2d: periode yang sudah punya budget tidak boleh ditulis ulang; anchor baru (tanggal 10/akhir bulan) harus mulai pada batasnya sendiri, bukan tanggal 1. Tanpa budget berjalan tidak ada nominal yang dilindungi, jadi menunggu periode berikutnya hanya menunda pengaturan yang diinginkan user. Pada tanggal efektif, service memakai pending sebagai aktif tanpa mengubah baris budget lama | Ya (spec AC-F2-2d) |
+| 2026-10-30 | Form create budget mengirim perubahan siklus sebelum nominal hanya ketika periode belum di-set; siklus edit pada periode yang sudah memiliki budget tetap lewat endpoint terpisah | Satu aksi pembuatan awal terasa langsung; perilaku penjadwalan yang melindungi periode berjalan tetap eksplisit dan tidak tercampur dengan edit nominal | Ya (spec AC-F2-2d) |
 | 2026-10-06 | Bentuk DTO: `DashboardDTO { balanceMinor, currencyCode, monthlyBudget{...}, spending{periodStart, periodEnd, totalOutMinor, byDay[]}, goals[], recentActivity[] }`; `MonthlyBudgetDTO.isSet=false` + `budgetMinor/remainingMinor=null` saat budget belum di-set; `GoalSummaryDTO.progressPercent` di-cap 100 di DTO | AC-F2-2: state "atur budget" (bukan Rp0 yang menyesatkan); AC-F2-9: progress bar tidak pernah >100%; satu kontrak agregasi dikonsumsi `/home` | Tidak |
 | 2026-10-06 | Cursor list = UUID baris sebagai token opaque; Prisma `cursor: { id }` dengan `orderBy [occurredAt desc, id desc]` dan `take: limit + 1` | AC-F2-6: stabil termasuk `occurredAt` yang sama (fallback tie-break `id`), tanpa duplikat/hilang. Plan menyebut "base64 composite", implementasi ini setara secara perilaku | Tidak (perilaku setara; kontrak eksternal tidak berubah) |
 | 2026-10-06 | `/home` dan `/budget` tetap static shell (○); komponen view `"use client"` fetch per-request lewat `lib/api-client.ts`; auth ditegakkan `proxy.ts` pada `/api/*` (kecuali signup/login) + redirect client saat 401 | Tidak ada data household dirender saat build, jadi prerender aman dan shell lebih cepat; isolasi household + revalidasi session penuh tetap di route handler Node | Tidak |

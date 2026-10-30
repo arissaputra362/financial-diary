@@ -62,3 +62,41 @@ export async function PUT(request: Request): Promise<NextResponse> {
     return respondError(error);
   }
 }
+
+/** DELETE /api/budget?scope=shared|personal soft-deletes the active-period cap. */
+export async function DELETE(request: Request): Promise<NextResponse> {
+  try {
+    const session = await authenticatedRequest({ approvedOnly: true });
+    const query = parseBudgetQuery(new URL(request.url).searchParams);
+    const scope = toBudgetScope(query.scope);
+    const dto = await session.budget.deleteCurrent(
+      { userId: session.userId, role: session.role, householdId: session.householdId },
+      session.householdId,
+      scope,
+    );
+    const response = NextResponse.json(dto);
+    await setSessionCookie(response, session.sessionId, session.userId);
+    return response;
+  } catch (error) {
+    return respondError(error);
+  }
+}
+
+/** POST /api/budget/restore?scope=... restores the current period during undo. */
+export async function POST(request: Request): Promise<NextResponse> {
+  try {
+    const session = await authenticatedRequest({ approvedOnly: true });
+    const query = parseBudgetQuery(new URL(request.url).searchParams);
+    const scope = toBudgetScope(query.scope);
+    const dto = await session.budget.restoreCurrent(
+      { userId: session.userId, role: session.role, householdId: session.householdId },
+      session.householdId,
+      scope,
+    );
+    const response = NextResponse.json(dto);
+    await setSessionCookie(response, session.sessionId, session.userId);
+    return response;
+  } catch (error) {
+    return respondError(error);
+  }
+}

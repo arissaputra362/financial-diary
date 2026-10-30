@@ -22,9 +22,11 @@ import {
   type UpdateTransactionInput,
 } from "./contracts/transactions";
 import {
+  budgetCycleUpdateSchema,
   budgetQuerySchema,
   budgetUpsertSchema,
   dashboardQuerySchema,
+  type BudgetCycleUpdateInput,
   type BudgetQuery,
   type BudgetUpsertInput,
   type DashboardQuery,
@@ -243,6 +245,12 @@ export function parseReportQuery(searchParams: URLSearchParams): MonthlyReportQu
 
 export function parseBudgetUpsert(input: unknown): BudgetUpsertInput {
   const result = budgetUpsertSchema.safeParse(input);
+  if (!result.success) throw validationError(result.error);
+  return result.data;
+}
+
+export function parseBudgetCycleUpdate(input: unknown): BudgetCycleUpdateInput {
+  const result = budgetCycleUpdateSchema.safeParse(input);
   if (!result.success) throw validationError(result.error);
   return result.data;
 }

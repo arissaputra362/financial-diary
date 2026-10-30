@@ -20,6 +20,64 @@ describe("PeriodService.currentMonth (A-13/D-7, AC-F2-2)", () => {
   });
 });
 
+describe("PeriodService budget cycles (AC-F2-2d)", () => {
+  it("keeps the calendar month shape as the default", () => {
+    const period = periods.periodFor(new Date("2026-10-15T05:00:00Z"));
+    expect(period.periodStartDateOnly).toBe("2026-10-01");
+    expect(period.periodEndDateOnly).toBe("2026-10-31");
+  });
+
+  it("runs a fixed day from that date to the day before it next month", () => {
+    const cycle = { mode: "FIXED_DAY" as const, day: 10 };
+    expect(periods.periodFor(new Date("2026-10-10T05:00:00Z"), cycle)).toMatchObject({
+      periodStartDateOnly: "2026-10-10",
+      periodEndDateOnly: "2026-11-09",
+    });
+    expect(periods.periodFor(new Date("2026-10-09T05:00:00Z"), cycle)).toMatchObject({
+      periodStartDateOnly: "2026-09-10",
+      periodEndDateOnly: "2026-10-09",
+    });
+    expect(periods.periodFor(new Date("2026-01-31T05:00:00Z"), cycle)).toMatchObject({
+      periodStartDateOnly: "2026-01-10",
+      periodEndDateOnly: "2026-02-09",
+    });
+  });
+
+  it("runs end-of-month through the day before next month's last day", () => {
+    const cycle = { mode: "END_OF_MONTH" as const, day: null };
+    expect(periods.periodFor(new Date("2026-10-31T05:00:00Z"), cycle)).toMatchObject({
+      periodStartDateOnly: "2026-10-31",
+      periodEndDateOnly: "2026-11-29",
+    });
+    expect(periods.periodFor(new Date("2026-11-15T05:00:00Z"), cycle)).toMatchObject({
+      periodStartDateOnly: "2026-10-31",
+      periodEndDateOnly: "2026-11-29",
+    });
+    expect(periods.periodFor(new Date("2026-11-30T05:00:00Z"), cycle)).toMatchObject({
+      periodStartDateOnly: "2026-11-30",
+      periodEndDateOnly: "2026-12-30",
+    });
+    expect(periods.periodFor(new Date("2028-02-29T05:00:00Z"), cycle)).toMatchObject({
+      periodStartDateOnly: "2028-02-29",
+      periodEndDateOnly: "2028-03-30",
+    });
+  });
+
+  it("returns the next boundary of the requested cycle after today", () => {
+    expect(periods.nextStartFor("2026-10-15", { mode: "FIXED_DAY", day: 10 })).toBe("2026-11-10");
+    expect(periods.nextStartFor("2026-10-01", { mode: "FIXED_DAY", day: 10 })).toBe("2026-10-10");
+    expect(periods.nextStartFor("2026-10-15", { mode: "CALENDAR_MONTH", day: null })).toBe("2026-11-01");
+    expect(periods.nextStartFor("2026-10-15", { mode: "END_OF_MONTH", day: null })).toBe("2026-10-31");
+    expect(periods.nextStartFor("2026-10-31", { mode: "END_OF_MONTH", day: null })).toBe("2026-11-30");
+  });
+
+  it("rejects a fixed day outside 1 to 28", () => {
+    expect(() =>
+      periods.periodFor(new Date("2026-10-15T05:00:00Z"), { mode: "FIXED_DAY", day: 29 }),
+    ).toThrow(RangeError);
+  });
+});
+
 describe("PeriodService.lastNDays (AC-F2-5)", () => {
   it("returns n ascending buckets ending on the Jakarta today", () => {
     /* 2026-10-06T20:00:00Z === 7 Oct 2026 03:00 WIB. */

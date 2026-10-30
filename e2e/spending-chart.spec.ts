@@ -41,6 +41,8 @@ function dashboardPayload(period: DashboardPeriodKey): DashboardDTO {
       spentMinor: 0,
       remainingMinor: null,
       currencyCode: "IDR",
+      cycle: { mode: "CALENDAR_MONTH", day: null },
+      nextCycle: null,
     },
     personalMonthlyBudget: {
       periodStart: "2026-10-01",
@@ -51,6 +53,8 @@ function dashboardPayload(period: DashboardPeriodKey): DashboardDTO {
       spentMinor: 0,
       remainingMinor: null,
       currencyCode: "IDR",
+      cycle: { mode: "CALENDAR_MONTH", day: null },
+      nextCycle: null,
     },
     spending: {
       periodStart: byDay[0]?.date ?? END_DATE,

@@ -12,9 +12,11 @@ import { prisma } from "@/lib/db";
 import { accessDeniedForStatus, unauthorized } from "./errors";
 import { createAuthRepositories } from "./repositories/auth";
 import {
+  createBudgetCycleRepository,
   createBudgetRepository,
   createGoalRepository,
   createLedgerRepositories,
+  createPersonalBudgetCycleRepository,
   createPersonalBudgetRepository,
   createPlanningRepositories,
   type LedgerRepositories,
@@ -109,6 +111,8 @@ export function createServices(): Services {
     createBudgetRepository(prisma),
     createPersonalBudgetRepository(prisma),
     ledgerRepos.transaction,
+    createBudgetCycleRepository(prisma),
+    createPersonalBudgetCycleRepository(prisma),
     periods,
   );
   const dashboard = new DashboardService(
