@@ -79,29 +79,29 @@ export function ActivityMonthSummaryCard({
   }, [hasPersonalWallet, month, scope, walletId, walletScope]);
 
   return (
-    <section className="rounded-3xl border border-card-border bg-card p-5 shadow-bento" aria-label="Ringkasan transaksi bulan ini">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
+    <section className="rounded-3xl border border-card-border bg-card p-3 shadow-bento" aria-label="Ringkasan transaksi bulan ini">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
           <p className="text-xs font-semibold text-ink-2">Saldo awal</p>
-          <p className="mt-2 truncate text-lg font-bold tabular-nums text-ink" aria-live="polite">
+          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-bold tracking-tight tabular-nums text-ink" aria-live="polite">
             {totals ? formatIDR(totals.opening) : error ? "Tidak tersedia" : "Memuat..."}
           </p>
         </div>
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
+        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
           <p className="text-xs font-semibold text-ink-2">Uang masuk</p>
-          <p className="mt-2 truncate text-lg font-bold tabular-nums text-ink" aria-live="polite">
+          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-bold tracking-tight tabular-nums text-ink" aria-live="polite">
             {totals ? formatIDR(totals.income) : error ? "Tidak tersedia" : "Memuat..."}
           </p>
         </div>
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
+        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
           <p className="text-xs font-semibold text-ink-2">Uang keluar</p>
-          <p className="mt-2 truncate text-lg font-bold tabular-nums text-ink" aria-live="polite">
+          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-bold tracking-tight tabular-nums text-ink" aria-live="polite">
             {totals ? formatIDR(totals.expense) : error ? "Tidak tersedia" : "Memuat..."}
           </p>
         </div>
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
+        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
           <p className="text-xs font-bold text-blue">Sisa saldo</p>
-          <p className="mt-2 truncate text-lg font-extrabold tabular-nums text-ink" aria-live="polite">
+          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-extrabold tracking-tight tabular-nums text-ink" aria-live="polite">
             {totals ? formatIDR(totals.closing) : error ? "Tidak tersedia" : "Memuat..."}
           </p>
         </div>
@@ -109,7 +109,7 @@ export function ActivityMonthSummaryCard({
       <button
         type="button"
         onClick={onOpenReport}
-        className="mt-3 inline-flex min-h-11 w-full items-center justify-between rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
+        className="mt-1 inline-flex min-h-11 w-full items-center gap-1 rounded-xl px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
       >
         Lihat ringkasan lengkap
         <ChevronRight className="h-4 w-4" aria-hidden="true" />

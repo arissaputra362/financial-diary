@@ -763,7 +763,7 @@ export function ActivityView({
   const showFilters = view === "active" && !loading && !error;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       <PageHeader
         className="flex-row flex-wrap items-center justify-between gap-3 print:hidden"
         actionsClassName="ml-auto w-auto flex-row items-center gap-3"
@@ -829,7 +829,7 @@ export function ActivityView({
         id={`activity-panel-${view}`}
         role="tabpanel"
         aria-labelledby={view === "ringkasan" ? "activity-report-title" : `activity-tab-${view}`}
-        className="space-y-5"
+        className="space-y-3 md:space-y-5"
       >
       {view === "ringkasan" ? <h2 id="activity-report-title" className="sr-only">Ringkasan lengkap</h2> : null}
       {view === "active" || view === "ringkasan" ? (
