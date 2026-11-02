@@ -45,10 +45,8 @@ export default async function TransactionsPage({
   const transactionScope: ActivityScopeFilter =
     params.scope === "personal" || params.scope === "PERSONAL" ? "personal" :
     params.scope === "shared" || params.scope === "SHARING" ? "shared" : "all";
-  const walletId =
-    typeof params.wallet === "string" && UUID_PATTERN.test(params.wallet)
-      ? params.wallet
-      : undefined;
+  const walletIds = [...new Set((Array.isArray(params.wallet) ? params.wallet : [params.wallet])
+    .filter((value): value is string => typeof value === "string" && UUID_PATTERN.test(value)))].slice(0, 50);
   const reportScope = view === "ringkasan" && params.scope === "personal" ? "personal" :
     view === "ringkasan" && params.scope === "shared" ? "shared" : "all";
   /* `?add=1` opens the add sheet: nav "Tambah" and the dashboard link here (A-27). */
@@ -67,9 +65,9 @@ export default async function TransactionsPage({
         initialAdd={initialAdd}
         initialFilter={filter}
         initialScope={transactionScope}
-        initialWalletId={view === "active" ? walletId : undefined}
+        initialWalletIds={view === "active" ? walletIds : undefined}
         initialReportScope={reportScope}
-        initialReportWalletId={view === "ringkasan" ? walletId : undefined}
+        initialReportWalletId={view === "ringkasan" && walletIds.length === 1 ? walletIds[0] : undefined}
       />
     </AppShell>
   );

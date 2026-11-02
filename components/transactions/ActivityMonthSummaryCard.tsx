@@ -4,79 +4,62 @@ import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { formatIDR } from "@/lib/format";
-import type { MonthlyReportDTO } from "@/types/api";
+import type { ActivityWalletSummaryDTO } from "@/types/api";
 
 type Scope = "all" | "personal" | "shared";
 
 export function ActivityMonthSummaryCard({
   month,
   scope,
-  walletId,
-  walletScope,
-  hasPersonalWallet,
+  walletIds,
+  refreshToken,
   onOpenReport,
 }: {
   month: string;
   scope: Scope;
-  walletId: string;
-  walletScope?: "PERSONAL" | "SHARING";
-  hasPersonalWallet: boolean;
-  onOpenReport: () => void;
+  walletIds: string[];
+  refreshToken: number;
+  onOpenReport?: () => void;
 }) {
-  const [totals, setTotals] = useState<{
+  const requestKey = `${month}:${scope}:${walletIds.join(",")}:${refreshToken}`;
+  const [result, setResult] = useState<{ key: string; totals: {
     opening: number;
     income: number;
     expense: number;
     closing: number;
-  } | null>(null);
-  const [error, setError] = useState(false);
+  } | null; error: boolean } | null>(null);
+  const totals = result?.key === requestKey ? result.totals : null;
+  const error = result?.key === requestKey && result.error;
 
   useEffect(() => {
     let active = true;
-    if (walletId && !walletScope) {
-      setTotals(null);
-      return;
-    }
-    const selectedScope = walletId
-      ? walletScope === "PERSONAL" ? "personal" : "shared"
-      : null;
-    if (walletId && scope !== "all" && selectedScope !== scope) {
-      setTotals({ opening: 0, income: 0, expense: 0, closing: 0 });
-      setError(false);
-      return;
-    }
-    const scopes = walletId
-      ? [selectedScope!]
-      : scope === "all"
-        ? hasPersonalWallet ? ["shared", "personal"] : ["shared"]
-        : [scope];
-    setTotals(null);
-    setError(false);
-    Promise.all(scopes.map((reportScope) => {
-      const params = new URLSearchParams({ month, scope: reportScope });
-      if (walletId) params.set("walletId", walletId);
-      return apiRequest<MonthlyReportDTO>(`/api/reports/monthly?${params.toString()}`);
-    }))
-      .then((responses) => {
+    const params = new URLSearchParams({ month, scope });
+    walletIds.forEach((id) => params.append("walletId", id));
+    apiRequest<ActivityWalletSummaryDTO>(`/api/reports/monthly/summary?${params.toString()}`)
+      .then((response) => {
         if (!active) return;
-        if (responses.some((response) => !response.ok || !response.data)) {
-          setError(true);
+        if (!response.ok || !response.data) {
+          setResult({ key: requestKey, totals: null, error: true });
           return;
         }
-        setTotals({
-          opening: responses.reduce((sum, response) => sum + (response.data?.openingMinor ?? 0), 0),
-          income: responses.reduce((sum, response) => sum + (response.data?.moneyInMinor ?? 0), 0),
-          expense: responses.reduce((sum, response) => sum + (response.data?.moneyOutMinor ?? 0), 0),
-          closing: responses.reduce((sum, response) => sum + (response.data?.closingMinor ?? 0), 0),
+        setResult({
+          key: requestKey,
+          totals: {
+            opening: response.data.openingMinor,
+            income: response.data.moneyInMinor,
+            expense: response.data.moneyOutMinor,
+            closing: response.data.closingMinor,
+          },
+          error: false,
         });
       })
       .catch(() => {
-        if (active) setError(true);
+        if (active) setResult({ key: requestKey, totals: null, error: true });
       });
     return () => {
       active = false;
     };
-  }, [hasPersonalWallet, month, scope, walletId, walletScope]);
+  }, [month, refreshToken, requestKey, scope, walletIds]);
 
   return (
     <section className="rounded-3xl border border-card-border bg-card p-3 shadow-bento" aria-label="Ringkasan transaksi bulan ini">
@@ -106,14 +89,20 @@ export function ActivityMonthSummaryCard({
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onOpenReport}
-        className="mt-1 inline-flex min-h-11 w-full items-center gap-1 rounded-xl px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
-      >
-        Lihat ringkasan lengkap
-        <ChevronRight className="h-4 w-4" aria-hidden="true" />
-      </button>
+      {onOpenReport ? (
+        <button
+          type="button"
+          onClick={onOpenReport}
+          className="mt-1 inline-flex min-h-11 w-full items-center gap-1 rounded-xl px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
+        >
+          Lihat ringkasan lengkap
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </button>
+      ) : (
+        <p className="px-2 pt-2 text-xs text-ink-3">
+          Ringkasan lengkap tersedia saat memilih semua dompet atau satu dompet.
+        </p>
+      )}
     </section>
   );
 }

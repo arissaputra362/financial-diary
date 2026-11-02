@@ -20,4 +20,11 @@ export const monthlyReportQuerySchema = z.object({
   walletId: z.string().uuid("Dompet tidak valid.").optional(),
 });
 
+export const activityWalletSummaryQuerySchema = z.object({
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Bulan tidak valid."),
+  scope: z.enum(["all", "shared", "personal"]).default("all"),
+  walletIds: z.array(z.string().uuid("Dompet tidak valid.")).max(50).default([]),
+});
+
 export type MonthlyReportQuery = z.infer<typeof monthlyReportQuerySchema>;
+export type ActivityWalletSummaryQuery = z.infer<typeof activityWalletSummaryQuerySchema>;

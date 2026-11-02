@@ -124,6 +124,13 @@ export type TransactionListDTO = {
   nextCursor: string | null;
 };
 
+export type ActivityWalletSummaryDTO = {
+  openingMinor: number;
+  moneyInMinor: number;
+  moneyOutMinor: number;
+  closingMinor: number;
+};
+
 /**
  * One calendar day of spending, bucketed in Asia/Jakarta (AC-F2-5). `date` is
  * `YYYY-MM-DD`; days with no spending are present with `amountMinor: 0`.

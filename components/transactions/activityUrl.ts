@@ -21,6 +21,8 @@ export interface ActivityHrefInput {
   scope?: ActivityScopeFilter;
   /** Active tab wallet filter, or the selected report wallet on Ringkasan. */
   walletId?: string;
+  /** Active tab wallet selection; repeated in the URL to support multi-select. */
+  walletIds?: string[];
   /** Ringkasan scope; `all` is the default and is omitted from the URL. */
   reportScope?: "all" | "shared" | "personal";
 }
@@ -34,10 +36,12 @@ export function activityHref({
   filter = "all",
   scope = "all",
   walletId,
+  walletIds,
   reportScope = "all",
 }: ActivityHrefInput): string {
   const params = new URLSearchParams();
-  const explicitActive = view === "active" && (filter !== "all" || scope !== "all" || Boolean(walletId));
+  const activeWalletIds = walletIds?.length ? walletIds : walletId ? [walletId] : [];
+  const explicitActive = view === "active" && (filter !== "all" || scope !== "all" || activeWalletIds.length > 0);
   if (view === "trash") params.set("view", "trash");
   else if (view === "ringkasan") params.set("view", "ringkasan");
   else if (explicitActive) params.set("view", "active");
@@ -50,7 +54,8 @@ export function activityHref({
     if (scope !== "all") params.set("scope", scope);
   }
   if (view === "ringkasan" && reportScope !== "all") params.set("scope", reportScope);
-  if (view !== "trash" && walletId) params.set("wallet", walletId);
+  if (view === "active") activeWalletIds.forEach((id) => params.append("wallet", id));
+  else if (view === "ringkasan" && walletId) params.set("wallet", walletId);
   if (add) params.set("add", "1");
   return `/transactions?${params.toString()}`;
 }
@@ -60,6 +65,7 @@ export interface ActivityListUrlInput {
   cursor?: string | null;
   month: string;
   walletId?: string;
+  walletIds?: string[];
   from?: string;
   to?: string;
   /** `in`/`out` are filtered by the API so pagination counts matching rows. */
@@ -79,6 +85,7 @@ export function activityListUrl({
   cursor,
   month,
   walletId,
+  walletIds,
   from,
   to,
   filter = "all",
@@ -91,7 +98,8 @@ export function activityListUrl({
     const monthRange = monthKeyRange(month);
     params.set("from", from || monthRange.from);
     params.set("to", to || monthRange.to);
-    if (walletId) params.set("walletId", walletId);
+    const selectedWalletIds = walletIds?.length ? walletIds : walletId ? [walletId] : [];
+    selectedWalletIds.forEach((id) => params.append("walletId", id));
     if (filter === "in") params.set("type", "MONEY_IN");
     else if (filter === "out") params.set("type", "MONEY_OUT");
     if (scope !== "all") params.set("scope", scope === "personal" ? "PERSONAL" : "SHARING");

@@ -96,6 +96,62 @@ export function createReportFake(store: DashboardFakeStore): ReportRepository {
       }));
     },
 
+    async listVisibleWalletIds(actor, walletIds, scope) {
+      return store.wallets
+        .filter((wallet) =>
+          wallet.householdId === actor.householdId &&
+          walletIds.includes(wallet.id) &&
+          (scope === "all" || wallet.scope === scope) &&
+          (wallet.scope === "SHARING" || wallet.createdByUserId === actor.userId),
+        )
+        .map((wallet) => wallet.id);
+    },
+
+    async activityWalletSummary(actor, { period, walletIds, scope }) {
+      const wallets = store.wallets.filter((wallet) =>
+        wallet.householdId === actor.householdId &&
+        (scope === "all" || wallet.scope === scope) &&
+        (wallet.scope === "SHARING" || wallet.createdByUserId === actor.userId) &&
+        (walletIds.length === 0 || walletIds.includes(wallet.id)),
+      );
+      const periodWallets = wallets.filter((wallet) =>
+        wallet.createdAt.getTime() <= period.end.getTime() || hasActiveInPeriod(wallet.id, period.start, period.end),
+      );
+      const periodIds = new Set(periodWallets.map((wallet) => wallet.id));
+      const transactions = activeInPeriod(store.transactions, periodIds, period.start, period.end);
+      const before = store.transactions.filter((row) =>
+        row.deletedAt === null && periodIds.has(row.walletId) && row.occurredAt.getTime() < period.start.getTime(),
+      );
+      const openingMinor =
+        periodWallets.reduce((sum, wallet) => sum + (wallet.createdAt.getTime() < period.start.getTime() ? wallet.openingBalanceMinor : 0), 0) +
+        netOf(before);
+      const newWalletOpening = periodWallets.reduce((sum, wallet) =>
+        sum + (wallet.createdAt.getTime() >= period.start.getTime() ? wallet.openingBalanceMinor : 0), 0,
+      );
+      const moneyInMinor = transactions.reduce((sum, row) => {
+        if (row.type !== "MONEY_IN") return sum;
+        if (row.transferGroupId === null) return sum + row.amountMinor;
+        const pairedWalletSelected = store.transactions.some((peer) =>
+          peer.id !== row.id && peer.transferGroupId === row.transferGroupId && peer.deletedAt === null && periodIds.has(peer.walletId),
+        );
+        return pairedWalletSelected ? sum : sum + row.amountMinor;
+      }, 0);
+      const moneyOutMinor = transactions.reduce((sum, row) => {
+        if (row.type !== "MONEY_OUT") return sum;
+        if (row.transferGroupId === null) return sum + row.amountMinor;
+        const pairedWalletSelected = store.transactions.some((peer) =>
+          peer.id !== row.id && peer.transferGroupId === row.transferGroupId && peer.deletedAt === null && periodIds.has(peer.walletId),
+        );
+        return pairedWalletSelected ? sum : sum + row.amountMinor;
+      }, 0);
+      return {
+        openingMinor,
+        moneyInMinor,
+        moneyOutMinor,
+        closingMinor: openingMinor + newWalletOpening + netOf(transactions),
+      };
+    },
+
     async aggregate(actor, { scope, walletId, period, previous }): Promise<ReportAggregate> {
       const wallets = scoped(actor, scope, walletId);
       const periodWallets = wallets.filter(

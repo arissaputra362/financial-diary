@@ -57,7 +57,9 @@ import {
   type QuickAddInstitutionInput,
 } from "./contracts/institutions";
 import {
+  activityWalletSummaryQuerySchema,
   monthlyReportQuerySchema,
+  type ActivityWalletSummaryQuery,
   type MonthlyReportQuery,
 } from "./contracts/reports";
 import { AppError, badRequest, unprocessable, unprocessableCode } from "./errors";
@@ -212,7 +214,12 @@ export function parseUpdateTransaction(input: unknown): UpdateTransactionInput {
 }
 
 export function parseListTransactionsQuery(searchParams: URLSearchParams): ListTransactionsQuery {
-  const result = listTransactionsQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+  const values = Object.fromEntries(searchParams.entries());
+  const walletIds = searchParams.getAll("walletId");
+  const result = listTransactionsQuerySchema.safeParse({
+    ...values,
+    ...(walletIds.length > 1 ? { walletIds, walletId: undefined } : {}),
+  });
   if (!result.success) throw validationError(result.error);
   return result.data;
 }
@@ -239,6 +246,16 @@ export function parseBudgetQuery(searchParams: URLSearchParams): BudgetQuery {
 /** GET /api/reports/monthly query (feat-reporting). */
 export function parseReportQuery(searchParams: URLSearchParams): MonthlyReportQuery {
   const result = monthlyReportQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+  if (!result.success) throw validationError(result.error);
+  return result.data;
+}
+
+export function parseActivityWalletSummaryQuery(searchParams: URLSearchParams): ActivityWalletSummaryQuery {
+  const walletIds = searchParams.getAll("walletId");
+  const result = activityWalletSummaryQuerySchema.safeParse({
+    ...Object.fromEntries(searchParams.entries()),
+    walletIds,
+  });
   if (!result.success) throw validationError(result.error);
   return result.data;
 }

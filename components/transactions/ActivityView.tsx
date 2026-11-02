@@ -52,6 +52,7 @@ export interface ActivityViewProps {
   initialScope?: ActivityScopeFilter;
   /** Active tab wallet filter, or the selected report wallet on Ringkasan. */
   initialWalletId?: string;
+  initialWalletIds?: string[];
   initialReportScope?: ReportScope;
   initialReportWalletId?: string;
   initialData?: TransactionListDTO;
@@ -84,6 +85,7 @@ export function ActivityView({
   initialFilter = "all",
   initialScope = "all",
   initialWalletId,
+  initialWalletIds,
   initialReportScope = "all",
   initialReportWalletId,
   initialData,
@@ -95,7 +97,8 @@ export function ActivityView({
   const [nextCursor, setNextCursor] = useState<string | null>(initialData?.nextCursor ?? null);
   const [listFilter, setListFilter] = useState<ListFilter>(() => filterFromUrl(initialFilter));
   const [transactionScope, setTransactionScope] = useState<ActivityScopeFilter>(initialScope);
-  const [walletId, setWalletId] = useState(initialWalletId ?? "");
+  const [walletIds, setWalletIds] = useState<string[]>(initialWalletIds ?? (initialWalletId ? [initialWalletId] : []));
+  const [walletSearch, setWalletSearch] = useState("");
   const [reportScope, setReportScope] = useState<ReportScope>(initialReportScope);
   const [reportWalletId, setReportWalletId] = useState(initialReportWalletId ?? "");
   const [wallets, setWallets] = useState<WalletDTO[]>([]);
@@ -119,6 +122,7 @@ export function ActivityView({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [summaryRefreshToken, setSummaryRefreshToken] = useState(0);
   /* `?add=1` from the nav/dashboard opens the shared sheet (A-27). */
   const [sheetOpen, setSheetOpen] = useState(initialAdd);
   const [detail, setDetail] = useState<TransactionDTO | null>(null);
@@ -154,13 +158,15 @@ export function ActivityView({
       filter?: ListFilter;
       scope?: ActivityScopeFilter;
       walletId?: string;
+      walletIds?: string[];
       reportScope?: ReportScope;
       reportWalletId?: string;
     }) => {
       const nextMonth = next.month ?? activeMonth;
       const nextFilter = next.filter ?? listFilter;
       const nextTransactionScope = next.scope ?? transactionScope;
-      const transactionWallet = next.walletId ?? walletId;
+      const transactionWalletIds = next.walletIds ??
+        (next.walletId !== undefined ? (next.walletId ? [next.walletId] : []) : walletIds);
       const nextScope = next.reportScope ?? reportScope;
       const nextReportWallet = next.reportWalletId ?? reportWalletId;
       const nextFrom = next.from ?? dateFrom;
@@ -174,18 +180,14 @@ export function ActivityView({
           to: next.view === "active" ? nextTo : undefined,
           filter: next.view === "active" ? filterToUrl(nextFilter) : "all",
           scope: next.view === "active" ? nextTransactionScope : "all",
-          walletId:
-            next.view === "active"
-              ? transactionWallet
-              : next.view === "ringkasan"
-                ? nextReportWallet
-                : undefined,
+          walletId: next.view === "ringkasan" ? nextReportWallet : undefined,
+          walletIds: next.view === "active" ? transactionWalletIds : undefined,
           reportScope: nextScope,
         }),
         { scroll: false },
       );
     },
-    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletId, router, transactionScope, walletId],
+    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletId, router, transactionScope, walletIds],
   );
 
   /*
@@ -283,7 +285,7 @@ export function ActivityView({
       activityListUrl({
         view,
         month: activeMonth,
-        walletId,
+        walletIds,
         from: dateFrom,
         to: dateTo,
         filter: filterToUrl(listFilter),
@@ -335,7 +337,7 @@ export function ActivityView({
     reloadToken,
     router,
     view,
-    walletId,
+    walletIds,
   ]);
 
   const reload = () => {
@@ -425,7 +427,7 @@ export function ActivityView({
     setNextCursor(null);
     setListFilter("all");
     setTransactionScope("all");
-    setWalletId("");
+    setWalletIds([]);
     resetDateFilter();
     setFilterPanelOpen(false);
     setFilterLoading(false);
@@ -435,7 +437,7 @@ export function ActivityView({
       month: activeMonth,
       filter: "all",
       scope: "all",
-      walletId: "",
+      walletIds: [],
       from: "",
       to: "",
     });
@@ -450,7 +452,7 @@ export function ActivityView({
           view: view === "trash" ? "trash" : "active",
           cursor: nextCursor,
           month: activeMonth,
-          walletId,
+          walletIds,
           from: dateFrom,
           to: dateTo,
           filter: filterToUrl(listFilter),
@@ -479,7 +481,7 @@ export function ActivityView({
     setUndo(null);
     setListFilter("all");
     setTransactionScope("all");
-    setWalletId("");
+    setWalletIds([]);
     setDetail(null);
     setFilterPanelOpen(false);
     resetDateFilter();
@@ -499,19 +501,19 @@ export function ActivityView({
       month: activeMonth,
       filter: "all",
       scope: "all",
-      walletId: "",
+      walletIds: [],
       from: "",
       to: "",
     });
   };
 
   const openFullReport = () => {
-    const selectedWallet = wallets.find((wallet) => wallet.id === walletId);
+    const selectedWallet = walletIds.length === 1 ? wallets.find((wallet) => wallet.id === walletIds[0]) : undefined;
     const walletMatchesScope =
       transactionScope === "all" || !selectedWallet ||
       (transactionScope === "personal" && selectedWallet.scope === "PERSONAL") ||
       (transactionScope === "shared" && selectedWallet.scope === "SHARING");
-    const nextReportWalletId = walletMatchesScope ? walletId : "";
+    const nextReportWalletId = walletMatchesScope && selectedWallet ? selectedWallet.id : "";
     setView("ringkasan");
     setReportScope(transactionScope);
     setReportWalletId(nextReportWalletId);
@@ -535,7 +537,7 @@ export function ActivityView({
       month: activeMonth,
       filter: listFilter,
       scope: transactionScope,
-      walletId,
+      walletIds,
       from: dateFrom,
       to: dateTo,
     });
@@ -573,6 +575,7 @@ export function ActivityView({
         return;
       }
       setRows((current) => current.filter((item) => item.id !== row.id));
+      setSummaryRefreshToken((token) => token + 1);
       setDetail((current) => (current?.id === row.id ? null : current));
       setUndo({ id: row.id, label: labelFor(row) });
       setTransactionToDelete(null);
@@ -595,6 +598,7 @@ export function ActivityView({
       }
       if (response.ok) {
         reload();
+        setSummaryRefreshToken((token) => token + 1);
         showNotice("Transaksi dikembalikan.");
       } else {
         showNotice("Transaksi belum bisa dipulihkan. Coba lagi.");
@@ -618,6 +622,7 @@ export function ActivityView({
       }
       setDetail(null);
       reload();
+      setSummaryRefreshToken((token) => token + 1);
       showNotice("Transaksi dipulihkan ke daftar aktivitas.");
     } catch {
       showNotice("Transaksi belum bisa dipulihkan. Coba lagi.");
@@ -632,6 +637,7 @@ export function ActivityView({
       follows (inside AddTransactionSheet) must not replace the URL again.
     */
     savedRef.current = true;
+    setSummaryRefreshToken((token) => token + 1);
     showNotice("Transaksi tersimpan.");
     if (view === "active") {
       reload();
@@ -648,6 +654,7 @@ export function ActivityView({
   const handleUpdated = (row: TransactionDTO) => {
     setRows((current) => current.map((item) => (item.id === row.id ? row : item)));
     setDetail(null);
+    setSummaryRefreshToken((token) => token + 1);
     reload();
     showNotice("Perubahan transaksi disimpan.");
   };
@@ -686,17 +693,18 @@ export function ActivityView({
   */
   useEffect(() => {
     validateSelectionsRef.current = (nextWallets) => {
-      const selectedTransactionWallet = nextWallets.find((wallet) => wallet.id === walletId);
-      const walletMatchesTransactionScope =
-        transactionScope === "all" || !selectedTransactionWallet ||
-        (transactionScope === "personal" && selectedTransactionWallet.scope === "PERSONAL") ||
-        (transactionScope === "shared" && selectedTransactionWallet.scope === "SHARING");
-      if (view === "active" && walletId && (!selectedTransactionWallet || !walletMatchesTransactionScope)) {
-        setWalletId("");
+      const validWalletIds = walletIds.filter((id) => {
+        const wallet = nextWallets.find((candidate) => candidate.id === id);
+        return wallet && (transactionScope === "all" ||
+          (transactionScope === "personal" && wallet.scope === "PERSONAL") ||
+          (transactionScope === "shared" && wallet.scope === "SHARING"));
+      });
+      if (view === "active" && validWalletIds.length !== walletIds.length) {
+        setWalletIds(validWalletIds);
         setLoading(true);
         setReloadToken((token) => token + 1);
-        showNotice("Dompet yang dipilih tidak tersedia. Menampilkan semua dompet.");
-        writeUrl({ view: "active", month: activeMonth, walletId: "" });
+        showNotice("Pilihan dompet yang tidak tersedia dihapus.");
+        writeUrl({ view: "active", month: activeMonth, walletIds: validWalletIds });
         return;
       }
       if (view !== "ringkasan") return;
@@ -738,15 +746,17 @@ export function ActivityView({
   */
   const transactionWallets = useMemo(
     () => wallets.filter((wallet) =>
-      (wallet.archivedAt === null || wallet.id === walletId) &&
+      (wallet.archivedAt === null || walletIds.includes(wallet.id)) &&
       (transactionScope === "all" ||
         (transactionScope === "personal" && wallet.scope === "PERSONAL") ||
         (transactionScope === "shared" && wallet.scope === "SHARING")),
     ),
-    [transactionScope, walletId, wallets],
+    [transactionScope, walletIds, wallets],
   );
 
-  const selectedWalletName = transactionWallets.find((wallet) => wallet.id === walletId)?.name;
+  const searchedTransactionWallets = transactionWallets.filter((wallet) =>
+    wallet.name.toLocaleLowerCase("id-ID").includes(walletSearch.trim().toLocaleLowerCase("id-ID")),
+  );
   const appliedDateLabel = dateFrom && dateTo
     ? `Tanggal: ${formatDateLabel(dateFrom)} s.d. ${formatDateLabel(dateTo)}`
     : dateFrom
@@ -758,7 +768,9 @@ export function ActivityView({
     listFilter === "all" ? null : FILTER_OPTIONS.find(([value]) => value === listFilter)?.[1] ?? null,
     transactionScope === "all" ? null : transactionScope === "personal" ? "Pribadi" : "Bersama",
     appliedDateLabel,
-    walletId ? `Dompet: ${selectedWalletName ?? "Terpilih"}` : null,
+    walletIds.length > 0
+      ? `Dompet: ${walletIds.length} dipilih`
+      : null,
   ].filter((label): label is string => label !== null);
   const showFilters = view === "active" && !loading && !error;
 
@@ -905,14 +917,14 @@ export function ActivityView({
                     {([['all', 'Semua'], ['personal', 'Pribadi'], ['shared', 'Bersama']] as const).map(([value, label]) => (
                       <button key={value} type="button" aria-pressed={transactionScope === value}
                         onClick={() => {
-                          const selected = wallets.find((wallet) => wallet.id === walletId);
-                          const walletMatchesScope = !selected || value === "all" ||
-                            (value === "personal" && selected.scope === "PERSONAL") ||
-                            (value === "shared" && selected.scope === "SHARING");
-                          const nextWalletId = walletMatchesScope ? walletId : "";
+                          const nextWalletIds = value === "all"
+                            ? walletIds
+                            : walletIds.filter((id) => wallets.some((wallet) =>
+                                wallet.id === id && wallet.scope === (value === "personal" ? "PERSONAL" : "SHARING"),
+                              ));
                           setRows([]); setNextCursor(null); setFilterLoading(true); setTransactionScope(value);
-                          if (!walletMatchesScope) setWalletId("");
-                          writeUrl({ view: 'active', month: activeMonth, scope: value, walletId: nextWalletId });
+                          setWalletIds(nextWalletIds);
+                          writeUrl({ view: 'active', month: activeMonth, scope: value, walletIds: nextWalletIds });
                         }}
                         className={cn('min-h-11 flex-1 rounded-full px-3 text-sm font-semibold transition-colors', transactionScope === value ? 'bg-card text-ink shadow-sm' : 'text-ink-2 hover:bg-card')}
                       >{label}</button>
@@ -957,42 +969,78 @@ export function ActivityView({
                 </div>
               </div>
 
-              <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-card-border bg-card px-3 text-sm font-semibold text-ink-2">
-                <span className="shrink-0">Dompet</span>
-                <select
-                  value={walletId}
-                  disabled={walletsLoading || Boolean(walletsError)}
-                  onChange={(event) => {
-                    const nextWalletId = event.target.value;
-                    setLoading(true);
-                    setWalletId(nextWalletId);
-                    setReloadToken((token) => token + 1);
-                    writeUrl({
-                      view: "active",
-                      month: activeMonth,
-                      filter: listFilter,
-                      walletId: nextWalletId,
-                    });
-                  }}
-                  className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-ink outline-none"
-                  aria-label="Filter berdasarkan dompet"
-                >
-                  <option value="">
-                    {walletsLoading
-                      ? "Memuat dompet..."
-                      : walletsError
-                        ? "Dompet tidak tersedia"
-                        : "Semua dompet"}
-                  </option>
-                  {!walletsLoading &&
-                    transactionWallets.map((wallet) => (
-                      <option key={wallet.id} value={wallet.id}>
-                        {wallet.name} · {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}
-                        {wallet.archivedAt ? ", Arsip" : ""}
-                      </option>
-                    ))}
-                </select>
-              </label>
+              <fieldset className="space-y-3 rounded-2xl border border-card-border bg-card p-3">
+                <legend className="px-1 text-sm font-semibold text-ink">Pilih dompet</legend>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-ink-2" aria-live="polite">
+                    {walletsLoading ? "Memuat dompet..." : walletIds.length ? `${walletIds.length} dipilih` : "Semua dompet"}
+                  </span>
+                  {walletIds.length ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWalletIds([]);
+                        setRows([]);
+                        setNextCursor(null);
+                        setLoading(true);
+                        setReloadToken((token) => token + 1);
+                        writeUrl({ view: "active", month: activeMonth, walletIds: [] });
+                      }}
+                      className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2"
+                    >
+                      Hapus pilihan
+                    </button>
+                  ) : null}
+                </div>
+                <label className="block">
+                  <span className="sr-only">Cari dompet</span>
+                  <input
+                    type="search"
+                    value={walletSearch}
+                    onChange={(event) => setWalletSearch(event.target.value)}
+                    placeholder="Cari nama dompet"
+                    disabled={walletsLoading || Boolean(walletsError)}
+                    className="min-h-11 w-full rounded-xl border border-input-border bg-card px-3 text-sm text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15 disabled:opacity-60"
+                  />
+                </label>
+                <div className="max-h-56 space-y-1 overflow-y-auto" role="group" aria-label="Daftar dompet">
+                  {walletsLoading ? (
+                    <p className="px-2 py-3 text-sm text-ink-3">Memuat daftar dompet...</p>
+                  ) : walletsError ? (
+                    <p className="px-2 py-3 text-sm text-danger">Dompet tidak tersedia.</p>
+                  ) : searchedTransactionWallets.length ? searchedTransactionWallets.map((wallet) => (
+                    <label key={wallet.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 text-sm text-ink hover:bg-blue-wash">
+                      <input
+                        type="checkbox"
+                        checked={walletIds.includes(wallet.id)}
+                        onChange={(event) => {
+                          const nextWalletIds = event.target.checked
+                            ? [...walletIds, wallet.id]
+                            : walletIds.filter((id) => id !== wallet.id);
+                          setWalletIds(nextWalletIds);
+                          setRows([]);
+                          setNextCursor(null);
+                          setLoading(true);
+                          setReloadToken((token) => token + 1);
+                          writeUrl({ view: "active", month: activeMonth, walletIds: nextWalletIds });
+                        }}
+                        className="h-4 w-4 accent-blue"
+                      />
+                      <span className="min-w-0 flex-1 truncate">{wallet.name}</span>
+                      <span className="shrink-0 text-xs text-ink-3">
+                        {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}{wallet.archivedAt ? ", Arsip" : ""}
+                      </span>
+                    </label>
+                  )) : (
+                    <p className="px-2 py-3 text-sm text-ink-3">
+                      {transactionWallets.length ? "Tidak ada dompet yang cocok." : "Belum ada dompet untuk cakupan ini."}
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-ink-3">
+                  Transfer dari dompet yang tidak dipilih dihitung sebagai uang masuk. Transfer ke dompet yang tidak dipilih dihitung sebagai uang keluar. Transfer antar-dompet yang sama-sama dipilih tidak dihitung sebagai masuk atau keluar.
+                </p>
+              </fieldset>
               {walletsError ? (
                 <p role="status" className="text-xs text-danger">{walletsError}</p>
               ) : null}
@@ -1096,10 +1144,9 @@ export function ActivityView({
         <ActivityMonthSummaryCard
           month={activeMonth}
           scope={transactionScope}
-          walletId={walletId}
-          walletScope={wallets.find((wallet) => wallet.id === walletId)?.scope}
-          hasPersonalWallet={wallets.some((wallet) => wallet.scope === "PERSONAL")}
-          onOpenReport={openFullReport}
+          walletIds={walletIds}
+          refreshToken={summaryRefreshToken}
+          onOpenReport={walletIds.length <= 1 ? openFullReport : undefined}
         />
       ) : null}
 

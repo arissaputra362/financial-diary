@@ -55,6 +55,19 @@ export interface ReportRepository {
     scope: "PERSONAL" | "SHARING",
     walletId?: string,
   ): Promise<ReportWalletRecord[]>;
+  listVisibleWalletIds(
+    actor: WalletActor,
+    walletIds: string[],
+    scope: "all" | "PERSONAL" | "SHARING",
+  ): Promise<string[]>;
+  activityWalletSummary(
+    actor: WalletActor,
+    query: {
+      period: ReportPeriod;
+      walletIds: string[];
+      scope: "all" | "PERSONAL" | "SHARING";
+    },
+  ): Promise<{ openingMinor: number; moneyInMinor: number; moneyOutMinor: number; closingMinor: number }>;
   aggregate(
     actor: WalletActor,
     query: {
@@ -95,6 +108,14 @@ type DailyRow = {
   closing: string;
 };
 
+type ActivitySummaryRow = {
+  opening: string;
+  new_wallet_opening: string;
+  money_in: string;
+  money_out: string;
+  closing: string;
+};
+
 function minor(value: string | null | undefined): number {
   return Number(value ?? 0);
 }
@@ -125,6 +146,114 @@ export function createReportRepository(db: Db): ReportRepository {
         openingBalanceMinor: Number(row.openingBalanceMinor),
         scope: row.scope as "PERSONAL" | "SHARING",
       }));
+    },
+
+    async listVisibleWalletIds(actor, walletIds, scope) {
+      if (walletIds.length === 0) return [];
+      const rows = await db.wallet.findMany({
+        where: {
+          householdId: actor.householdId,
+          id: { in: walletIds },
+          ...(scope === "all" ? {} : { scope }),
+          OR: [{ scope: "SHARING" }, { createdByUserId: actor.userId }],
+        },
+        select: { id: true },
+      });
+      return rows.map((row) => row.id);
+    },
+
+    async activityWalletSummary(actor, { period, walletIds, scope }) {
+      const idList = walletIds.join(",");
+      const rows = await db.$queryRaw<ActivitySummaryRow[]>`
+        WITH selected_wallets AS (
+          SELECT w.id, w.opening_balance_minor::numeric AS opening_balance_minor, w.created_at
+          FROM "wallet" w
+          WHERE w.household_id = ${actor.householdId}::uuid
+            AND (w.scope::text = 'SHARING' OR w.created_by_user_id = ${actor.userId}::uuid)
+            AND (${scope === "all"} OR w.scope::text = ${scope})
+            AND (${walletIds.length === 0} OR w.id::text = ANY(string_to_array(${idList}, ',')))
+        ),
+        period_wallets AS (
+          SELECT sw.* FROM selected_wallets sw
+          WHERE sw.created_at <= ${period.end}::timestamptz
+             OR EXISTS (
+               SELECT 1 FROM "transaction" t
+               WHERE t.wallet_id = sw.id
+                 AND t.deleted_at IS NULL
+                 AND t.occurred_at >= ${period.start}::timestamptz
+                 AND t.occurred_at <= ${period.end}::timestamptz
+             )
+        ),
+        before_tx AS (
+          SELECT t.* FROM "transaction" t
+          JOIN period_wallets pw ON pw.id = t.wallet_id
+          WHERE t.deleted_at IS NULL
+            AND t.occurred_at < ${period.start}::timestamptz
+        ),
+        period_tx AS (
+          SELECT t.* FROM "transaction" t
+          JOIN period_wallets pw ON pw.id = t.wallet_id
+          WHERE t.deleted_at IS NULL
+            AND t.occurred_at >= ${period.start}::timestamptz
+            AND t.occurred_at <= ${period.end}::timestamptz
+        ),
+        opening AS (
+          SELECT
+            COALESCE(SUM(CASE WHEN pw.created_at < ${period.start}::timestamptz
+                              THEN pw.opening_balance_minor ELSE 0 END), 0)::numeric
+            + COALESCE((
+                SELECT SUM(CASE WHEN t.type::text = 'MONEY_IN'
+                                THEN t.amount_minor ELSE -t.amount_minor END)::numeric
+                FROM before_tx t
+              ), 0)::numeric AS amount
+          FROM period_wallets pw
+        ),
+        new_wallet AS (
+          SELECT COALESCE(SUM(pw.opening_balance_minor), 0)::numeric AS amount
+          FROM period_wallets pw
+          WHERE pw.created_at >= ${period.start}::timestamptz
+        ),
+        totals AS (
+          SELECT
+            COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_IN'
+                              THEN t.amount_minor END), 0)::numeric
+            + COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_IN'
+                                 AND NOT EXISTS (
+                                   SELECT 1 FROM "transaction" peer
+                                   WHERE peer.household_id = t.household_id
+                                     AND peer.transfer_group_id = t.transfer_group_id
+                                     AND peer.id <> t.id
+                                     AND peer.deleted_at IS NULL
+                                     AND peer.wallet_id IN (SELECT id FROM period_wallets)
+                                 ) THEN t.amount_minor END), 0)::numeric AS money_in,
+            COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_OUT'
+                              THEN t.amount_minor END), 0)::numeric
+            + COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_OUT'
+                                 AND NOT EXISTS (
+                                   SELECT 1 FROM "transaction" peer
+                                   WHERE peer.household_id = t.household_id
+                                     AND peer.transfer_group_id = t.transfer_group_id
+                                     AND peer.id <> t.id
+                                     AND peer.deleted_at IS NULL
+                                     AND peer.wallet_id IN (SELECT id FROM period_wallets)
+                                 ) THEN t.amount_minor END), 0)::numeric AS money_out,
+            COALESCE(SUM(CASE WHEN t.type::text = 'MONEY_IN' THEN t.amount_minor ELSE -t.amount_minor END), 0)::numeric AS net
+          FROM period_tx t
+        )
+        SELECT opening.amount::text AS opening,
+               new_wallet.amount::text AS new_wallet_opening,
+               totals.money_in::text AS money_in,
+               totals.money_out::text AS money_out,
+               (opening.amount + new_wallet.amount + totals.net)::text AS closing
+        FROM opening, new_wallet, totals
+      `;
+      const row = rows[0];
+      return {
+        openingMinor: minor(row?.opening),
+        moneyInMinor: minor(row?.money_in),
+        moneyOutMinor: minor(row?.money_out),
+        closingMinor: minor(row?.closing),
+      };
     },
 
     async aggregate(actor, { scope, walletId, period, previous }) {

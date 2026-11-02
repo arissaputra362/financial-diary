@@ -15,6 +15,7 @@ import { jakartaDateOnly } from "../jakarta";
 import type { ReportCategorySum, ReportRepository } from "../repositories/reports";
 import type { WalletActor } from "../repositories/ledger";
 import { PeriodService } from "./period";
+import type { ActivityWalletSummaryQuery } from "../contracts/reports";
 
 export interface MonthlyReportOptions {
   month?: string;
@@ -69,6 +70,17 @@ export class ReportService {
     private readonly repo: ReportRepository,
     private readonly periods: PeriodService = new PeriodService(),
   ) {}
+
+  async activityWalletSummary(actor: WalletActor, options: ActivityWalletSummaryQuery) {
+    const walletIds = [...new Set(options.walletIds)];
+    const scope = options.scope === "personal" ? "PERSONAL" : options.scope === "shared" ? "SHARING" : "all";
+    if (walletIds.length > 0) {
+      const visibleIds = await this.repo.listVisibleWalletIds(actor, walletIds, scope);
+      if (visibleIds.length !== walletIds.length) throw notFound("Dompet tidak ditemukan.");
+    }
+    const period = this.periods.month(options.month);
+    return this.repo.activityWalletSummary(actor, { period, walletIds, scope });
+  }
 
   async get(actor: WalletActor, options: MonthlyReportOptions = {}): Promise<MonthlyReportDTO> {
     const month = options.month ?? jakartaDateOnly().slice(0, 7);
