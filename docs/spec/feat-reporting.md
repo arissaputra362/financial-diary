@@ -149,7 +149,8 @@ Prinsip yang mengikat seluruh fitur ini: **server adalah satu-satunya sumber ang
 
 - Kondisi: laporan dirender.
 - Yang terjadi: seluruh angka berasal dari satu respons server untuk kombinasi bulan, cakupan, dan dompet yang aktif. Perubahan salah satu filter memicu satu permintaan baru.
-- Blok `Ringkasan aktivitas` lama pada tab Transaksi (`ActivityView.tsx`, dihitung dari baris yang termuat) **dihentikan** dan diganti tautan `Lihat ringkasan bulan ini`.
+- Tab Transaksi menampilkan kartu ringkasan 2×2 untuk bulan terpilih dengan urutan baca `Saldo awal`, `Uang masuk`, `Uang keluar`, lalu `Sisa saldo`. Keempat metrik memakai permukaan dan tata letak seragam; `Sisa saldo` mendapat penekanan tipografi ringan sebagai hasil akhir. Keempat angka berasal dari endpoint laporan bulanan, bukan dari baris transaksi yang termuat. Kartu mengikuti cakupan dan dompet transaksi yang dipilih; cakupan `Semua` menggabungkan hasil Bersama dan Pribadi.
+- Tautan `Lihat ringkasan lengkap` membuka tab Ringkasan untuk bulan terpilih.
 - Yang tidak boleh terjadi: dua angka `Uang masuk` berbeda pada dua tab yang bersebelahan; client menjumlahkan `rows`; ringkasan dihitung dari halaman pertama pagination; angka berubah saat pengguna menekan `Muat lagi`.
 
 ### AC-F7-15: Kejujuran angka dan bahasa

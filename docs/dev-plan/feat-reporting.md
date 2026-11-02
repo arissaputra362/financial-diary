@@ -486,6 +486,7 @@ Parameter yang didukung:
 - `writeUrl` diperluas dan menjadi satu-satunya penulis URL. Ganti bulan mempertahankan `scope`/`wallet` report dan `filter`/`wallet` transaksi. Ganti tab mempertahankan bulan.
 - Blok `Ringkasan aktivitas` lama dihapus. Di tempatnya, untuk view active dan list siap, render ghost link `Lihat ringkasan bulan ini` dengan `activityHref({ view: "ringkasan", month, reportScope: "shared" })`.
 - `MonthlyReport` dirender saat `view === "ringkasan"`, menerima `month`, `wallets`, `walletsLoading`, `walletsError`, `scope`, `walletId`, callbacks, dan `onAddTransaction`.
+- Kartu ringkasan 2×2 pada tab Transaksi memakai permukaan seragam, mengikuti alur baca `Saldo awal` → `Uang masuk` → `Uang keluar` → `Sisa saldo`, dan memberi penekanan tipografi ringan pada hasil akhir; semua nominal tetap berasal dari DTO laporan bulanan dan mengikuti filter cakupan/dompet aktif.
 - Jika `wallets` selesai dimuat dan `scope === "personal"` tetapi tidak ada dompet pribadi, reset ke `shared` dan tulis URL.
 - Jika `reportWalletId` tidak ada di daftar dompet cakupan, reset ke `Semua dompet` dan tampilkan notice.
 - `changeView("ringkasan")` mereset filter transaksi dan tanggal, tidak mereset bulan.
@@ -642,6 +643,7 @@ File: `components/transactions/activityUrl.test.ts` (perluas).
 | 2026-10-25 | QA putaran 1: verdict PASS WITH RISKS, 14 PASS / 1 PARTIAL, 4 bug (laporan `docs/qa/feat-reporting-verification.md`) | AC-F7-13 PARTIAL karena dua state hanya via inspeksi dan 360px belum diuji saat itu. |
 | 2026-10-25 | QA putaran 2 (regresi): 4/4 bug PASS, tidak ada regresi produk, rekomendasi ship | `bun run test` 523/523; lint 0 error; tsc bersih; probe fitur 6/6, undo/trash 3/3, add-intent 12/13 (1 kandidat flaky pre-existing di spek test, bukan produk). Follow-up yang dilacak PM: (1) test permanen untuk copy invarian, gating footnote, dan atribut tab; (2) perbaiki locator ambigu `e2e/transaction-add-intent.spec.ts:212` (test-only, pre-existing). |
 | 2026-10-25 | Implementasi extension F7.1: print stylesheet dan detail transaksi multi-halaman | `MonthlyReport` mengambil semua cursor sebelum memanggil dialog print; helper mengelompokkan jenis transaksi, menjaga urutan tanggal/id, serta memakai total ringkasan untuk subtotal. Layout cetak dipadatkan untuk A4 portrait dan detail dipaksa mulai halaman kedua. Verifikasi browser print masih terbuka. |
+| 2026-11-02 | Kartu ringkasan tab Transaksi menambahkan saldo awal dan sisa saldo | Memakai `openingMinor` dan `closingMinor` dari endpoint laporan bulanan; urutan visual menunjukkan alur saldo awal, uang masuk/keluar, lalu sisa saldo. Nominal tetap mengikuti bulan, cakupan, dan dompet aktif. |
 
 ## Keputusan Teknis
 

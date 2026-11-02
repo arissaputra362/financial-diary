@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownLeft, ArrowUpRight, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { formatIDR } from "@/lib/format";
 import type { MonthlyReportDTO } from "@/types/api";
@@ -23,7 +23,12 @@ export function ActivityMonthSummaryCard({
   hasPersonalWallet: boolean;
   onOpenReport: () => void;
 }) {
-  const [totals, setTotals] = useState<{ income: number; expense: number } | null>(null);
+  const [totals, setTotals] = useState<{
+    opening: number;
+    income: number;
+    expense: number;
+    closing: number;
+  } | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -36,7 +41,7 @@ export function ActivityMonthSummaryCard({
       ? walletScope === "PERSONAL" ? "personal" : "shared"
       : null;
     if (walletId && scope !== "all" && selectedScope !== scope) {
-      setTotals({ income: 0, expense: 0 });
+      setTotals({ opening: 0, income: 0, expense: 0, closing: 0 });
       setError(false);
       return;
     }
@@ -59,8 +64,10 @@ export function ActivityMonthSummaryCard({
           return;
         }
         setTotals({
+          opening: responses.reduce((sum, response) => sum + (response.data?.openingMinor ?? 0), 0),
           income: responses.reduce((sum, response) => sum + (response.data?.moneyInMinor ?? 0), 0),
           expense: responses.reduce((sum, response) => sum + (response.data?.moneyOutMinor ?? 0), 0),
+          closing: responses.reduce((sum, response) => sum + (response.data?.closingMinor ?? 0), 0),
         });
       })
       .catch(() => {
@@ -74,20 +81,28 @@ export function ActivityMonthSummaryCard({
   return (
     <section className="rounded-3xl border border-card-border bg-card p-5 shadow-bento" aria-label="Ringkasan transaksi bulan ini">
       <div className="grid grid-cols-2 gap-3">
-        <div className="min-w-0 rounded-2xl bg-mint p-4">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-2">
-            <ArrowDownLeft className="h-4 w-4 text-green" aria-hidden="true" /> Uang masuk
-          </p>
+        <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
+          <p className="text-xs font-semibold text-ink-2">Saldo awal</p>
           <p className="mt-2 truncate text-lg font-bold tabular-nums text-ink" aria-live="polite">
-            {totals ? formatIDR(totals.income) : error ? "—" : "Memuat..."}
+            {totals ? formatIDR(totals.opening) : error ? "Tidak tersedia" : "Memuat..."}
           </p>
         </div>
         <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-2">
-            <ArrowUpRight className="h-4 w-4 text-blue" aria-hidden="true" /> Uang keluar
-          </p>
+          <p className="text-xs font-semibold text-ink-2">Uang masuk</p>
           <p className="mt-2 truncate text-lg font-bold tabular-nums text-ink" aria-live="polite">
-            {totals ? formatIDR(totals.expense) : error ? "—" : "Memuat..."}
+            {totals ? formatIDR(totals.income) : error ? "Tidak tersedia" : "Memuat..."}
+          </p>
+        </div>
+        <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
+          <p className="text-xs font-semibold text-ink-2">Uang keluar</p>
+          <p className="mt-2 truncate text-lg font-bold tabular-nums text-ink" aria-live="polite">
+            {totals ? formatIDR(totals.expense) : error ? "Tidak tersedia" : "Memuat..."}
+          </p>
+        </div>
+        <div className="min-w-0 rounded-2xl bg-blue-wash p-4">
+          <p className="text-xs font-bold text-blue">Sisa saldo</p>
+          <p className="mt-2 truncate text-lg font-extrabold tabular-nums text-ink" aria-live="polite">
+            {totals ? formatIDR(totals.closing) : error ? "Tidak tersedia" : "Memuat..."}
           </p>
         </div>
       </div>
