@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDownLeft, ArrowUpRight, Printer } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -87,6 +87,7 @@ export function MonthlyReport({
   } | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [walletSearch, setWalletSearch] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [printRun, setPrintRun] = useState<{
     key: string;
     report: MonthlyReportDTO;
@@ -164,6 +165,7 @@ export function MonthlyReport({
   useEffect(() => {
     printKeyRef.current = printKey;
     printAbortRef.current?.abort();
+    setPreviewOpen(false);
   }, [printKey]);
 
   useEffect(
@@ -198,7 +200,7 @@ export function MonthlyReport({
         )
       : null;
 
-  const prepareAndPrint = async () => {
+  const preparePreview = async () => {
     if (preparing || !data) return;
     const key = printKey;
     setPrintRun({ key, report: data, status: "preparing", rows: [] });
@@ -248,8 +250,14 @@ export function MonthlyReport({
       return;
     }
 
-    /* Commit the print-only nodes before the native dialog snapshots the DOM. */
-    flushSync(() => setPrintRun({ key, report: data, status: "ready", rows }));
+    flushSync(() => {
+      setPrintRun({ key, report: data, status: "ready", rows });
+      setPreviewOpen(true);
+    });
+  };
+
+  const printPreview = () => {
+    if (!historicalLedger) return;
 
     const originalTitle = document.title;
     const restoreTitle = () => {
@@ -273,7 +281,20 @@ export function MonthlyReport({
 
   return (
     <section aria-label="Laporan bulanan" className="space-y-5">
-      <div className="space-y-2 print:hidden">
+      {previewOpen ? (
+        <div className="sticky top-2 z-20 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-card-border bg-card/95 p-3 shadow-bento backdrop-blur print:hidden">
+          <p className="text-sm font-semibold text-ink">Pratinjau laporan {monthLabel}</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPreviewOpen(false)} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash">
+              <X className="h-4 w-4" aria-hidden="true" /> Tutup
+            </button>
+            <button type="button" onClick={printPreview} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover">
+              <Printer className="h-4 w-4" aria-hidden="true" /> Cetak / simpan PDF
+            </button>
+          </div>
+        </div>
+      ) : null}
+      <div className={cn("space-y-2 print:hidden", previewOpen && "hidden")}>
         <div className="flex flex-wrap items-end gap-3">
           <SegmentedControl<ReportScope>
             label="Lingkup laporan"
@@ -354,13 +375,13 @@ export function MonthlyReport({
           {canPrint ? (
             <button
               type="button"
-              onClick={() => void prepareAndPrint()}
+              onClick={() => void preparePreview()}
               disabled={preparing}
               aria-busy={preparing || undefined}
               className="ml-auto inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash disabled:cursor-not-allowed disabled:text-ink-2 disabled:hover:bg-transparent sm:w-auto sm:min-w-52"
             >
               <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {preparing ? "Menyiapkan detail..." : "Cetak atau simpan PDF"}
+              {preparing ? "Menyiapkan pratinjau..." : "Pratinjau laporan"}
             </button>
           ) : null}
         </div>
@@ -369,7 +390,7 @@ export function MonthlyReport({
             Detail transaksi belum bisa disiapkan.{" "}
             <button
               type="button"
-              onClick={() => void prepareAndPrint()}
+              onClick={() => void preparePreview()}
               className="min-h-11 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
             >
               Coba lagi
@@ -400,7 +421,7 @@ export function MonthlyReport({
         </Card>
       ) : (
         <>
-          <div className="space-y-5 print:space-y-2 print:break-after-page">
+          <div className={cn("space-y-5 print:space-y-2 print:break-after-page", previewOpen && "rounded-3xl border border-card-border bg-card p-3 sm:p-5")}>
             <h2 className="hidden text-2xl font-bold tracking-tight text-ink print:mb-1 print:block print:text-xl">
               Laporan {monthLabel}
             </h2>
@@ -458,7 +479,7 @@ export function MonthlyReport({
             <ReportFootnotes report={data} scope={scope} walletLabel={walletIds.length ? selectedWallets.map((wallet) => wallet.name).join(", ") : "Semua dompet"} />
           </div>
           {historicalLedger ? (
-            <PrintTransactionDetail rows={historicalLedger} monthLabel={monthLabel} />
+            <PrintTransactionDetail rows={historicalLedger} monthLabel={monthLabel} preview={previewOpen} />
           ) : null}
         </>
       )}
@@ -690,16 +711,41 @@ function ReportFootnotes({
 function PrintTransactionDetail({
   rows,
   monthLabel,
+  preview,
 }: {
   rows: ReportLedgerRow[];
   monthLabel: string;
+  preview: boolean;
 }) {
   return (
-    <section className="hidden print:block print:break-before-page">
+    <section className={cn(preview ? "rounded-3xl border border-card-border bg-card p-3 sm:p-5" : "hidden print:block print:break-before-page")}>
       <h2 className="text-2xl font-bold text-ink">
         Rincian transaksi {monthLabel}
       </h2>
-      <div className="mt-4 overflow-hidden rounded-xl border border-row-divider">
+      {preview ? (
+        <div className="mt-4 space-y-2 sm:hidden">
+          {rows.map((row) => {
+            const amount = row.amountMinor;
+            return (
+              <article key={row.id} className="rounded-2xl border border-row-divider bg-card p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-ink-3">{formatReportDetailDate(row.occurredAt)}</p>
+                    <p className="mt-1 break-words text-sm font-semibold text-ink">{row.description}</p>
+                  </div>
+                  <p className={cn("shrink-0 text-right text-sm font-semibold tabular-nums", amount === null ? "text-ink-3" : amount >= 0 ? "text-green" : "text-ink")}>
+                    {amount === null ? "—" : `${amount > 0 ? "+" : amount < 0 ? "−" : ""}${formatIDR(Math.abs(amount))}`}
+                  </p>
+                </div>
+                <p className="mt-2 border-t border-row-divider pt-2 text-xs text-ink-3">
+                  Sisa saldo <span className="font-semibold tabular-nums text-ink">{formatIDR(row.balanceMinor)}</span>
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      ) : null}
+      <div className={cn("mt-4 overflow-x-auto rounded-xl border border-row-divider", preview && "hidden sm:block")}>
         <table className="w-full border-collapse text-left">
           <thead className="bg-surface-subtle">
             <tr className="border-b border-row-divider text-xs font-semibold uppercase tracking-wide text-ink-3">
