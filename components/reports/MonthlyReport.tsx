@@ -257,7 +257,7 @@ export function MonthlyReport({
   };
 
   const printPreview = () => {
-    if (!historicalLedger) return;
+    if (!historicalLedger || !data) return;
 
     const originalTitle = document.title;
     const restoreTitle = () => {
