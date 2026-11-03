@@ -55,6 +55,7 @@ export interface ActivityViewProps {
   initialWalletIds?: string[];
   initialReportScope?: ReportScope;
   initialReportWalletId?: string;
+  initialReportWalletIds?: string[];
   initialData?: TransactionListDTO;
 }
 
@@ -88,6 +89,7 @@ export function ActivityView({
   initialWalletIds,
   initialReportScope = "all",
   initialReportWalletId,
+  initialReportWalletIds,
   initialData,
 }: ActivityViewProps) {
   const router = useRouter();
@@ -100,7 +102,7 @@ export function ActivityView({
   const [walletIds, setWalletIds] = useState<string[]>(initialWalletIds ?? (initialWalletId ? [initialWalletId] : []));
   const [walletSearch, setWalletSearch] = useState("");
   const [reportScope, setReportScope] = useState<ReportScope>(initialReportScope);
-  const [reportWalletId, setReportWalletId] = useState(initialReportWalletId ?? "");
+  const [reportWalletIds, setReportWalletIds] = useState<string[]>(initialReportWalletIds ?? (initialReportWalletId ? [initialReportWalletId] : []));
   const [wallets, setWallets] = useState<WalletDTO[]>([]);
   const [walletsLoading, setWalletsLoading] = useState(true);
   const [walletsError, setWalletsError] = useState<string | null>(null);
@@ -160,7 +162,7 @@ export function ActivityView({
       walletId?: string;
       walletIds?: string[];
       reportScope?: ReportScope;
-      reportWalletId?: string;
+      reportWalletIds?: string[];
     }) => {
       const nextMonth = next.month ?? activeMonth;
       const nextFilter = next.filter ?? listFilter;
@@ -168,7 +170,8 @@ export function ActivityView({
       const transactionWalletIds = next.walletIds ??
         (next.walletId !== undefined ? (next.walletId ? [next.walletId] : []) : walletIds);
       const nextScope = next.reportScope ?? reportScope;
-      const nextReportWallet = next.reportWalletId ?? reportWalletId;
+      const nextReportWalletIds = next.reportWalletIds ??
+        reportWalletIds;
       const nextFrom = next.from ?? dateFrom;
       const nextTo = next.to ?? dateTo;
       router.replace(
@@ -180,14 +183,15 @@ export function ActivityView({
           to: next.view === "active" ? nextTo : undefined,
           filter: next.view === "active" ? filterToUrl(nextFilter) : "all",
           scope: next.view === "active" ? nextTransactionScope : "all",
-          walletId: next.view === "ringkasan" ? nextReportWallet : undefined,
+          walletId: undefined,
           walletIds: next.view === "active" ? transactionWalletIds : undefined,
+          reportWalletIds: next.view === "ringkasan" ? nextReportWalletIds : undefined,
           reportScope: nextScope,
         }),
         { scroll: false },
       );
     },
-    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletId, router, transactionScope, walletIds],
+    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletIds, router, transactionScope, walletIds],
   );
 
   /*
@@ -508,22 +512,16 @@ export function ActivityView({
   };
 
   const openFullReport = () => {
-    const selectedWallet = walletIds.length === 1 ? wallets.find((wallet) => wallet.id === walletIds[0]) : undefined;
-    const walletMatchesScope =
-      transactionScope === "all" || !selectedWallet ||
-      (transactionScope === "personal" && selectedWallet.scope === "PERSONAL") ||
-      (transactionScope === "shared" && selectedWallet.scope === "SHARING");
-    const nextReportWalletId = walletMatchesScope && selectedWallet ? selectedWallet.id : "";
     setView("ringkasan");
     setReportScope(transactionScope);
-    setReportWalletId(nextReportWalletId);
+    setReportWalletIds(walletIds);
     setFilterPanelOpen(false);
     setLoading(false);
     writeUrl({
       view: "ringkasan",
       month: activeMonth,
       reportScope: transactionScope,
-      reportWalletId: nextReportWalletId,
+      reportWalletIds: walletIds,
     });
   };
 
@@ -544,20 +542,24 @@ export function ActivityView({
   };
 
   const changeReportScope = (next: ReportScope) => {
-    /* A scope change always resets the wallet to Semua dompet (AC-F7-8). */
+    const nextWalletIds = next === "all"
+      ? reportWalletIds
+      : reportWalletIds.filter((id) => wallets.some((wallet) =>
+          wallet.id === id && wallet.scope === (next === "personal" ? "PERSONAL" : "SHARING"),
+        ));
     setReportScope(next);
-    setReportWalletId("");
+    setReportWalletIds(nextWalletIds);
     writeUrl({
       view: "ringkasan",
       month: activeMonth,
       reportScope: next,
-      reportWalletId: "",
+      reportWalletIds: nextWalletIds,
     });
   };
 
-  const changeReportWallet = (next: string) => {
-    setReportWalletId(next);
-    writeUrl({ view: "ringkasan", month: activeMonth, reportWalletId: next });
+  const changeReportWallet = (next: string[]) => {
+    setReportWalletIds(next);
+    writeUrl({ view: "ringkasan", month: activeMonth, reportWalletIds: next });
   };
 
   const handleDelete = async () => {
@@ -713,23 +715,25 @@ export function ActivityView({
       );
       if (reportScope === "personal" && inScope.length === 0) {
         setReportScope("shared");
-        setReportWalletId("");
+        const sharedWalletIds = reportWalletIds.filter((id) => nextWallets.some((wallet) => wallet.id === id && wallet.scope === "SHARING"));
+        setReportWalletIds(sharedWalletIds);
         writeUrl({
           view: "ringkasan",
           month: activeMonth,
           reportScope: "shared",
-          reportWalletId: "",
+          reportWalletIds: sharedWalletIds,
         });
         return;
       }
-      if (reportWalletId && !inScope.some((wallet) => wallet.id === reportWalletId)) {
-        setReportWalletId("");
-        showNotice("Dompet yang dipilih tidak tersedia. Menampilkan semua dompet.");
+      const validReportWalletIds = reportWalletIds.filter((id) => inScope.some((wallet) => wallet.id === id));
+      if (validReportWalletIds.length !== reportWalletIds.length) {
+        setReportWalletIds(validReportWalletIds);
+        showNotice("Pilihan dompet yang tidak tersedia dihapus.");
         writeUrl({
           view: "ringkasan",
           month: activeMonth,
           reportScope,
-          reportWalletId: "",
+          reportWalletIds: validReportWalletIds,
         });
       }
     };
@@ -1146,7 +1150,7 @@ export function ActivityView({
           scope={transactionScope}
           walletIds={walletIds}
           refreshToken={summaryRefreshToken}
-          onOpenReport={walletIds.length <= 1 ? openFullReport : undefined}
+          onOpenReport={openFullReport}
         />
       ) : null}
 
@@ -1213,7 +1217,7 @@ export function ActivityView({
           walletsLoading={walletsLoading}
           walletsError={walletsError}
           scope={reportScope}
-          walletId={reportWalletId}
+          walletIds={reportWalletIds}
           onScopeChange={changeReportScope}
           onWalletChange={changeReportWallet}
         />

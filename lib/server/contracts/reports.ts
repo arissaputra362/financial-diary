@@ -16,8 +16,9 @@ export const monthlyReportQuerySchema = z.object({
     .string()
     .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Bulan tidak valid.")
     .optional(),
-  scope: reportScopeSchema.optional(),
+  scope: z.enum(["all", "shared", "personal"]).optional(),
   walletId: z.string().uuid("Dompet tidak valid.").optional(),
+  walletIds: z.array(z.string().uuid("Dompet tidak valid.")).max(50).optional(),
 });
 
 export const activityWalletSummaryQuerySchema = z.object({

@@ -25,12 +25,11 @@ import { BalanceMovementChart } from "./BalanceMovementChart";
 import { CategoryDonutChart } from "./CategoryDonutChart";
 import { GoldReportSection } from "./GoldReportSection";
 import {
-  buildReportDetailSections,
+  buildReportHistoricalLedger,
   canOfferPrint,
   collectReportDetailRows,
   formatReportDetailDate,
-  reportDetailDescription,
-  type ReportDetailSection,
+  type ReportLedgerRow,
 } from "./reportDetail";
 
 export type ReportScope = "all" | "shared" | "personal";
@@ -41,9 +40,9 @@ export interface MonthlyReportProps {
   walletsLoading: boolean;
   walletsError: string | null;
   scope: ReportScope;
-  walletId: string;
+  walletIds: string[];
   onScopeChange: (scope: ReportScope) => void;
-  onWalletChange: (walletId: string) => void;
+  onWalletChange: (walletIds: string[]) => void;
 }
 
 const longDateFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -70,64 +69,13 @@ function scopeWallets(wallets: WalletDTO[], scope: ReportScope): WalletDTO[] {
   return wallets.filter((wallet) => wallet.scope === wanted);
 }
 
-function combineReports(reports: MonthlyReportDTO[]): MonthlyReportDTO {
-  const [first, second] = reports;
-  const combineBreakdown = (key: "income" | "expense") => {
-    const entries = new Map<string, number>();
-    for (const report of reports) {
-      for (const item of report[key].categories) {
-        entries.set(item.name, (entries.get(item.name) ?? 0) + item.amountMinor);
-      }
-    }
-    const sorted = [...entries].map(([name, amountMinor]) => ({ name, amountMinor }))
-      .sort((a, b) => b.amountMinor - a.amountMinor || a.name.localeCompare(b.name, "id"));
-    const categories = sorted.slice(0, 4);
-    return {
-      totalMinor: reports.reduce((sum, report) => sum + report[key].totalMinor, 0),
-      categories,
-      uncategorizedMinor: reports.reduce((sum, report) => sum + report[key].uncategorizedMinor, 0),
-      otherCategoryCount: reports.reduce((sum, report) => sum + report[key].otherCategoryCount, 0) + Math.max(0, sorted.length - 4),
-      otherAmountMinor: reports.reduce((sum, report) => sum + report[key].otherAmountMinor, 0) + sorted.slice(4).reduce((sum, row) => sum + row.amountMinor, 0),
-    };
-  };
-  const daily = new Map<string, number>();
-  for (const report of reports) {
-    for (const point of report.dailyBalances) daily.set(point.date, (daily.get(point.date) ?? 0) + point.closingMinor);
-  }
-  const add = (key: "openingMinor" | "newWalletOpeningMinor" | "moneyInMinor" | "moneyOutMinor" | "transferInMinor" | "transferOutMinor" | "transferNetMinor" | "closingMinor" | "transactionCount") =>
-    reports.reduce((sum, report) => sum + report[key], 0);
-  const sumDelta = (key: "closingMinor" | "moneyInMinor" | "moneyOutMinor") =>
-    first.delta[key] === null && second.delta[key] === null
-      ? null
-      : (first.delta[key] ?? 0) + (second.delta[key] ?? 0);
-  return {
-    ...first,
-    scope: "ALL",
-    wallet: null,
-    openingMinor: add("openingMinor"),
-    newWalletOpeningMinor: add("newWalletOpeningMinor"),
-    moneyInMinor: add("moneyInMinor"),
-    moneyOutMinor: add("moneyOutMinor"),
-    transferInMinor: add("transferInMinor"),
-    transferOutMinor: add("transferOutMinor"),
-    transferNetMinor: add("transferNetMinor"),
-    closingMinor: add("closingMinor"),
-    transactionCount: add("transactionCount"),
-    hasBackdatedNewWallet: reports.some((report) => report.hasBackdatedNewWallet),
-    delta: { closingMinor: sumDelta("closingMinor"), moneyInMinor: sumDelta("moneyInMinor"), moneyOutMinor: sumDelta("moneyOutMinor") },
-    income: combineBreakdown("income"),
-    expense: combineBreakdown("expense"),
-    dailyBalances: [...daily].map(([date, closingMinor]) => ({ date, closingMinor })),
-  };
-}
-
 export function MonthlyReport({
   month,
   wallets,
   walletsLoading,
   walletsError,
   scope,
-  walletId,
+  walletIds,
   onScopeChange,
   onWalletChange,
 }: MonthlyReportProps) {
@@ -138,6 +86,7 @@ export function MonthlyReport({
     error: string | null;
   } | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [walletSearch, setWalletSearch] = useState("");
   const [printRun, setPrintRun] = useState<{
     key: string;
     report: MonthlyReportDTO;
@@ -149,18 +98,20 @@ export function MonthlyReport({
   const available = scopeWallets(wallets, scope);
   const hasPersonalWallet = wallets.some((wallet) => wallet.scope === "PERSONAL");
   const personalUnavailable = !walletsLoading && !walletsError && !hasPersonalWallet;
-  const selectedWallet = available.find((wallet) => wallet.id === walletId) ?? null;
+  const selectedWallets = available.filter((wallet) => walletIds.includes(wallet.id));
+  const searchedWallets = available.filter((wallet) =>
+    wallet.name.toLocaleLowerCase("id-ID").includes(walletSearch.trim().toLocaleLowerCase("id-ID")),
+  );
   /*
     Never request a scope or wallet the selector cannot represent. The parent
     resets both from the URL; until then the report keeps its loading shape
     instead of rendering a misleading empty or error result.
   */
-  const waitingForScope =
-    (walletsLoading && (scope === "all" || scope === "personal" || Boolean(walletId))) ||
+  const waitingForScope = walletsLoading ||
     (scope === "personal" && personalUnavailable) ||
-    (Boolean(walletId) && !walletsLoading && !walletsError && selectedWallet === null);
-  const requestKey = `${month}|${scope}|${walletId}|${reloadToken}`;
-  const printKey = `${month}|${scope}|${walletId}`;
+    (walletIds.length > 0 && !walletsError && selectedWallets.length !== walletIds.length);
+  const requestKey = `${month}|${scope}|${walletIds.join(",")}|${reloadToken}`;
+  const printKey = `${month}|${scope}|${walletIds.join(",")}`;
   const printKeyRef = useRef(printKey);
   const loading = result?.key !== requestKey;
   const data = result?.key === requestKey ? result.data : null;
@@ -171,36 +122,28 @@ export function MonthlyReport({
     let active = true;
     const controller = new AbortController();
 
-    const selectedWalletScope = available.find((wallet) => wallet.id === walletId)?.scope;
-    const scopesToLoad = scope === "all"
-      ? walletId ? [selectedWalletScope === "PERSONAL" ? "personal" : "shared"] : hasPersonalWallet ? ["shared", "personal"] : ["shared"]
-      : [scope];
-    Promise.all(scopesToLoad.map((reportScope) => {
-      const params = new URLSearchParams({ month, scope: reportScope });
-      if (walletId) params.set("walletId", walletId);
-      return apiRequest<MonthlyReportDTO>(`/api/reports/monthly?${params.toString()}`, { signal: controller.signal });
-    }))
+    const params = new URLSearchParams({ month, scope });
+    walletIds.forEach((id) => params.append("walletId", id));
+    apiRequest<MonthlyReportDTO>(`/api/reports/monthly?${params.toString()}`, { signal: controller.signal })
       .then((response) => {
         if (!active) return;
-        const failed = response.find((item) => item.status === 401 || item.status === 403 || !item.ok || !item.data);
-        if (failed?.status === 401) {
+        if (response.status === 401) {
           router.push("/login");
           return;
         }
-        if (failed?.status === 403) {
+        if (response.status === 403) {
           router.push("/waiting-for-approval");
           return;
         }
-        if (failed) {
+        if (!response.ok || !response.data) {
           setResult({
             key: requestKey,
             data: null,
-            error: failed.data?.error?.message ?? "Laporan belum bisa dimuat.",
+            error: response.data?.error?.message ?? "Laporan belum bisa dimuat.",
           });
           return;
         }
-        const reports = response.map((item) => item.data!);
-        setResult({ key: requestKey, data: reports.length === 1 ? reports[0] : combineReports(reports), error: null });
+        setResult({ key: requestKey, data: response.data, error: null });
       })
       .catch(() => {
         if (!active || controller.signal.aborted) return;
@@ -211,7 +154,7 @@ export function MonthlyReport({
       active = false;
       controller.abort();
     };
-  }, [month, requestKey, router, scope, waitingForScope, walletId]);
+  }, [month, requestKey, router, scope, waitingForScope, walletIds]);
 
   /*
     A print run belongs to one month + scope + wallet combination. Changing any
@@ -245,15 +188,15 @@ export function MonthlyReport({
     printRun && printRun.key === printKey && printRun.report === data ? printRun : null;
   const preparing = currentPrint?.status === "preparing";
   const printFailed = currentPrint?.status === "error";
-  const detailSections =
+  const historicalLedger =
     data && currentPrint?.status === "ready"
-      ? buildReportDetailSections(currentPrint.rows, scope, {
-          incomeMinor: data.income.totalMinor,
-          expenseMinor: data.expense.totalMinor,
-          transferInMinor: data.transferInMinor,
-          transferOutMinor: data.transferOutMinor,
-        })
-      : [];
+      ? buildReportHistoricalLedger(
+          currentPrint.rows,
+          scope,
+          data,
+          walletIds.length ? selectedWallets : available,
+        )
+      : null;
 
   const prepareAndPrint = async () => {
     if (preparing || !data) return;
@@ -270,7 +213,7 @@ export function MonthlyReport({
           activityListUrl({
             view: "active",
             month,
-            walletId: walletId || undefined,
+            walletIds,
             scope,
             cursor,
           }),
@@ -300,18 +243,7 @@ export function MonthlyReport({
 
     if (controller.signal.aborted || printKeyRef.current !== key) return;
 
-    /*
-      The report already told us this combination has rows. Zero groups here means
-      the list and report disagree; fail honestly instead of printing a detail
-      page that silently drops transactions.
-    */
-    const sections = buildReportDetailSections(rows, scope, {
-      incomeMinor: data.income.totalMinor,
-      expenseMinor: data.expense.totalMinor,
-      transferInMinor: data.transferInMinor,
-      transferOutMinor: data.transferOutMinor,
-    });
-    if (sections.length === 0) {
+    if (rows.length === 0) {
       setPrintRun({ key, report: data, status: "error", rows: [] });
       return;
     }
@@ -325,7 +257,7 @@ export function MonthlyReport({
     };
     window.addEventListener("afterprint", restoreTitle, { once: true });
     const scopeLabel = scope === "all" ? "Semua" : scope === "shared" ? "Bersama" : "Pribadi";
-    const walletLabel = (data.wallet?.name ?? "Semua dompet")
+    const walletLabel = (data.wallet?.name ?? (walletIds.length ? `${walletIds.length} dompet` : "Semua dompet"))
       .replace(/[<>:"/\\|?*\u0000-\u001F]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -361,29 +293,63 @@ export function MonthlyReport({
             }}
           />
 
-          <label className="flex min-h-11 w-full min-w-0 flex-none items-center gap-3 rounded-2xl border border-card-border bg-card px-3 text-sm font-semibold text-ink-2 sm:w-auto sm:flex-1 sm:min-w-64">
-            <span className="shrink-0">Dompet</span>
-            <select
-              value={walletId}
-              disabled={walletsLoading || Boolean(walletsError)}
-              onChange={(event) => onWalletChange(event.target.value)}
-              aria-label="Pilih dompet"
-              className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-ink outline-none disabled:text-ink-2"
-            >
-              <option value="">
-                {walletsLoading
-                  ? "Memuat dompet..."
-                  : walletsError
-                    ? "Dompet tidak tersedia"
-                    : `Semua dompet (${available.length})`}
-              </option>
-              {available.map((wallet) => (
-                <option key={wallet.id} value={wallet.id}>
-                  {wallet.archivedAt ? `${wallet.name}, Arsip` : wallet.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <fieldset className="w-full space-y-2 rounded-2xl border border-card-border bg-card p-3 sm:flex-1">
+            <legend className="px-1 text-sm font-semibold text-ink">Pilih dompet</legend>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-medium text-ink-2" aria-live="polite">
+                {walletsLoading ? "Memuat dompet..." : walletIds.length ? `${walletIds.length} dipilih` : `Semua dompet (${available.length})`}
+              </span>
+              {walletIds.length ? (
+                <button
+                  type="button"
+                  onClick={() => onWalletChange([])}
+                  className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2"
+                >
+                  Hapus pilihan
+                </button>
+              ) : null}
+            </div>
+            <label className="block">
+              <span className="sr-only">Cari dompet laporan</span>
+              <input
+                type="search"
+                value={walletSearch}
+                onChange={(event) => setWalletSearch(event.target.value)}
+                placeholder="Cari nama dompet"
+                disabled={walletsLoading || Boolean(walletsError)}
+                className="min-h-11 w-full rounded-xl border border-input-border bg-card px-3 text-sm text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15 disabled:opacity-60"
+              />
+            </label>
+            <div className="max-h-48 space-y-1 overflow-y-auto" role="group" aria-label="Daftar dompet laporan">
+              {walletsLoading ? (
+                <p className="px-2 py-3 text-sm text-ink-3">Memuat daftar dompet...</p>
+              ) : walletsError ? (
+                <p className="px-2 py-3 text-sm text-danger">Dompet tidak tersedia.</p>
+              ) : searchedWallets.length ? searchedWallets.map((wallet) => (
+                <label key={wallet.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 text-sm text-ink hover:bg-blue-wash">
+                  <input
+                    type="checkbox"
+                    checked={walletIds.includes(wallet.id)}
+                    onChange={(event) => onWalletChange(event.target.checked
+                      ? [...walletIds, wallet.id]
+                      : walletIds.filter((id) => id !== wallet.id))}
+                    className="h-4 w-4 accent-blue"
+                  />
+                  <span className="min-w-0 flex-1 truncate">{wallet.name}</span>
+                  <span className="shrink-0 text-xs text-ink-3">
+                    {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}{wallet.archivedAt ? ", Arsip" : ""}
+                  </span>
+                </label>
+              )) : (
+                <p className="px-2 py-3 text-sm text-ink-3">
+                  {available.length ? "Tidak ada dompet yang cocok." : "Belum ada dompet untuk cakupan ini."}
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-ink-3">
+              Transfer antar-dompet yang seluruh sisinya ada di pilihan tidak masuk ke pemasukan atau pengeluaran. Jika sisi pasangannya berada di dompet yang tidak dipilih, transfer dihitung sebagai pemasukan atau pengeluaran sesuai arah pada dompet terpilih.
+            </p>
+          </fieldset>
 
           {canPrint ? (
             <button
@@ -439,7 +405,7 @@ export function MonthlyReport({
               Laporan {monthLabel}
             </h2>
             <BalanceCard report={data} month={month} />
-            <MovementTrace report={data} />
+            <MovementTrace report={data} hasWalletSelection={walletIds.length > 0} />
             {data.transactionCount === 0 ? (
               <Card className="text-center print:hidden">
                 <p className="text-[15px] font-medium text-ink">
@@ -461,7 +427,7 @@ export function MonthlyReport({
                     month,
                     filter: "in",
                     scope,
-                    walletId: walletId || undefined,
+                    walletIds,
                   })}
                 />
                 <BreakdownCard
@@ -475,24 +441,24 @@ export function MonthlyReport({
                     month,
                     filter: "out",
                     scope,
-                    walletId: walletId || undefined,
+                    walletIds,
                   })}
                   actionLabel="Lihat semua pengeluaran"
                 />
               </div>
             )}
             <BalanceMovementChart
-              key={`${month}-${scope}-${walletId || "all"}`}
+              key={`${month}-${scope}-${walletIds.join(",") || "all"}`}
               data={data.dailyBalances}
               monthLabel={monthLabel}
               isCurrentMonth={data.isCurrentMonth}
               scopeLabel={scope === "all" ? "semua" : scope === "shared" ? "bersama" : "pribadi"}
             />
             <GoldReportSection scope={scope} liquidBalanceMinor={data.closingMinor} />
-            <ReportFootnotes report={data} scope={scope} />
+            <ReportFootnotes report={data} scope={scope} walletLabel={walletIds.length ? selectedWallets.map((wallet) => wallet.name).join(", ") : "Semua dompet"} />
           </div>
-          {detailSections.length > 0 ? (
-            <PrintTransactionDetail sections={detailSections} monthLabel={monthLabel} />
+          {historicalLedger ? (
+            <PrintTransactionDetail rows={historicalLedger} monthLabel={monthLabel} />
           ) : null}
         </>
       )}
@@ -534,7 +500,7 @@ function BalanceCard({ report, month }: { report: MonthlyReportDTO; month: strin
   );
 }
 
-function MovementTrace({ report }: { report: MonthlyReportDTO }) {
+function MovementTrace({ report, hasWalletSelection }: { report: MonthlyReportDTO; hasWalletSelection: boolean }) {
   const hasNewWallet = report.newWalletOpeningMinor !== 0;
   const hasTransferIn = report.transferInMinor !== 0;
   const hasTransferOut = report.transferOutMinor !== 0;
@@ -573,11 +539,11 @@ function MovementTrace({ report }: { report: MonthlyReportDTO }) {
       </p>
       {hasTransfer ? (
         <p className="mt-1 text-xs text-ink-3 print:text-[7pt]">
-          {report.wallet
-            ? "Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Baris ini hanya menampilkan sisi dompet terpilih; sisi dompet pasangannya tidak ditampilkan."
+          {hasWalletSelection
+            ? "Transfer antar-dompet yang seluruh sisinya ada di pilihan saling meniadakan. Jika dompet pasangan tidak dipilih, nilainya dihitung sebagai masuk atau keluar sesuai sisi dompet yang dipilih."
             : report.scope === "ALL"
-              ? "Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Semua sisi transfer yang dapat kamu akses ditampilkan."
-              : `Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran. Antar dompet ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}, kedua sisi ditampilkan dan saling meniadakan. Transfer ke cakupan lain hanya menampilkan sisi ${report.scope === "SHARED" ? "Bersama" : "Pribadi"}.`}
+              ? "Transfer antar-dompet yang kedua sisinya dapat diakses saling meniadakan. Transfer dengan sisi pasangan di luar akses hanya menampilkan sisi yang dapat diakses."
+              : `Transfer antar-dompet dalam cakupan ${report.scope === "SHARED" ? "Bersama" : "Pribadi"} saling meniadakan. Transfer dengan sisi pasangan di cakupan lain dihitung pada sisi ${report.scope === "SHARED" ? "Bersama" : "Pribadi"} yang terlihat.`}
         </p>
       ) : null}
     </Card>
@@ -693,18 +659,19 @@ function BreakdownCard({
 function ReportFootnotes({
   report,
   scope,
+  walletLabel,
 }: {
   report: MonthlyReportDTO;
   scope: ReportScope;
+  walletLabel: string;
 }) {
-  const walletLabel = report.wallet?.name ?? "Semua dompet";
   return (
     <div className="space-y-1 px-1 text-xs text-ink-3 print:break-inside-avoid print:space-y-0 print:text-[7pt]">
       <p>
         Dihitung dari {report.transactionCount} transaksi, {longDate(report.periodStart)} sampai{" "}
         {longDate(report.periodEnd)}.
       </p>
-      <p>Transfer antar dompet tidak dihitung sebagai pemasukan atau pengeluaran.</p>
+      <p>Transfer dengan kedua dompet tercakup dalam pilihan tidak mengubah saldo gabungan. Jika dompet pasangan di luar pilihan, transfer dihitung sesuai arahnya.</p>
       <p>
         Cakupan: {scope === "all" ? "Semua" : scope === "shared" ? "Bersama" : "Pribadi"}, {walletLabel}.
       </p>
@@ -721,10 +688,10 @@ function ReportFootnotes({
   report is read on screen.
 */
 function PrintTransactionDetail({
-  sections,
+  rows,
   monthLabel,
 }: {
-  sections: ReportDetailSection[];
+  rows: ReportLedgerRow[];
   monthLabel: string;
 }) {
   return (
@@ -732,71 +699,41 @@ function PrintTransactionDetail({
       <h2 className="text-2xl font-bold text-ink">
         Rincian transaksi {monthLabel}
       </h2>
-      {sections.map((section) => (
-        <div key={section.key} className="mt-6">
-          <h3 className="break-inside-avoid border-t border-row-divider pt-3 text-xs font-semibold uppercase tracking-wider text-ink-3">
-            {section.title}
-          </h3>
-          <ul>
-            {section.rows.map((row) => (
-              <PrintDetailRow key={row.id} row={row} section={section.key} />
-            ))}
-          </ul>
-          <div className="flex items-baseline justify-between gap-3 break-inside-avoid border-t border-row-divider pt-2">
-            <span className="text-sm font-semibold text-ink-2">Subtotal</span>
-            <span
-              className={cn(
-                "whitespace-nowrap text-sm font-semibold tabular-nums",
-                detailAmountColor(section.key),
-              )}
-            >
-              {formatIDR(section.subtotalMinor)}
-            </span>
-          </div>
-        </div>
-      ))}
+      <div className="mt-4 overflow-hidden rounded-xl border border-row-divider">
+        <table className="w-full border-collapse text-left">
+          <thead className="bg-surface-subtle">
+            <tr className="border-b border-row-divider text-xs font-semibold uppercase tracking-wide text-ink-3">
+              <th className="px-2 py-2">Tanggal</th>
+              <th className="px-2 py-2">Transaksi</th>
+              <th className="px-2 py-2 text-right">Nominal (+/−)</th>
+              <th className="px-2 py-2 text-right">Sisa</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => <PrintLedgerRow key={row.id} row={row} />)}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
 
-function PrintDetailRow({
+function PrintLedgerRow({
   row,
-  section,
 }: {
-  row: TransactionDTO;
-  section: ReportDetailSection["key"];
+  row: ReportLedgerRow;
 }) {
-  const transfer = section === "transfer";
+  const amount = row.amountMinor;
   return (
-    <li className="flex items-baseline gap-3 break-inside-avoid border-b border-row-divider py-2">
-      <span className="w-16 shrink-0 text-sm text-ink-3">
-        {formatReportDetailDate(row.occurredAt)}
-      </span>
-      <span className="min-w-0 flex-1 break-words text-sm text-ink">
-        {transfer ? (
-          <span className="inline-flex rounded-full bg-blue-wash px-2 py-0.5 text-xs font-semibold text-blue">
-            {reportDetailDescription(row, true)}
-          </span>
-        ) : (
-          reportDetailDescription(row, false)
-        )}
-      </span>
-      <span
-        className={cn(
-          "shrink-0 whitespace-nowrap text-sm font-semibold tabular-nums",
-          detailAmountColor(section),
-        )}
-      >
-        {formatIDR(row.amountMinor)}
-      </span>
-    </li>
+    <tr className={cn("break-inside-avoid border-b border-row-divider", row.kind === "opening" || row.kind === "closing" ? "bg-surface-subtle font-semibold" : "")}>
+      <td className="whitespace-nowrap px-2 py-2 text-xs text-ink-3">{formatReportDetailDate(row.occurredAt)}</td>
+      <td className="px-2 py-2 text-sm text-ink">{row.description}</td>
+      <td className={cn("whitespace-nowrap px-2 py-2 text-right text-sm font-medium tabular-nums", amount === null ? "text-ink-3" : amount >= 0 ? "text-green" : "text-ink")}>
+        {amount === null ? "—" : `${amount > 0 ? "+" : amount < 0 ? "−" : ""}${formatIDR(Math.abs(amount))}`}
+      </td>
+      <td className="whitespace-nowrap px-2 py-2 text-right text-sm font-semibold tabular-nums text-ink">{formatIDR(row.balanceMinor)}</td>
+    </tr>
   );
-}
-
-function detailAmountColor(section: ReportDetailSection["key"]): string {
-  if (section === "income") return "text-green";
-  if (section === "transfer") return "text-blue";
-  return "text-ink";
 }
 
 function ReportSkeleton() {

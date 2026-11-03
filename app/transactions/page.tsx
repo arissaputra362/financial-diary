@@ -67,7 +67,7 @@ export default async function TransactionsPage({
         initialScope={transactionScope}
         initialWalletIds={view === "active" ? walletIds : undefined}
         initialReportScope={reportScope}
-        initialReportWalletId={view === "ringkasan" && walletIds.length === 1 ? walletIds[0] : undefined}
+        initialReportWalletIds={view === "ringkasan" ? walletIds : undefined}
       />
     </AppShell>
   );

@@ -66,13 +66,14 @@ function netOf(rows: TransactionRecord[]): number {
 }
 
 export function createReportFake(store: DashboardFakeStore): ReportRepository {
-  const scoped = (actor: WalletActor, scope: "PERSONAL" | "SHARING", walletId?: string) =>
+  const scoped = (actor: WalletActor, scope: "PERSONAL" | "SHARING", walletId?: string, walletIds?: string[]) =>
     store.wallets.filter(
       (wallet) =>
         wallet.householdId === actor.householdId &&
         wallet.scope === scope &&
         (scope !== "PERSONAL" || wallet.createdByUserId === actor.userId) &&
-        (!walletId || wallet.id === walletId),
+        (!walletId || wallet.id === walletId) &&
+        (walletIds === undefined || walletIds.includes(wallet.id)),
     );
 
   const hasActiveInPeriod = (walletId: string, start: Date, end: Date) =>
@@ -85,8 +86,8 @@ export function createReportFake(store: DashboardFakeStore): ReportRepository {
     );
 
   return {
-    async listScopedWallets(actor, scope, walletId) {
-      return scoped(actor, scope, walletId).map<ReportWalletRecord>((wallet) => ({
+    async listScopedWallets(actor, scope, walletId, walletIds) {
+      return scoped(actor, scope, walletId, walletIds).map<ReportWalletRecord>((wallet) => ({
         id: wallet.id,
         name: wallet.name,
         scope: wallet.scope,
@@ -152,8 +153,8 @@ export function createReportFake(store: DashboardFakeStore): ReportRepository {
       };
     },
 
-    async aggregate(actor, { scope, walletId, period, previous }): Promise<ReportAggregate> {
-      const wallets = scoped(actor, scope, walletId);
+    async aggregate(actor, { scope, walletId, walletIds, transferWalletIds, period, previous }): Promise<ReportAggregate> {
+      const wallets = scoped(actor, scope, walletId, walletIds);
       const periodWallets = wallets.filter(
         (wallet) =>
           wallet.createdAt.getTime() <= period.end.getTime() ||
@@ -198,11 +199,18 @@ export function createReportFake(store: DashboardFakeStore): ReportRepository {
       const moneyOutMinor = periodTx
         .filter((row) => row.transferGroupId === null && row.type === "MONEY_OUT")
         .reduce((total, row) => total + row.amountMinor, 0);
+      const isCrossingTransfer = (row: TransactionRecord, selection: Set<string>) =>
+        row.transferGroupId !== null && !store.transactions.some((peer) =>
+          peer.id !== row.id && peer.transferGroupId === row.transferGroupId && peer.deletedAt === null && selection.has(peer.walletId),
+        );
+      const transferSelection = transferWalletIds === undefined ? null : new Set(transferWalletIds);
       const transferInMinor = periodTx
-        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_IN")
+        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_IN" &&
+          (transferSelection === null || isCrossingTransfer(row, transferSelection)))
         .reduce((total, row) => total + row.amountMinor, 0);
       const transferOutMinor = periodTx
-        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_OUT")
+        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_OUT" &&
+          (transferSelection === null || isCrossingTransfer(row, transferSelection)))
         .reduce((total, row) => total + row.amountMinor, 0);
 
       const prevOpening =
@@ -220,10 +228,12 @@ export function createReportFake(store: DashboardFakeStore): ReportRepository {
         .filter((row) => row.transferGroupId === null && row.type === "MONEY_OUT")
         .reduce((total, row) => total + row.amountMinor, 0);
       const prevTransferIn = prevTx
-        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_IN")
+        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_IN" &&
+          (transferSelection === null || isCrossingTransfer(row, transferSelection)))
         .reduce((total, row) => total + row.amountMinor, 0);
       const prevTransferOut = prevTx
-        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_OUT")
+        .filter((row) => row.transferGroupId !== null && row.type === "MONEY_OUT" &&
+          (transferSelection === null || isCrossingTransfer(row, transferSelection)))
         .reduce((total, row) => total + row.amountMinor, 0);
 
       const categoryMap = new Map<string, ReportCategorySum>();
@@ -286,6 +296,8 @@ export function createReportFake(store: DashboardFakeStore): ReportRepository {
           closingMinor: previousClosing,
           moneyInMinor: prevMoneyIn,
           moneyOutMinor: prevMoneyOut,
+          transferInMinor: prevTransferIn,
+          transferOutMinor: prevTransferOut,
         },
       };
     },

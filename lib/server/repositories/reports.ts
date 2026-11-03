@@ -46,6 +46,8 @@ export interface ReportAggregate {
     closingMinor: number;
     moneyInMinor: number;
     moneyOutMinor: number;
+    transferInMinor: number;
+    transferOutMinor: number;
   };
 }
 
@@ -54,6 +56,7 @@ export interface ReportRepository {
     actor: WalletActor,
     scope: "PERSONAL" | "SHARING",
     walletId?: string,
+    walletIds?: string[],
   ): Promise<ReportWalletRecord[]>;
   listVisibleWalletIds(
     actor: WalletActor,
@@ -73,6 +76,8 @@ export interface ReportRepository {
     query: {
       scope: "PERSONAL" | "SHARING";
       walletId?: string;
+      walletIds?: string[];
+      transferWalletIds?: string[];
       period: ReportPeriod;
       previous: ReportPeriod;
     },
@@ -122,7 +127,7 @@ function minor(value: string | null | undefined): number {
 
 export function createReportRepository(db: Db): ReportRepository {
   return {
-    async listScopedWallets(actor, scope, walletId) {
+    async listScopedWallets(actor, scope, walletId, walletIds) {
       const rows = await db.wallet.findMany({
         where: {
           householdId: actor.householdId,
@@ -130,6 +135,7 @@ export function createReportRepository(db: Db): ReportRepository {
             ? { scope: "SHARING" as const }
             : { scope: "PERSONAL" as const, createdByUserId: actor.userId }),
           ...(walletId ? { id: walletId } : {}),
+          ...(walletIds ? { id: { in: walletIds } } : {}),
         },
         select: {
           id: true,
@@ -256,7 +262,11 @@ export function createReportRepository(db: Db): ReportRepository {
       };
     },
 
-    async aggregate(actor, { scope, walletId, period, previous }) {
+    async aggregate(actor, { scope, walletId, walletIds, transferWalletIds, period, previous }) {
+      const walletIdList = walletIds?.join(",") ?? "";
+      const transferWalletIdList = transferWalletIds?.join(",") ?? "";
+      const hasWalletIdSelection = walletIds !== undefined;
+      const hasTransferWalletSelection = transferWalletIds !== undefined;
       const [totalsRows, categoryRows, dailyRows] = await Promise.all([
         db.$queryRaw<TotalRow[]>`
           WITH scoped_wallets AS (
@@ -265,6 +275,7 @@ export function createReportRepository(db: Db): ReportRepository {
             WHERE w.household_id = ${actor.householdId}::uuid
               AND w.scope::text = ${scope}
               AND (${walletId ?? null}::uuid IS NULL OR w.id = ${walletId ?? null}::uuid)
+              AND (${!hasWalletIdSelection} OR w.id::text = ANY(string_to_array(${walletIdList}, ',')))
               AND (${scope} <> 'PERSONAL' OR w.created_by_user_id = ${actor.userId}::uuid)
           ),
           period_wallets AS (
@@ -338,8 +349,24 @@ export function createReportRepository(db: Db): ReportRepository {
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_OUT'
                                 THEN t.amount_minor END), 0)::numeric AS money_out,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_IN'
+                                AND (${!hasTransferWalletSelection} OR NOT EXISTS (
+                                  SELECT 1 FROM "transaction" peer
+                                  WHERE peer.household_id = t.household_id
+                                    AND peer.transfer_group_id = t.transfer_group_id
+                                    AND peer.id <> t.id
+                                    AND peer.deleted_at IS NULL
+                                    AND peer.wallet_id::text = ANY(string_to_array(${transferWalletIdList}, ','))
+                                ))
                                 THEN t.amount_minor END), 0)::numeric AS transfer_in,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_OUT'
+                                AND (${!hasTransferWalletSelection} OR NOT EXISTS (
+                                  SELECT 1 FROM "transaction" peer
+                                  WHERE peer.household_id = t.household_id
+                                    AND peer.transfer_group_id = t.transfer_group_id
+                                    AND peer.id <> t.id
+                                    AND peer.deleted_at IS NULL
+                                    AND peer.wallet_id::text = ANY(string_to_array(${transferWalletIdList}, ','))
+                                ))
                                 THEN t.amount_minor END), 0)::numeric AS transfer_out,
               COUNT(*)::numeric AS tx_count
             FROM period_tx t
@@ -367,8 +394,24 @@ export function createReportRepository(db: Db): ReportRepository {
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NULL AND t.type::text = 'MONEY_OUT'
                                 THEN t.amount_minor END), 0)::numeric AS money_out,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_IN'
+                                AND (${!hasTransferWalletSelection} OR NOT EXISTS (
+                                  SELECT 1 FROM "transaction" peer
+                                  WHERE peer.household_id = t.household_id
+                                    AND peer.transfer_group_id = t.transfer_group_id
+                                    AND peer.id <> t.id
+                                    AND peer.deleted_at IS NULL
+                                    AND peer.wallet_id::text = ANY(string_to_array(${transferWalletIdList}, ','))
+                                ))
                                 THEN t.amount_minor END), 0)::numeric AS transfer_in,
               COALESCE(SUM(CASE WHEN t.transfer_group_id IS NOT NULL AND t.type::text = 'MONEY_OUT'
+                                AND (${!hasTransferWalletSelection} OR NOT EXISTS (
+                                  SELECT 1 FROM "transaction" peer
+                                  WHERE peer.household_id = t.household_id
+                                    AND peer.transfer_group_id = t.transfer_group_id
+                                    AND peer.id <> t.id
+                                    AND peer.deleted_at IS NULL
+                                    AND peer.wallet_id::text = ANY(string_to_array(${transferWalletIdList}, ','))
+                                ))
                                 THEN t.amount_minor END), 0)::numeric AS transfer_out,
               COUNT(*)::numeric AS tx_count
             FROM prev_tx t
@@ -407,6 +450,7 @@ export function createReportRepository(db: Db): ReportRepository {
             WHERE w.household_id = ${actor.householdId}::uuid
               AND w.scope::text = ${scope}
               AND (${walletId ?? null}::uuid IS NULL OR w.id = ${walletId ?? null}::uuid)
+              AND (${!hasWalletIdSelection} OR w.id::text = ANY(string_to_array(${walletIdList}, ',')))
               AND (${scope} <> 'PERSONAL' OR w.created_by_user_id = ${actor.userId}::uuid)
           ),
           period_wallets AS (
@@ -437,6 +481,7 @@ export function createReportRepository(db: Db): ReportRepository {
             WHERE w.household_id = ${actor.householdId}::uuid
               AND w.scope::text = ${scope}
               AND (${walletId ?? null}::uuid IS NULL OR w.id = ${walletId ?? null}::uuid)
+              AND (${!hasWalletIdSelection} OR w.id::text = ANY(string_to_array(${walletIdList}, ',')))
               AND (${scope} <> 'PERSONAL' OR w.created_by_user_id = ${actor.userId}::uuid)
           ),
           period_wallets AS (
@@ -542,6 +587,8 @@ export function createReportRepository(db: Db): ReportRepository {
             prevOpening + prevNewOpening + prevMoneyIn - prevMoneyOut + prevTransferIn - prevTransferOut,
           moneyInMinor: prevMoneyIn,
           moneyOutMinor: prevMoneyOut,
+          transferInMinor: prevTransferIn,
+          transferOutMinor: prevTransferOut,
         },
       };
     },

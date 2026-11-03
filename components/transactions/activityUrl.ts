@@ -23,6 +23,8 @@ export interface ActivityHrefInput {
   walletId?: string;
   /** Active tab wallet selection; repeated in the URL to support multi-select. */
   walletIds?: string[];
+  /** Ringkasan lengkap wallet selection; repeated in the URL. */
+  reportWalletIds?: string[];
   /** Ringkasan scope; `all` is the default and is omitted from the URL. */
   reportScope?: "all" | "shared" | "personal";
 }
@@ -37,6 +39,7 @@ export function activityHref({
   scope = "all",
   walletId,
   walletIds,
+  reportWalletIds,
   reportScope = "all",
 }: ActivityHrefInput): string {
   const params = new URLSearchParams();
@@ -55,7 +58,10 @@ export function activityHref({
   }
   if (view === "ringkasan" && reportScope !== "all") params.set("scope", reportScope);
   if (view === "active") activeWalletIds.forEach((id) => params.append("wallet", id));
-  else if (view === "ringkasan" && walletId) params.set("wallet", walletId);
+  else if (view === "ringkasan") {
+    const selectedReportWalletIds = reportWalletIds?.length ? reportWalletIds : walletId ? [walletId] : [];
+    selectedReportWalletIds.forEach((id) => params.append("wallet", id));
+  }
   if (add) params.set("add", "1");
   return `/transactions?${params.toString()}`;
 }

@@ -98,11 +98,7 @@ export function ActivityMonthSummaryCard({
           Lihat ringkasan lengkap
           <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </button>
-      ) : (
-        <p className="px-2 pt-2 text-xs text-ink-3">
-          Ringkasan lengkap tersedia saat memilih semua dompet atau satu dompet.
-        </p>
-      )}
+      ) : null}
     </section>
   );
 }

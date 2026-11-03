@@ -17,7 +17,13 @@ export async function GET(request: Request): Promise<NextResponse> {
     const session = await authenticatedRequest({ approvedOnly: true });
     const query = parseReportQuery(new URL(request.url).searchParams);
     const actor = { userId: session.userId, householdId: session.householdId, role: session.role };
-    const report = await session.reports.get(actor, query);
+    const report = query.scope !== undefined || query.walletIds?.length
+      ? await session.reports.getSelection(actor, {
+          month: query.month,
+          scope: query.scope ?? "all",
+          walletIds: query.walletIds ?? (query.walletId ? [query.walletId] : []),
+        })
+      : await session.reports.get(actor, query);
     const response = NextResponse.json(report);
     await setSessionCookie(response, session.sessionId, session.userId);
     return response;

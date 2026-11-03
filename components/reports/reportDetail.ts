@@ -6,7 +6,7 @@
 
 import { categoryLabel } from "@/components/transactions/categories";
 import { mergeActivityRows } from "@/components/transactions/activityRows";
-import type { TransactionDTO, TransactionListDTO } from "@/types/api";
+import type { MonthlyReportDTO, TransactionDTO, TransactionListDTO, WalletDTO } from "@/types/api";
 
 export type ReportDetailScope = "all" | "shared" | "personal";
 export type ReportDetailSectionKey = "income" | "expense" | "transfer";
@@ -30,6 +30,15 @@ export interface ReportDetailGroups {
   income: TransactionDTO[];
   expense: TransactionDTO[];
   transfer: TransactionDTO[];
+}
+
+export interface ReportLedgerRow {
+  id: string;
+  occurredAt: string;
+  description: string;
+  amountMinor: number | null;
+  balanceMinor: number;
+  kind: "opening" | "transaction" | "wallet-opening" | "closing";
 }
 
 /** A-39 rows null the wallet and source because the other transfer leg is private. */
@@ -83,9 +92,18 @@ export function groupReportDetailRows(
   scope: ReportDetailScope,
 ): ReportDetailGroups {
   const groups: ReportDetailGroups = { income: [], expense: [], transfer: [] };
-  for (const row of rows) {
-    if (!belongsToReportScope(row, scope)) continue;
-    if (isReportTransferRow(row)) groups.transfer.push(row);
+  const scopedRows = rows.filter((row) => belongsToReportScope(row, scope));
+  const groupCounts = new Map<string, number>();
+  for (const row of scopedRows) {
+    if (row.transferGroupId) groupCounts.set(row.transferGroupId, (groupCounts.get(row.transferGroupId) ?? 0) + 1);
+  }
+  for (const row of scopedRows) {
+    if (isReportTransferRow(row)) {
+      if (row.transferGroupId && (groupCounts.get(row.transferGroupId) ?? 0) > 1) continue;
+      if (row.type === "MONEY_IN") groups.income.push(row);
+      else if (row.type === "MONEY_OUT") groups.expense.push(row);
+      else groups.transfer.push(row);
+    }
     else if (row.type === "MONEY_IN") groups.income.push(row);
     else if (row.type === "MONEY_OUT") groups.expense.push(row);
   }
@@ -189,4 +207,56 @@ export function formatReportDetailDate(occurredAt: string): string {
 export function reportDetailDescription(row: TransactionDTO, transfer: boolean): string {
   if (transfer) return "Transfer";
   return row.merchant ?? row.note ?? categoryLabel(row.category);
+}
+
+/** Build a chronological, running-balance ledger from the report's visible rows. */
+export function buildReportHistoricalLedger(
+  rows: TransactionDTO[],
+  scope: ReportDetailScope,
+  report: MonthlyReportDTO,
+  wallets: WalletDTO[],
+): ReportLedgerRow[] {
+  const groups = groupReportDetailRows(rows, scope);
+  const transactions = [...groups.income, ...groups.expense].map((row) => ({
+    id: row.id,
+    occurredAt: row.occurredAt,
+    description: reportDetailDescription(row, isReportTransferRow(row)),
+    amountMinor: row.type === "MONEY_IN" ? row.amountMinor : -row.amountMinor,
+    kind: "transaction" as const,
+  }));
+  const walletOpenings = wallets
+    .filter((wallet) => wallet.openingBalanceMinor !== 0 && wallet.createdAt >= report.periodStart && wallet.createdAt <= report.periodEnd)
+    .map((wallet) => ({
+      id: `wallet-opening-${wallet.id}`,
+      occurredAt: wallet.createdAt,
+      description: `Saldo awal dompet ${wallet.name}`,
+      amountMinor: wallet.openingBalanceMinor,
+      kind: "wallet-opening" as const,
+    }));
+
+  const events = [...transactions, ...walletOpenings].sort((left, right) =>
+    left.occurredAt.localeCompare(right.occurredAt) || left.id.localeCompare(right.id),
+  );
+  let balanceMinor = report.openingMinor;
+  const ledger: ReportLedgerRow[] = [{
+    id: "report-opening",
+    occurredAt: report.periodStart,
+    description: "Saldo awal",
+    amountMinor: null,
+    balanceMinor,
+    kind: "opening",
+  }];
+  for (const event of events) {
+    balanceMinor += event.amountMinor;
+    ledger.push({ ...event, balanceMinor });
+  }
+  ledger.push({
+    id: "report-closing",
+    occurredAt: report.periodEnd,
+    description: "Saldo akhir",
+    amountMinor: null,
+    balanceMinor: report.closingMinor,
+    kind: "closing",
+  });
+  return ledger;
 }

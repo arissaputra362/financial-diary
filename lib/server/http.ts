@@ -245,7 +245,12 @@ export function parseBudgetQuery(searchParams: URLSearchParams): BudgetQuery {
 
 /** GET /api/reports/monthly query (feat-reporting). */
 export function parseReportQuery(searchParams: URLSearchParams): MonthlyReportQuery {
-  const result = monthlyReportQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+  const values = Object.fromEntries(searchParams.entries());
+  const walletIds = searchParams.getAll("walletId");
+  const result = monthlyReportQuerySchema.safeParse({
+    ...values,
+    ...(walletIds.length > 1 ? { walletIds, walletId: undefined } : {}),
+  });
   if (!result.success) throw validationError(result.error);
   return result.data;
 }
