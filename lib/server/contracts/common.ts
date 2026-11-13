@@ -67,6 +67,7 @@ export const OCR_ERROR_CODES = [
   "OCR_RATE_LIMITED",
   "OCR_INVALID_OUTPUT",
   "OCR_MODEL_UNAVAILABLE",
+  "OCR_EXCHANGE_RATE_UNAVAILABLE",
 ] as const;
 
 export type OcrErrorCode = (typeof OCR_ERROR_CODES)[number];

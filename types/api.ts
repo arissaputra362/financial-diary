@@ -281,7 +281,8 @@ export type OcrErrorCode =
   | "OCR_TIMEOUT"
   | "OCR_RATE_LIMITED"
   | "OCR_INVALID_OUTPUT"
-  | "OCR_MODEL_UNAVAILABLE";
+  | "OCR_MODEL_UNAVAILABLE"
+  | "OCR_EXCHANGE_RATE_UNAVAILABLE";
 
 /**
  * T-012 retry control errors (envelope `error.code`, HTTP 409). These are not
@@ -302,7 +303,13 @@ export type OcrMissingField =
 export type OcrDraftDTO = {
   merchant: string | null;
   totalAmountMinor: number | null;
-  currencyCode: "IDR" | null;
+  /** Settlement currency after conversion. */
+  currencyCode: string | null;
+  /** Original currency and amount when the receipt was not denominated in IDR. */
+  originalCurrencyCode?: string | null;
+  originalAmountMinor?: number | null;
+  exchangeRate?: number | null;
+  exchangeRateDate?: string | null;
   /** Date-only `YYYY-MM-DD`; converted to 12:00 Asia/Jakarta on save (D-14). */
   occurredAt: string | null;
   category: string | null;

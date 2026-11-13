@@ -40,7 +40,15 @@ export const ocrDraftSchema = z.object({
     .max(2_147_483_647, "Jumlah terlalu besar.")
     .refine(hasAtMostTwoDecimals, "Jumlah maksimal dua angka desimal.")
     .nullable(),
-  currencyCode: z.enum(["IDR"]).nullable(),
+  /** ISO 4217 code printed on the receipt. The ledger currently settles in IDR. */
+  currencyCode: z
+    .string()
+    .regex(/^[A-Z]{3}$/, "Kode mata uang tidak valid.")
+    .nullable(),
+  originalCurrencyCode: z.string().regex(/^[A-Z]{3}$/, "Kode mata uang tidak valid.").nullable().optional(),
+  originalAmountMinor: z.number().positive().nullable().optional(),
+  exchangeRate: z.number().positive().nullable().optional(),
+  exchangeRateDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   occurredAt: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Tanggal tidak valid.")

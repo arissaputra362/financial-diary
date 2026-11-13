@@ -56,6 +56,9 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
   const [merchant, setMerchant] = useState("");
   const [note, setNote] = useState("");
   const [amountDigits, setAmountDigits] = useState("");
+  const [currencyCode, setCurrencyCode] = useState<string | null>("IDR");
+  const [originalAmountMinor, setOriginalAmountMinor] = useState<number | null>(null);
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const [occurredAt, setOccurredAt] = useState(todayJakarta());
   const [category, setCategory] = useState<string | null>(null);
   const [wallet, setWallet] = useState<WalletDTO | null>(null);
@@ -178,6 +181,9 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
     setMerchant(draft.merchant ?? "");
     setNote(draft.notes ?? "");
     setAmountDigits(draft.totalAmountMinor !== null ? String(draft.totalAmountMinor) : "");
+    setCurrencyCode(draft.originalCurrencyCode ?? draft.currencyCode);
+    setOriginalAmountMinor(draft.originalAmountMinor ?? null);
+    setExchangeRate(draft.exchangeRate ?? null);
     setOccurredAt(draft.occurredAt ?? todayJakarta());
     /*
       OCR supports money in/out only (transfer hidden). An `income` suggestion
@@ -783,7 +789,16 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
               className="w-full min-w-0 bg-transparent text-2xl font-bold tabular-nums text-ink outline-none placeholder:text-placeholder/60"
             />
           </div>
-          {amountDigits ? <p className="text-xs text-ink-3">Terbaca: {formatIDR(amountMinor)}</p> : null}
+          {amountDigits ? (
+            <p className="text-xs text-ink-3">
+              Hasil konversi: {formatIDR(amountMinor)}
+            </p>
+          ) : null}
+          {currencyCode && currencyCode !== "IDR" && originalAmountMinor !== null && exchangeRate !== null ? (
+            <p className="mt-1 text-xs text-warning" role="alert">
+              {currencyCode} {originalAmountMinor} dikonversi ke IDR dengan kurs {exchangeRate.toLocaleString("id-ID")} pada tanggal transaksi.
+            </p>
+          ) : null}
         </Field>
 
         <Field
@@ -1045,6 +1060,8 @@ function failureMessageFor(code: OcrErrorCode | null): string {
       return "Layanan baca struk sedang tidak tersedia.";
     case "OCR_INVALID_OUTPUT":
       return "Tulisan di struk belum bisa dibaca dengan jelas.";
+    case "OCR_EXCHANGE_RATE_UNAVAILABLE":
+      return "Kurs historis mata uang struk tidak tersedia untuk tanggal transaksi.";
     default:
       return "Struk ini belum bisa diproses.";
   }

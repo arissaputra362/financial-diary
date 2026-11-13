@@ -12,6 +12,7 @@ import {
   type FakeStore,
 } from "../testing/fakes";
 import type { OcrExtraction } from "../providers/ocr";
+import type { ExchangeRateProvider } from "../providers/exchange-rates";
 
 const HOUSEHOLD = "11111111-1111-4111-8111-111111111111";
 const USER = "33333333-3333-4333-8333-333333333333";
@@ -64,12 +65,21 @@ function setup(
   extraction: OcrExtraction | Error,
   blobFail = false,
   normalizer: ImageNormalizer = createFakeNormalizer("pass").normalizer,
+  exchangeRates?: ExchangeRateProvider,
 ) {
   const store = createFakeStore();
   const { repos, transaction } = createFakeLedger(store);
   const { provider, extract } = createFakeOcrProvider(extraction);
   const { store: blob, put } = createFakeBlobStore(blobFail);
-  const service = new OcrService(repos, transaction, new IdempotencyService(transaction), provider, blob, normalizer);
+  const service = new OcrService(
+    repos,
+    transaction,
+    new IdempotencyService(transaction),
+    provider,
+    blob,
+    normalizer,
+    exchangeRates,
+  );
   return { service, store: store as FakeStore, extract, put };
 }
 
@@ -92,6 +102,48 @@ describe("OcrService", () => {
     expect(ctx.store.receipts).toHaveLength(1);
     expect(ctx.store.receipts[0]?.storageKey).toContain(HOUSEHOLD);
     expect(ctx.store.order).not.toContain("transaction.create");
+  });
+
+  it("converts a foreign receipt to IDR using the transaction date rate", async () => {
+    const getIdrRate = vi.fn(async (currencyCode: string, date: string) => {
+      expect(currencyCode).toBe("USD");
+      expect(date).toBe("2026-10-01");
+      return 16_000;
+    });
+    const isolated = setup(
+      {
+        ok: true,
+        model: "fake",
+        raw: {
+          ...draft,
+          totalAmountMinor: 12.5,
+          currencyCode: "USD",
+          occurredAt: "2026-10-01",
+        },
+      },
+      false,
+      createFakeNormalizer("pass").normalizer,
+      { getIdrRate },
+    );
+
+    const result = await isolated.service.upload(actor, file());
+    const body = result.body as {
+      draft: {
+        totalAmountMinor: number;
+        currencyCode: string;
+        originalCurrencyCode: string;
+        originalAmountMinor: number;
+        exchangeRate: number;
+        exchangeRateDate: string;
+      };
+    };
+    expect(body.draft.totalAmountMinor).toBe(200_000);
+    expect(body.draft.currencyCode).toBe("IDR");
+    expect(body.draft.originalCurrencyCode).toBe("USD");
+    expect(body.draft.originalAmountMinor).toBe(12.5);
+    expect(body.draft.exchangeRate).toBe(16_000);
+    expect(body.draft.exchangeRateDate).toBe("2026-10-01");
+    expect(getIdrRate).toHaveBeenCalledOnce();
   });
 
   it("maps provider failures to OCR namespace codes with HTTP 200 (AC-F3-5)", async () => {

@@ -29,6 +29,7 @@ import type { LedgerRepositories, OcrJobRecord, ReceiptRecord } from "../reposit
 import type { OcrDraftDTO, OcrJobDTO, OcrMissingField } from "@/types/api";
 import type { BlobStore } from "../providers/blob";
 import type { OcrExtraction, OcrProvider } from "../providers/ocr";
+import { createFrankfurterRateProvider, roundMoney, type ExchangeRateProvider } from "../providers/exchange-rates";
 import { computeRequestHash, IdempotencyService } from "./idempotency";
 import { createSharpImageNormalizer, type ImageNormalizer } from "./image-normalization";
 import type { LedgerTransaction, ServiceResult } from "./types";
@@ -61,6 +62,7 @@ export class OcrService {
     private readonly provider: OcrProvider,
     private readonly blob: BlobStore,
     private readonly normalizer: ImageNormalizer = createSharpImageNormalizer(),
+    private readonly exchangeRates: ExchangeRateProvider = createFrankfurterRateProvider(),
   ) {}
 
   async upload(actor: OcrActor, file: OcrUploadFile, idempotencyKey?: string): Promise<ServiceResult> {
@@ -183,15 +185,24 @@ export class OcrService {
       return { status: 200, body: { job: toOcrJobDTO(job, sharedWithHousehold), draft: null } };
     }
 
-    const draft = normalizeDraft(parsed.data);
+    const draft = await this.convertDraft(parsed.data);
+    if (!draft.ok) {
+      const job = await repos.ocrJob.update(created.id, {
+        status: "FAILED",
+        errorCode: draft.errorCode,
+        model: extraction.model,
+        completedAt: new Date(),
+      });
+      return { status: 200, body: { job: toOcrJobDTO(job, sharedWithHousehold), draft: null } };
+    }
     const job = await repos.ocrJob.update(created.id, {
       status: "SUCCEEDED",
       model: extraction.model,
-      resultJson: draft,
-      confidence: draft.confidence,
+      resultJson: draft.value,
+      confidence: draft.value.confidence,
       completedAt: new Date(),
     });
-    return { status: 200, body: { job: toOcrJobDTO(job, sharedWithHousehold), draft } };
+    return { status: 200, body: { job: toOcrJobDTO(job, sharedWithHousehold), draft: draft.value } };
   }
 
   /**
@@ -266,15 +277,24 @@ export class OcrService {
       return { status: 200, body: { job: toOcrJobDTO(job, false), draft: null } };
     }
 
-    const draft = normalizeDraft(parsed.data);
+    const draft = await this.convertDraft(parsed.data);
+    if (!draft.ok) {
+      const job = await repos.ocrJob.update(created.id, {
+        status: "FAILED",
+        errorCode: draft.errorCode,
+        model: extraction.model,
+        completedAt: new Date(),
+      });
+      return { status: 200, body: { job: toOcrJobDTO(job, false), draft: null } };
+    }
     const job = await repos.ocrJob.update(created.id, {
       status: "SUCCEEDED",
       model: extraction.model,
-      resultJson: draft,
-      confidence: draft.confidence,
+      resultJson: draft.value,
+      confidence: draft.value.confidence,
       completedAt: new Date(),
     });
-    return { status: 200, body: { job: toOcrJobDTO(job, false), draft } };
+    return { status: 200, body: { job: toOcrJobDTO(job, false), draft: draft.value } };
   }
 
   /**
@@ -341,6 +361,45 @@ export class OcrService {
     } catch {
       /* Fail-closed: provider crash is a model-unavailable condition, not a 500. */
       return { ok: false, errorCode: "OCR_MODEL_UNAVAILABLE" };
+    }
+  }
+
+  private async convertDraft(raw: OcrDraft): Promise<
+    | { ok: true; value: OcrDraftDTO }
+    | { ok: false; errorCode: "OCR_EXCHANGE_RATE_UNAVAILABLE" }
+  > {
+    const draft = normalizeDraft(raw);
+    const sourceCurrency = draft.currencyCode;
+    if (
+      !sourceCurrency ||
+      sourceCurrency === "IDR"
+    ) {
+      return { ok: true, value: draft };
+    }
+    if (draft.totalAmountMinor === null || !draft.occurredAt) {
+      return { ok: false, errorCode: "OCR_EXCHANGE_RATE_UNAVAILABLE" };
+    }
+
+    try {
+      const exchangeRate = await this.exchangeRates.getIdrRate(sourceCurrency, draft.occurredAt);
+      const convertedAmount = roundMoney(draft.totalAmountMinor * exchangeRate);
+      if (!Number.isFinite(convertedAmount) || convertedAmount <= 0 || convertedAmount > 2_147_483_647) {
+        return { ok: false, errorCode: "OCR_EXCHANGE_RATE_UNAVAILABLE" };
+      }
+      return {
+        ok: true,
+        value: {
+          ...draft,
+          currencyCode: "IDR",
+          originalCurrencyCode: sourceCurrency,
+          originalAmountMinor: draft.totalAmountMinor,
+          exchangeRate,
+          exchangeRateDate: draft.occurredAt,
+          totalAmountMinor: convertedAmount,
+        },
+      };
+    } catch {
+      return { ok: false, errorCode: "OCR_EXCHANGE_RATE_UNAVAILABLE" };
     }
   }
 
@@ -484,6 +543,10 @@ export function normalizeDraft(raw: OcrDraft): OcrDraftDTO {
     merchant,
     totalAmountMinor,
     currencyCode: raw.currencyCode,
+    originalCurrencyCode: raw.originalCurrencyCode ?? null,
+    originalAmountMinor: raw.originalAmountMinor ?? null,
+    exchangeRate: raw.exchangeRate ?? null,
+    exchangeRateDate: raw.exchangeRateDate ?? null,
     occurredAt,
     category,
     taxAmountMinor: raw.taxAmountMinor,

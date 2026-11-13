@@ -67,9 +67,14 @@ describe("ocrDraftSchema", () => {
     expect(ocrDraftSchema.safeParse({ ...validDraft, confidence: -0.1 }).success).toBe(false);
   });
 
-  it("rejects unsupported currencies", () => {
+  it("accepts ISO 4217 currencies from foreign receipts", () => {
     const result = ocrDraftSchema.safeParse({ ...validDraft, currencyCode: "USD" });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects malformed currency codes", () => {
+    expect(ocrDraftSchema.safeParse({ ...validDraft, currencyCode: "US" }).success).toBe(false);
+    expect(ocrDraftSchema.safeParse({ ...validDraft, currencyCode: "usd" }).success).toBe(false);
   });
 
   it("rejects invalid dates", () => {
@@ -85,12 +90,13 @@ describe("ocrJobParamsSchema", () => {
 });
 
 describe("OCR error namespace (A-10)", () => {
-  it("exposes exactly the four canonical codes", () => {
+  it("exposes the canonical OCR and exchange-rate codes", () => {
     expect(Array.from(OCR_ERROR_CODES)).toEqual([
       "OCR_TIMEOUT",
       "OCR_RATE_LIMITED",
       "OCR_INVALID_OUTPUT",
       "OCR_MODEL_UNAVAILABLE",
+      "OCR_EXCHANGE_RATE_UNAVAILABLE",
     ]);
     for (const code of OCR_ERROR_CODES) {
       expect(ocrErrorCodeSchema.parse(code)).toBe(code);

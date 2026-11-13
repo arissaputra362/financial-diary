@@ -48,9 +48,11 @@ const RESPONSE_SCHEMA = {
 };
 
 const PROMPT = [
-  "Baca foto struk atau bukti transfer ini dan isi data transaksi.",
+  "Baca foto struk, invoice, atau bukti transfer ini dan isi data transaksi.",
   "Aturan penting:",
-  "- Semua jumlah dalam Rupiah, maksimal dua angka desimal. Contoh Rp64.800,25 diisi 64800.25.",
+  "- Kenali mata uang yang tercetak pada dokumen. Isi currencyCode dengan kode ISO 4217 tiga huruf (contoh IDR, USD, EUR, SGD).",
+  "- Isi totalAmountMinor sebagai angka nominal dalam mata uang yang tercetak, maksimal dua angka desimal. Jangan mengonversi kurs dan jangan menganggap semua nominal sebagai Rupiah.",
+  "- Contoh: USD 64.80 diisi totalAmountMinor 64.8 dan currencyCode USD; Rp64.800,25 diisi 64800.25 dan currencyCode IDR.",
   "- occurredAt hanya tanggal format YYYY-MM-DD.",
   `- category harus salah satu dari: ${CATEGORIES.join(", ")}, atau null bila tidak yakin.`,
   "- confidence angka 0 sampai 1 sesuai keyakinanmu.",
