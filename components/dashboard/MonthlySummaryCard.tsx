@@ -56,6 +56,7 @@ export function MonthlySummaryCard({
 }: MonthlySummaryCardProps) {
   const [scope, setScope] = useState<SummaryScope>("all");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const requestKey = `${month}:${scope}:${refreshToken}`;
   const [state, setState] = useState<SummaryState | null>(null);
   const loaded = state?.key === requestKey ? state : null;
@@ -98,6 +99,7 @@ export function MonthlySummaryCard({
   if (scope !== "all") reportParams.set("scope", scope);
   const reportHref = `/transactions?${reportParams.toString()}`;
   const selectedDay = days.find((day) => day.date === selectedDate) ?? null;
+  const visibleTooltipDate = selectedDate ?? hoveredDate;
 
   return (
     <section
@@ -183,21 +185,22 @@ export function MonthlySummaryCard({
           </div>
 
           {hasSpending ? (
-            <div className="mt-2">
+            <div className="mt-2 pt-8">
               <div
                 role="img"
                 aria-label={`Grafik pengeluaran harian 7 hari terakhir untuk ${scopeNoun}. Total ${formatIDR(chartTotal)}.`}
-                className="flex h-20 items-end gap-1.5"
+                className="flex items-end gap-1.5"
               >
                 {days.map((day) => {
                   const height = Math.max(6, Math.round((day.amountMinor / maxAmount) * 72));
                   const selected = selectedDate === day.date;
+                  const showTooltip = visibleTooltipDate === day.date;
                   return (
                     <div key={day.date} className="group relative flex min-w-0 flex-1 flex-col items-center gap-1">
-                      {selected ? (
+                      {showTooltip ? (
                         <div
                           role="status"
-                          className="pointer-events-none absolute bottom-[calc(100%-1.25rem)] z-10 whitespace-nowrap rounded-lg bg-navy px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg"
+                          className="pointer-events-none absolute bottom-[calc(100%+0.25rem)] z-10 whitespace-nowrap rounded-lg bg-navy px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg"
                         >
                           {formatIDR(day.amountMinor)}
                         </div>
@@ -208,10 +211,10 @@ export function MonthlySummaryCard({
                           aria-label={`${formatDateLabel(`${day.date}T12:00:00+07:00`)}: ${formatIDR(day.amountMinor)}`}
                           aria-pressed={selected}
                           onClick={() => setSelectedDate(selected ? null : day.date)}
-                          onMouseEnter={() => setSelectedDate(day.date)}
-                          onMouseLeave={() => {
-                            if (selectedDate === day.date) setSelectedDate(null);
-                          }}
+                          onMouseEnter={() => setHoveredDate(day.date)}
+                          onMouseLeave={() => setHoveredDate(null)}
+                          onFocus={() => setHoveredDate(day.date)}
+                          onBlur={() => setHoveredDate(null)}
                           className={cn(
                             "mx-auto flex w-8 items-end justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 sm:w-9",
                             selected && "bg-surface-subtle",
