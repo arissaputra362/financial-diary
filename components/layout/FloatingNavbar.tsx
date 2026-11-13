@@ -25,6 +25,11 @@ const navItems = [
   { href: "/goals", label: "Tabungan", icon: Target },
 ] as const;
 
+function isNavItemActive(pathname: string, href: string, matchPrefix?: string): boolean {
+  const target = matchPrefix ?? href;
+  return pathname === target || pathname.startsWith(`${target}/`);
+}
+
 export function FloatingNavbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -49,7 +54,7 @@ export function FloatingNavbar() {
       <nav
         aria-label="Navigasi utama"
         data-nav="top"
-        className="flex w-full max-w-6xl items-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-navy px-3 py-2 text-white shadow-floating-nav lg:px-4"
+        className="flex w-full max-w-6xl items-center gap-2 rounded-2xl border border-white/10 bg-navy px-3 py-2 text-white shadow-floating-nav lg:px-4"
       >
         <Link
           href="/home"
@@ -67,12 +72,13 @@ export function FloatingNavbar() {
           </span>
         </Link>
 
-        <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden lg:gap-1">
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto overflow-y-hidden px-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:gap-1">
           {navItems.map((item) => {
-            const isActive =
-              "matchPrefix" in item && item.matchPrefix
-                ? pathname.startsWith(item.matchPrefix)
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = isNavItemActive(
+              pathname,
+              item.href,
+              "matchPrefix" in item ? item.matchPrefix : undefined,
+            );
             const Icon = item.icon;
 
             return (
@@ -108,7 +114,13 @@ export function FloatingNavbar() {
           <Link
             href="/profile"
             aria-label="Buka profil kamu"
-            className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-mint text-xs font-bold text-green"
+            aria-current={pathname === "/profile" ? "page" : undefined}
+            className={cn(
+              "relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors",
+              pathname === "/profile"
+                ? "border-mint bg-mint text-green"
+                : "border-white/10 bg-mint text-green",
+            )}
           >
             <User weight="fill" size={18} aria-hidden="true" />
           </Link>

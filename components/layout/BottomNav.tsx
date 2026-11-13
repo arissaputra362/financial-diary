@@ -15,6 +15,11 @@ type NavItem = {
   matchPrefix?: string;
 };
 
+function isNavItemActive(pathname: string, item: NavItem): boolean {
+  const target = item.matchPrefix ?? item.href;
+  return pathname === target || pathname.startsWith(`${target}/`);
+}
+
 const primaryItems: NavItem[] = [
   { href: "/home", label: "Beranda", icon: House },
   { href: "/budget", label: "Budget", icon: PiggyBank },
@@ -38,7 +43,7 @@ export function BottomNav() {
     open: false,
   });
   const moreOpen = moreState.pathname === pathname && moreState.open;
-  const moreIsActive = moreItems.some((item) => pathname.startsWith(item.href));
+  const moreIsActive = moreItems.some((item) => isNavItemActive(pathname, item));
 
   /*
     The menu is scoped to the pathname it was opened on. A route change makes
@@ -80,9 +85,7 @@ export function BottomNav() {
       >
         {primaryItems.map((item) => {
           const isAdd = item.href.includes("add=1");
-          const isActive = !isAdd && (item.matchPrefix
-            ? pathname.startsWith(item.matchPrefix)
-            : pathname === item.href || pathname.startsWith(`${item.href}/`));
+          const isActive = !isAdd && isNavItemActive(pathname, item);
           const Icon = item.icon;
 
           return (
@@ -132,7 +135,7 @@ export function BottomNav() {
           >
             {moreItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              const isActive = isNavItemActive(pathname, item);
               return (
                 <Link
                   key={item.href}
