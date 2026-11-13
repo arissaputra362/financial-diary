@@ -29,7 +29,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-3xl border p-6 shadow-bento",
+        "rounded-card border p-5 shadow-bento sm:p-6",
         variantClasses[variant],
         className,
       )}

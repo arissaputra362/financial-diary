@@ -99,6 +99,8 @@ Control/status documents (TASK-PLAN, tickets) live outside; see `../tickets/TASK
 
 ## 4. Design System
 
+> **2026-11-11:** the blue-white-green table below is historical. The product owner approved the FinDiary green redesign; the active visual system is `docs/revamp/docs/DESIGN_SYSTEM.md` plus the semantic tokens in `app/globals.css`. Everything in this guide about product behavior, money rules, auth, permissions, and feature parity still applies.
+
 The UI follows a **Bento Box dashboard** style with the PM-approved blue-white-green tokens from `docs/design/01-design-system-tokens.md` (2026-10-20):
 
 | Token | Value | Usage |
@@ -299,3 +301,16 @@ Every feature follows the DDD workflow before any code is written:
 - Do NOT auto-save transactions from OCR without user review.
 - Do NOT create placeholder content that looks real (fake numbers, names, avatars).
 - Do NOT ship UI without running the app and checking all interactive elements.
+- Do NOT run `UPDATE`/`DELETE`/DDL on a shared or dev database without a `WHERE` scoped to your own QA data (a known `household_id`/`user_id`). Check `DATABASE_URL` and the active database first; never change another household's rows.
+
+## FinDiary Revamp Documentation
+
+The redesign package is isolated under `docs/revamp/`. Do not move its files into or replace existing `docs/`, `.agent/`, `.agents/`, or `.claude/` content. Before redesign work, read `docs/revamp/AGENTS.md`, `docs/revamp/README.md`, `docs/revamp/.agent/MASTER_REVAMP_INSTRUCTIONS.md`, and `docs/revamp/PROMPT.md`.
+
+Phase 0 is read-only discovery and audit. Do not begin Phase 0 until the product owner explicitly approves it. After approval, create the eight deliverables listed in `docs/revamp/docs/audit/README.md` under `docs/revamp/docs/audit/`; do not change application source code during Phase 0. The known feature list is not exhaustive. Preserve existing behavior and follow the redesign package's design, data-integrity, responsive, accessibility, and QA documents.
+
+After Phase 0, stop and present the discovery inventory and implementation plan for product-owner review. Do not start Phase 1 or any redesign implementation without separate explicit approval. Existing project instructions above remain in force. If the redesign's visual direction differs from the established design system, document the discrepancy and obtain a product decision before changing it.
+
+### Product-owner visual direction update (2026-11-11)
+
+The product owner approved a total redesign and directed that the previous visual design standard not constrain the new direction. This resolves the design-system decision referenced above; do not request approval merely to replace the old palette or visual system. Existing product behavior, money/data rules, authentication, permissions, privacy, and feature parity remain protected. Phase 0 is complete in docs/revamp/docs/audit/; Phase 1 still requires separate explicit approval.

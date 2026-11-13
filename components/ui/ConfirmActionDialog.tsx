@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 
 type ConfirmActionDialogProps = {
@@ -27,17 +28,18 @@ export function ConfirmActionDialog({
   onConfirm,
 }: ConfirmActionDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, panelRef, () => {
+  const { closing, requestClose } = useAnimatedClose(() => {
     if (!busy) onCancel();
   });
+  useDialogFocusTrap(open, panelRef, requestClose);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-scrim/45 p-0 sm:items-center sm:p-4"
+      className={`modal-overlay fixed inset-0 z-[100] flex items-end justify-center bg-scrim/45 p-0 sm:items-center sm:p-4${closing ? " modal-closing-overlay" : ""}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !busy) onCancel();
+        if (event.target === event.currentTarget && !busy) requestClose();
       }}
     >
       <div
@@ -47,7 +49,7 @@ export function ConfirmActionDialog({
         aria-labelledby="confirm-action-title"
         aria-describedby="confirm-action-description"
         tabIndex={-1}
-        className="w-full rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6"
+        className={`w-full rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6${closing ? " modal-closing-panel" : ""}`}
       >
         <div className="flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-danger-bg text-danger">
@@ -69,7 +71,7 @@ export function ConfirmActionDialog({
           </p>
         ) : null}
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button variant="secondary" onClick={onCancel} disabled={busy}>
+          <Button variant="secondary" onClick={requestClose} disabled={busy}>
             Batal
           </Button>
           <Button variant="danger" onClick={onConfirm} isLoading={busy} loadingLabel="Memproses">

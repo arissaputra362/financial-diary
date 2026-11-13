@@ -1,5 +1,7 @@
 # Design System Tokens & Guidelines: Bento Financial Diary
 
+> **Superseded 2026-11-11:** the product owner approved the FinDiary green redesign. The active visual system is `docs/revamp/docs/DESIGN_SYSTEM.md` plus the semantic tokens in `app/globals.css`. This document remains as the T-010 history.
+
 ## 0. Canonical status & change note
 
 - **Status: PM-approved for T-010 visual refresh (2026-10-20).** This sign-off covers palette, typography hierarchy, icon/nav language, and wallet card treatment. Business behavior and feature scope remain governed by their Specs.

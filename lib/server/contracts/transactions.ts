@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import { cursorSchema, limitSchema } from "./common";
 
 /*
@@ -134,6 +133,11 @@ export const listTransactionsQuerySchema = z.object({
   walletId: z.string().uuid("Data tidak ditemukan.").optional(),
   walletIds: z.array(z.string().uuid("Data tidak ditemukan.")).max(50).optional(),
   scope: z.enum(["PERSONAL", "SHARING"]).optional(),
+  category: z.enum(CATEGORIES).optional(),
+  /** Multi-select category filter (repeated `category` params). */
+  categories: z.array(z.enum(CATEGORIES)).max(20).optional(),
+  /** Free-text search across merchant name and note (case-insensitive). */
+  q: z.string().trim().max(120, "Kata kunci terlalu panjang.").optional(),
   from: dateOnlySchema.optional(),
   to: dateOnlySchema.optional(),
   cursor: cursorSchema.optional(),
@@ -154,3 +158,4 @@ export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 export type CreateTransactionRequest = z.input<typeof createTransactionSchema>;
 export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;
 export type TrashListQuery = z.infer<typeof trashListQuerySchema>;
+import { hasAtMostTwoDecimals } from "@/lib/money-input";

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import { cursorSchema, limitSchema } from "./common";
 
 /*
@@ -40,3 +39,4 @@ export const goalTrashListQuerySchema = z.object({
 
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 export type AdjustSavedInput = z.infer<typeof adjustSavedSchema>;
+import { hasAtMostTwoDecimals } from "@/lib/money-input";

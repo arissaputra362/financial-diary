@@ -1,7 +1,8 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { ActivityView } from "@/components/transactions/ActivityView";
-import type { ActivityScopeFilter, ActivityTypeFilter } from "@/components/transactions/activityUrl";
-import { monthKeyRange, resolveMonthKey } from "@/lib/dates";
+import type { ActivityPeriod, ActivityScopeFilter, ActivityTypeFilter } from "@/components/transactions/activityUrl";
+import { CATEGORIES } from "@/lib/server/contracts/transactions";
+import { resolveMonthKey } from "@/lib/dates";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,22 +27,31 @@ export default async function TransactionsPage({
   const view =
     params.view === "trash" ? "trash" : params.view === "ringkasan" ? "ringkasan" : "active";
   const month = resolveMonthKey(typeof params.month === "string" ? params.month : undefined);
-  const monthRange = monthKeyRange(month);
-  const from =
-    view === "active" &&
-    typeof params.from === "string" &&
-    params.from >= monthRange.from &&
-    params.from <= monthRange.to
-      ? params.from
-      : undefined;
-  const to =
-    view === "active" &&
-    typeof params.to === "string" &&
-    params.to >= monthRange.from &&
-    params.to <= monthRange.to
-      ? params.to
-      : undefined;
+  /*
+    Period is independent of the month now: a rolling 7/30-day window or a
+    custom range may span months, which fits paydays that are not on the 1st.
+  */
+  const period: ActivityPeriod =
+    params.period === "7d" ? "7d" :
+    params.period === "30d" ? "30d" :
+    params.period === "range" ? "range" : "month";
+  const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+  const rangeView = view === "active" || view === "ringkasan";
+  const from = rangeView && typeof params.from === "string" && DATE_ONLY.test(params.from)
+    ? params.from
+    : undefined;
+  const to = rangeView && typeof params.to === "string" && DATE_ONLY.test(params.to)
+    ? params.to
+    : undefined;
   const filter = view === "active" ? parseFilter(params.filter) : "all";
+  const q = typeof params.q === "string" ? params.q.trim().slice(0, 120) : "";
+  const categories = [
+    ...new Set(
+      (Array.isArray(params.category) ? params.category : params.category ? [params.category] : [])
+        .filter((value): value is string =>
+          typeof value === "string" && (CATEGORIES as readonly string[]).includes(value)),
+    ),
+  ];
   const transactionScope: ActivityScopeFilter =
     params.scope === "personal" || params.scope === "PERSONAL" ? "personal" :
     params.scope === "shared" || params.scope === "SHARING" ? "shared" : "all";
@@ -51,6 +61,10 @@ export default async function TransactionsPage({
     view === "ringkasan" && params.scope === "shared" ? "shared" : "all";
   /* `?add=1` opens the add sheet: nav "Tambah" and the dashboard link here (A-27). */
   const initialAdd = params.add === "1";
+  const initialScan = initialAdd && params.scan === "1";
+  const initialTransactionType =
+    initialAdd && params.type === "TRANSFER" ? "TRANSFER" as const :
+    initialAdd && params.type === "MONEY_IN" ? "MONEY_IN" as const : "MONEY_OUT" as const;
   return (
     <AppShell>
       {/* Keyed by view + month only. `add` is an intent handled inside
@@ -60,9 +74,14 @@ export default async function TransactionsPage({
         key={`${view}-${month}`}
         initialView={view}
         initialMonth={month}
+        initialPeriod={period}
+        initialQ={q}
+        initialCategories={categories}
         initialFrom={from}
         initialTo={to}
         initialAdd={initialAdd}
+        initialScan={initialScan}
+        initialTransactionType={initialTransactionType}
         initialFilter={filter}
         initialScope={transactionScope}
         initialWalletIds={view === "active" ? walletIds : undefined}

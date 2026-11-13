@@ -177,7 +177,7 @@ describe("Dashboard DB integration (T-005)", () => {
       where: { householdId: fixtures.householdId, userId: fixtures.userId },
     });
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.amountMinor).toBe(250_000);
+    expect(Number(rows[0]?.amountMinor)).toBe(250_000);
 
     await expect(
       prisma.personalBudget.create({

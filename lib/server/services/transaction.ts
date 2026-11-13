@@ -216,6 +216,9 @@ export class TransactionService {
     const page = await this.repos.transaction.listActive(actor, {
       type: query.type,
       source: query.source,
+      category: query.category,
+      categories: query.categories,
+      q: query.q,
       walletId: query.walletId,
       walletIds: query.walletIds,
       walletScope: query.scope,

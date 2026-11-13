@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Archive, Nfc, Pencil, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,8 @@ export interface WalletDetailSheetProps {
 */
 export function WalletDetailSheet({ wallet, onClose, onEdit, onArchive, onRestore }: WalletDetailSheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(wallet !== null, panelRef, onClose);
+  const { closing, requestClose } = useAnimatedClose(onClose);
+  useDialogFocusTrap(wallet !== null, panelRef, requestClose);
 
   if (!wallet) return null;
 
@@ -32,9 +34,12 @@ export function WalletDetailSheet({ wallet, onClose, onEdit, onArchive, onRestor
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+      className={cn(
+        "modal-overlay fixed inset-0 z-[70] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4",
+        closing && "modal-closing-overlay",
+      )}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -43,7 +48,10 @@ export function WalletDetailSheet({ wallet, onClose, onEdit, onArchive, onRestor
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="wallet-detail-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className={cn(
+          "max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6",
+          closing && "modal-closing-panel",
+        )}
       >
         <div className="flex items-center justify-between">
           <h2 id="wallet-detail-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -51,9 +59,9 @@ export function WalletDetailSheet({ wallet, onClose, onEdit, onArchive, onRestor
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Tutup detail dompet"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -62,7 +70,7 @@ export function WalletDetailSheet({ wallet, onClose, onEdit, onArchive, onRestor
         <div
           className={cn(
             "mt-4 rounded-2xl p-4 text-white",
-            wallet.scope === "SHARING" ? "bg-navy" : "bg-brand-blue",
+            wallet.scope === "SHARING" ? "bg-green" : "bg-brand-green-hover",
           )}
         >
           <div className="flex items-start justify-between" aria-hidden="true">
@@ -96,14 +104,14 @@ export function WalletDetailSheet({ wallet, onClose, onEdit, onArchive, onRestor
         </dl>
 
         {wallet.scope === "SHARING" && wallet.institution?.kind === "CUSTOM" ? (
-          <p className="mt-3 rounded-2xl bg-blue-wash px-4 py-3 text-xs text-ink-2">
+          <p className="mt-3 rounded-2xl bg-surface-subtle px-4 py-3 text-xs text-ink-2">
             Label ini hanya metadata dompet. Daftar bank/penyedia pribadi tidak dibagikan ke
             anggota lain.
           </p>
         ) : null}
 
         {wallet.openingBalanceLocked ? (
-          <p className="mt-3 rounded-2xl bg-blue-wash px-4 py-3 text-xs text-ink-2">
+          <p className="mt-3 rounded-2xl bg-surface-subtle px-4 py-3 text-xs text-ink-2">
             Saldo awal terkunci: sudah ada transaksi untuk dompet ini.
           </p>
         ) : null}

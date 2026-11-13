@@ -139,7 +139,7 @@ export function BalanceMovementChart({
 
       {selectedPoint ? (
         <div
-          className="mt-4 flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-blue-wash px-3.5 py-2.5"
+          className="mt-4 flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-surface-subtle px-3.5 py-2.5"
           data-testid="balance-selection"
         >
           <span className="min-w-0 text-sm font-medium text-ink-2">{selectedDayLabel}</span>
@@ -174,7 +174,7 @@ export function BalanceMovementChart({
           <div
             role="img"
             aria-label={`Grafik area bertangga saldo ${scopeLabel}, ${monthLabel}. Skala ${formatIDR(min)} sampai ${formatIDR(max)}.`}
-            className="relative h-40 min-w-0 overflow-hidden rounded-2xl bg-blue-wash sm:h-56 print:h-20"
+            className="relative h-40 min-w-0 overflow-hidden rounded-2xl bg-surface-subtle sm:h-56 print:h-20"
           >
             <svg
               viewBox="0 0 100 100"
@@ -182,7 +182,7 @@ export function BalanceMovementChart({
               aria-hidden="true"
               className="absolute inset-0 h-full w-full"
             >
-              {!isFlat ? <path d={areaPath} fill="var(--color-blue-tint)" fillOpacity="0.55" /> : null}
+              {!isFlat ? <path d={areaPath} fill="var(--color-mint)" fillOpacity="0.55" /> : null}
               {yTicks.map((tick, index) => (
                 <line
                   key={`grid-${index}`}
@@ -200,7 +200,7 @@ export function BalanceMovementChart({
                 x2={selectedPoint?.x ?? 0}
                 y1="0"
                 y2="100"
-                stroke="var(--color-brand-blue)"
+                stroke="var(--color-green)"
                 strokeWidth="1"
                 strokeDasharray="3 3"
                 vectorEffect="non-scaling-stroke"
@@ -208,7 +208,7 @@ export function BalanceMovementChart({
               <path
                 d={linePath}
                 fill="none"
-                stroke="var(--color-brand-blue)"
+                stroke="var(--color-green)"
                 strokeWidth="2.5"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -219,7 +219,7 @@ export function BalanceMovementChart({
                   cx={selectedPoint.x}
                   cy={selectedPoint.y}
                   r="2.4"
-                  fill="var(--color-brand-blue)"
+                  fill="var(--color-green)"
                   stroke="white"
                   strokeWidth="1.5"
                   vectorEffect="non-scaling-stroke"
@@ -265,7 +265,7 @@ export function BalanceMovementChart({
             aria-valuetext={selectedLabel}
             aria-describedby="balance-date-help"
             onChange={(event) => setActiveIndex(Number(event.target.value))}
-            className="h-11 w-full cursor-pointer accent-blue"
+            className="h-11 w-full cursor-pointer accent-green"
           />
           <p id="balance-date-help" className="sr-only">
             Geser untuk memilih tanggal dan membaca saldo akhir hari tersebut.

@@ -137,11 +137,12 @@ describe("GoalService.adjustSaved (AC-F4-3)", () => {
     expect(serviceError(failure).code).toBe("SAVED_AMOUNT_INVALID");
   });
 
-  it("rejects a non-integer or zero delta", async () => {
+  it("rejects zero and accepts a delta with up to two decimals", async () => {
     const { service } = setup();
     const { id } = await create(service, "Tako", 100);
     expect(serviceError(await service.adjustSaved(ACTOR, id, 0).catch((caught: unknown) => caught)).code).toBe("SAVED_AMOUNT_INVALID");
-    expect(serviceError(await service.adjustSaved(ACTOR, id, 2.5).catch((caught: unknown) => caught)).code).toBe("SAVED_AMOUNT_INVALID");
+    const result = await service.adjustSaved(ACTOR, id, 2.5);
+    expect(result.status).toBe(200);
   });
 
   it("returns 404 for an increment on a trashed goal (AC-F4-3)", async () => {

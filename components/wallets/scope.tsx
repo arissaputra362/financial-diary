@@ -16,8 +16,8 @@ export function ScopePill({ scope, className }: { scope: WalletScope; className?
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold",
         shared
-          ? "border-blue-border bg-blue-tint text-ink"
-          : "border-card-border bg-blue-wash text-ink",
+          ? "border-success-border bg-mint text-green"
+          : "border-card-border bg-surface-subtle text-ink-2",
         className,
       )}
     >
@@ -41,11 +41,11 @@ export function WalletMark({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        "flex h-9 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-blue",
+        "flex h-9 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-green",
         className,
       )}
     >
-      <span className="h-2.5 w-3.5 rounded-sm bg-brand-green" />
+      <span className="h-2.5 w-3.5 rounded-sm bg-white/70" />
     </span>
   );
 }

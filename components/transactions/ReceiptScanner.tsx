@@ -27,7 +27,7 @@ import type {
   TransactionDTO,
   WalletDTO,
 } from "@/types/api";
-import { categoriesForType, CATEGORY_EMOJI, CATEGORY_LABELS } from "./categories";
+import { categoriesForType, CategoryIcon, CATEGORY_LABELS } from "./categories";
 
 const MAX_BYTES = 4_194_304;
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp"];
@@ -577,8 +577,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           aria-atomic="true"
           className="space-y-4 outline-none"
         >
-          <Card variant="tint">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue">
+          <Card variant="mint">
+            <p className="text-xs font-semibold uppercase tracking-wider text-green">
               Struk sedang diproses
             </p>
             <p className="mt-1 text-[15px] font-semibold text-ink">
@@ -689,7 +689,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             className="sm:flex-1"
           >
             <ImageIcon className="h-4 w-4" aria-hidden="true" />
-            Pilih dari galeri
+            Pilih foto struk
           </Button>
           <Button type="button" variant="secondary" onClick={onSwitchToManual}>
             Isi manual
@@ -718,8 +718,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           : null;
     return (
       <div className="space-y-5">
-        <div className="flex items-start gap-2 rounded-2xl bg-blue-tint px-4 py-3">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
+        <div className="flex items-start gap-2 rounded-2xl bg-mint px-4 py-3">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-green" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-ink">Struk berhasil dibaca!</p>
             <p className="text-xs text-ink-2">Periksa detail di bawah ini sebelum menyimpan.</p>
@@ -772,7 +772,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
           error={fieldErrors.amountMinor?.[0]}
           helperText={autoDetected(missingFields, "totalAmountMinor", "✨ Terbaca otomatis")}
         >
-          <div className="flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-blue focus-within:ring-4 focus-within:ring-blue/15">
+          <div className="flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-green focus-within:ring-4 focus-within:ring-green/15">
             <span className="text-lg font-semibold text-ink-2">Rp</span>
             <MoneyInput
               id="ocr-amount"
@@ -799,7 +799,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             value={occurredAt}
             max={todayJakarta()}
             onChange={(event) => setOccurredAt(event.target.value)}
-            className="min-h-11 w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+            className="min-h-11 w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] text-ink accent-green focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
           />
         </Field>
 
@@ -822,8 +822,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
                 className={cn(
                   "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                   txType === value
-                    ? "bg-brand-blue text-white"
-                    : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
+                    ? "bg-brand-green text-white"
+                    : "border border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
                 )}
               >
                 {label}
@@ -837,7 +837,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
             Kategori <span className="text-danger" aria-hidden="true">*</span>
           </legend>
           <div className="mt-2 flex flex-wrap gap-2">
-            {categoriesForType(txType).map((value) => (
+            {categoriesForType(txType).map((value) => {
+              return (
               <button
                 key={value}
                 type="button"
@@ -847,14 +848,15 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
                 className={cn(
                   "flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all",
                   category === value
-                    ? "border-blue bg-blue-tint text-blue"
-                    : "border-blue-border bg-card text-ink-2 hover:bg-blue-wash",
+                    ? "border-brand-green bg-mint text-green"
+                    : "border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
                 )}
               >
-                <span aria-hidden="true">{CATEGORY_EMOJI[value]}</span>
+                <CategoryIcon category={value} size="sm" className="h-7 w-7 rounded-lg" />
                 {CATEGORY_LABELS[value]}
               </button>
-            ))}
+              );
+            })}
           </div>
           {fieldErrors.category?.[0] ? (
             <p role="alert" className="mt-1.5 text-xs text-danger">
@@ -897,7 +899,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         </div>
 
         {disclosure ? (
-          <div role="note" className="rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
+          <div role="note" className="rounded-2xl bg-surface-subtle px-4 py-3 text-sm text-ink-2">
             <p className="font-semibold text-ink">Catatan sebelum menyimpan</p>
             <p className="mt-1">{disclosure}</p>
           </div>
@@ -977,11 +979,11 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
         onDrop={handleDrop}
         className={`rounded-3xl border-2 border-dashed p-6 text-center transition-colors ${
           dragActive
-            ? "border-blue bg-blue-tint ring-4 ring-blue/10"
-            : "border-blue-border bg-blue-wash/60"
+            ? "border-brand-green bg-mint ring-4 ring-green/10"
+            : "border-success-border bg-surface-subtle"
         }`}
       >
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-tint text-blue">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-mint text-green">
           <Camera className="h-6 w-6" aria-hidden="true" />
         </span>
         <span className="mt-3 block text-[15px] font-semibold text-ink">Tambahkan foto struk</span>
@@ -1001,7 +1003,7 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
       <p className="flex items-center justify-center gap-1.5 text-xs text-ink-3">
         <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
         Ingin ketik sendiri?{" "}
-        <button type="button" onClick={onSwitchToManual} className="font-semibold text-blue underline">
+        <button type="button" onClick={onSwitchToManual} className="font-semibold text-green underline">
           Isi manual
         </button>
       </p>
@@ -1015,8 +1017,8 @@ export function ReceiptScanner({ onCreated, onCancel, onSwitchToManual }: Receip
 
 function ScanningCard({ previewUrl }: { previewUrl: string | null }) {
   return (
-    <div className="rounded-3xl border-2 border-blue-border bg-blue-wash p-6">
-      <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-blue-tint text-blue">
+    <div className="rounded-3xl border-2 border-success-border bg-mint p-6">
+      <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-2xl bg-card text-green">
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={previewUrl} alt="Pratinjau struk" className="h-full w-full rounded-2xl object-cover" />
@@ -1028,7 +1030,7 @@ function ScanningCard({ previewUrl }: { previewUrl: string | null }) {
         AI sedang membaca strukmu...
       </p>
       <p className="mt-1 text-sm text-ink-2">Mengambil total, nama toko, dan tanggal...</p>
-      <div className="mx-auto mt-4 h-1 w-40 animate-pulse rounded-full bg-brand-blue motion-reduce:animate-none" />
+      <div className="mx-auto mt-4 h-1 w-40 animate-pulse rounded-full bg-brand-green motion-reduce:animate-none" />
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowLeftRight,
   ArrowDownLeft,
   ArrowUpRight,
   Pencil,
@@ -13,12 +12,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ScopePill } from "@/components/wallets/scope";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { formatDateLabel, formatDateTimeLabel } from "@/lib/dates";
 import { formatSignedIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
-import { categoryEmoji, categoryLabel, categoryTone, isTransferLeg, TYPE_LABELS } from "./categories";
+import { CategoryIcon, categoryLabel, isTransferLeg, TYPE_LABELS } from "./categories";
 import { ManualEntryForm } from "./ManualEntryForm";
 
 export interface TransactionDetailSheetProps {
@@ -65,7 +65,8 @@ export function TransactionDetailSheet({
     receipt viewer is open, so Escape closes the viewer first and focus returns
     to its trigger instead of dropping to `body` (BUG-3/BUG-4).
   */
-  useDialogFocusTrap(row !== null, panelRef, close);
+  const { closing, requestClose } = useAnimatedClose(close);
+  useDialogFocusTrap(row !== null, panelRef, requestClose);
 
   useEffect(() => {
     if (row) closeRef.current?.focus();
@@ -92,16 +93,19 @@ export function TransactionDetailSheet({
   const amountColor =
     showTransfer ? "text-ink" : isIncome ? "text-green" : "text-ink";
   const heroClass = showTransfer
-    ? "border-blue-border bg-blue-wash"
+    ? "border-card-border bg-surface-subtle"
     : isIncome
       ? "border-success-border bg-mint"
-      : "border-card-border bg-blue-wash";
+      : "border-card-border bg-surface-subtle";
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+      className={cn(
+        "modal-overlay fixed inset-0 z-[60] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4",
+        closing && "modal-closing-overlay",
+      )}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) close();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -110,7 +114,10 @@ export function TransactionDetailSheet({
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="transaction-detail-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className={cn(
+          "max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6",
+          closing && "modal-closing-panel",
+        )}
       >
         <div className="flex items-center justify-between">
           <h2 id="transaction-detail-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -119,9 +126,9 @@ export function TransactionDetailSheet({
           <button
             ref={closeRef}
             type="button"
-            onClick={close}
+            onClick={requestClose}
             aria-label="Tutup detail transaksi"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -142,15 +149,7 @@ export function TransactionDetailSheet({
         ) : <>
         <div className={cn("mt-4 rounded-2xl border p-4", heroClass)}>
           <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl",
-                showTransfer ? "bg-blue-tint text-blue" : categoryTone(row.category),
-              )}
-            >
-              {showTransfer ? <ArrowLeftRight className="h-5 w-5" /> : categoryEmoji(row.category)}
-            </span>
+            <CategoryIcon category={row.category} transfer={showTransfer} />
             <div className="min-w-0">
               <p className="truncate text-[15px] font-medium text-ink">{title}</p>
               <p className="text-xs font-medium text-ink-2">
@@ -172,7 +171,7 @@ export function TransactionDetailSheet({
         </div>
 
         {showTransfer ? (
-          <p className="mt-3 rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
+          <p className="mt-3 rounded-2xl bg-surface-subtle px-4 py-3 text-sm text-ink-2">
             Transfer antar dompet tercatat sebagai dua baris: uang keluar dari satu dompet dan uang
             masuk ke dompet lain.
           </p>
@@ -184,14 +183,17 @@ export function TransactionDetailSheet({
               {isIncome ? (
                 <ArrowDownLeft className="h-4 w-4 text-green" aria-hidden="true" />
               ) : (
-                <ArrowUpRight className={cn("h-4 w-4", showTransfer ? "text-ink-3" : "text-blue")} aria-hidden="true" />
+                <ArrowUpRight className={cn("h-4 w-4", showTransfer ? "text-ink-3" : "text-green")} aria-hidden="true" />
               )}
               {showTransfer ? "Transfer antar dompet" : TYPE_LABELS[row.type]}
             </span>
           </DetailRow>
           {!showTransfer ? (
             <DetailRow label="Kategori">
-              <span aria-hidden="true">{categoryEmoji(row.category)}</span> {categoryLabel(row.category)}
+              <span className="inline-flex items-center gap-1.5">
+                <CategoryIcon category={row.category} size="sm" />
+                {categoryLabel(row.category)}
+              </span>
             </DetailRow>
           ) : null}
           <DetailRow label="Tanggal">{formatDateLabel(row.occurredAt)}</DetailRow>
@@ -213,7 +215,7 @@ export function TransactionDetailSheet({
               <button
                 type="button"
                 onClick={() => setViewerOpen(true)}
-                className="inline-flex items-center gap-1.5 font-semibold text-blue underline underline-offset-2"
+                className="inline-flex items-center gap-1.5 font-semibold text-green underline underline-offset-2"
               >
                 <ReceiptText className="h-4 w-4 text-ink-3" aria-hidden="true" />
                 Lihat struk
@@ -332,7 +334,7 @@ function ReceiptImageViewer({ receiptId, alt, onClose }: { receiptId: string; al
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-navy/60 sm:items-center sm:p-4"
+      className="modal-overlay fixed inset-0 z-[80] flex items-end justify-center bg-scrim/60 sm:items-center sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -351,14 +353,14 @@ function ReceiptImageViewer({ receiptId, alt, onClose }: { receiptId: string; al
             type="button"
             onClick={onClose}
             aria-label="Tutup foto struk"
-            className="flex h-12 w-12 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+            className="flex h-12 w-12 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
         {state === "notfound" ? (
-          <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-6 text-center">
+          <div className="mt-4 rounded-2xl bg-surface-subtle px-4 py-6 text-center">
             <p className="text-sm text-ink-2">Struk tidak tersedia.</p>
             <button
               type="button"

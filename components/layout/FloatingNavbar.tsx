@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Coins, LayoutDashboard, PiggyBank, Plus, ReceiptText, User, Users, Wallet } from "lucide-react";
+import { Coins, House, PiggyBank, Plus, Receipt, Target, User, Users, Wallet } from "@phosphor-icons/react";
+import { Sprout } from "lucide-react";
 import { requestTransactionAddIntent } from "@/lib/transaction-add-intent";
 import { cn } from "@/lib/utils";
 
@@ -15,11 +16,13 @@ import { cn } from "@/lib/utils";
 */
 
 const navItems = [
-  { href: "/home", label: "Beranda", icon: LayoutDashboard },
+  { href: "/home", label: "Beranda", icon: House },
+  { href: "/transactions", label: "Aktivitas", icon: Receipt, matchPrefix: "/transactions" },
+  { href: "/wallet", label: "Wallet", icon: Wallet },
   { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/gold", label: "Emas", icon: Coins },
-  { href: "/transactions", label: "Aktivitas", icon: ReceiptText, matchPrefix: "/transactions" },
   { href: "/family", label: "Keluarga", icon: Users },
+  { href: "/goals", label: "Tabungan", icon: Target },
 ] as const;
 
 export function FloatingNavbar() {
@@ -46,21 +49,21 @@ export function FloatingNavbar() {
       <nav
         aria-label="Navigasi utama"
         data-nav="top"
-        className="flex w-full max-w-6xl items-center justify-between gap-2 rounded-full border border-white/10 bg-navy/95 px-3 py-2 text-white shadow-floating-nav backdrop-blur-md lg:px-4"
+        className="flex w-full max-w-6xl items-center justify-between gap-2 rounded-2xl border border-white/10 bg-navy px-3 py-2 text-white shadow-floating-nav lg:px-4"
       >
         <Link
           href="/home"
-          className="flex shrink-0 items-center gap-2 rounded-full px-1 py-1 lg:px-2"
+          className="flex shrink-0 items-center gap-2 rounded-xl px-1 py-1 lg:px-2"
           aria-label="Beranda Financial Diary"
         >
           <span
             aria-hidden="true"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-tint text-ink"
+            className="flex h-8 w-8 items-center justify-center rounded-xl bg-mint text-green"
           >
-            <Wallet className="h-4 w-4" />
+            <Sprout className="h-[18px] w-[18px]" />
           </span>
           <span className="hidden whitespace-nowrap text-base font-bold tracking-tight xl:inline">
-            Financial Diary
+            FinDiary
           </span>
         </Link>
 
@@ -78,13 +81,13 @@ export function FloatingNavbar() {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 items-center gap-1.5 rounded-full px-2.5 text-sm transition-colors lg:px-3 xl:px-4",
+                  "flex min-h-11 items-center gap-1.5 rounded-xl px-2.5 text-sm transition-colors lg:px-3 xl:px-4",
                   isActive
-                    ? "bg-blue-tint font-medium text-ink"
-                    : "text-white/60 hover:text-white",
+                    ? "bg-mint font-medium text-green"
+                    : "text-white/70 hover:bg-white/10 hover:text-white",
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <Icon weight="fill" size={18} className="shrink-0" aria-hidden="true" />
                 <span className="whitespace-nowrap">{item.label}</span>
               </Link>
             );
@@ -96,18 +99,18 @@ export function FloatingNavbar() {
             href="/transactions?add=1"
             onClick={openAddIntent}
             aria-label="Tambah transaksi"
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-green px-3 text-sm font-semibold text-white transition-colors hover:bg-brand-green-hover xl:px-4"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-brand-green px-3 text-sm font-semibold text-white transition-colors hover:bg-brand-green-hover xl:px-4"
           >
-            <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Plus weight="bold" size={18} className="shrink-0" aria-hidden="true" />
             <span className="hidden lg:inline">Tambah transaksi</span>
             <span className="lg:hidden">Tambah</span>
           </Link>
           <Link
             href="/profile"
             aria-label="Buka profil kamu"
-            className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white/20 bg-brand-blue text-xs font-bold text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-mint text-xs font-bold text-green"
           >
-            <User className="h-4 w-4" aria-hidden="true" />
+            <User weight="fill" size={18} aria-hidden="true" />
           </Link>
         </div>
       </nav>

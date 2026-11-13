@@ -93,16 +93,9 @@ export function groupReportDetailRows(
 ): ReportDetailGroups {
   const groups: ReportDetailGroups = { income: [], expense: [], transfer: [] };
   const scopedRows = rows.filter((row) => belongsToReportScope(row, scope));
-  const groupCounts = new Map<string, number>();
-  for (const row of scopedRows) {
-    if (row.transferGroupId) groupCounts.set(row.transferGroupId, (groupCounts.get(row.transferGroupId) ?? 0) + 1);
-  }
   for (const row of scopedRows) {
     if (isReportTransferRow(row)) {
-      if (row.transferGroupId && (groupCounts.get(row.transferGroupId) ?? 0) > 1) continue;
-      if (row.type === "MONEY_IN") groups.income.push(row);
-      else if (row.type === "MONEY_OUT") groups.expense.push(row);
-      else groups.transfer.push(row);
+      groups.transfer.push(row);
     }
     else if (row.type === "MONEY_IN") groups.income.push(row);
     else if (row.type === "MONEY_OUT") groups.expense.push(row);

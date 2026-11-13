@@ -5,6 +5,7 @@ import { Archive, Check, Plus, RotateCcw, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest } from "@/lib/api-client";
 import { institutionMatchesQuery, normalizeInstitutionName } from "@/lib/institution-name";
@@ -156,7 +157,8 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
     setReloadToken((token) => token + 1);
   };
 
-  useDialogFocusTrap(open, panelRef, onClose);
+  const { closing, requestClose } = useAnimatedClose(onClose);
+  useDialogFocusTrap(open, panelRef, requestClose);
 
   if (!open) return null;
 
@@ -189,12 +191,12 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
 
   const choose = (choice: WalletInstitutionDTO) => {
     onSelect(choice);
-    onClose();
+    requestClose();
   };
 
   const chooseManual = () => {
     onSelect(null);
-    onClose();
+    requestClose();
   };
 
   const resetManagementFeedback = () => {
@@ -329,9 +331,12 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
   return (
     <>
       <div
-        className="fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+        className={cn(
+          "modal-overlay fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4",
+          closing && "modal-closing-overlay",
+        )}
         onMouseDown={(event) => {
-          if (event.target === event.currentTarget) onClose();
+          if (event.target === event.currentTarget) requestClose();
         }}
       >
         <div
@@ -340,7 +345,10 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
           aria-modal="true"
           tabIndex={-1}
           aria-labelledby="bank-picker-title"
-          className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+          className={cn(
+            "max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6",
+            closing && "modal-closing-panel",
+          )}
         >
           <div className="flex items-center justify-between">
             <h2 id="bank-picker-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -348,9 +356,9 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
             </h2>
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               aria-label="Tutup pilih bank atau penyedia"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -375,7 +383,7 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
           </div>
 
           {showCurrentLabel && current && !state.loading && !state.error ? (
-            <div className="mt-3 rounded-2xl border border-card-border bg-blue-wash px-4 py-3">
+            <div className="mt-3 rounded-2xl border border-card-border bg-surface-subtle px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-ink-3">
                 Label saat ini
               </p>
@@ -400,6 +408,31 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
             </p>
           ) : null}
 
+          <div className="mt-4 space-y-2 border-b border-row-divider pb-4">
+            <button
+              type="button"
+              onClick={() => setQuickAddOpen(true)}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-green bg-card px-5 text-sm font-semibold text-green hover:bg-surface-subtle"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Tambah bank atau penyedia
+            </button>
+            <button
+              type="button"
+              onClick={chooseManual}
+              className="inline-flex min-h-11 w-full flex-col items-start rounded-2xl border border-dashed border-green bg-card px-4 py-2.5 text-left hover:bg-surface-subtle"
+            >
+              <span className="text-sm font-semibold text-ink">Dompet manual / bank lain</span>
+              <span className="text-xs text-placeholder">
+                Buat dompet tanpa label bank. Nama dompet tetap kamu isi sendiri.
+              </span>
+            </button>
+            <p className="rounded-2xl bg-surface-subtle px-4 py-3 text-xs text-ink-2">
+              Entri pribadi hanya terlihat olehmu. Jika dipakai di dompet Bersama, nama bank tampil
+              sebagai metadata dompet bagi anggota yang berhak melihatnya.
+            </p>
+          </div>
+
           {state.loading ? (
             <div className="mt-4 space-y-3" aria-busy="true" aria-label="Memuat bank dan penyedia">
               <Skeleton className="h-12 w-full" />
@@ -422,14 +455,14 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
               </button>
             </div>
           ) : total === 0 ? (
-            <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-5 text-center">
+            <div className="mt-4 rounded-2xl bg-surface-subtle px-4 py-5 text-center">
               <p className="text-sm text-ink-2">
                 Katalog bank resmi belum tersedia. Kamu tetap bisa menambah bank/penyedia pribadi
                 atau membuat dompet manual.
               </p>
             </div>
           ) : !hasFilteredResults ? (
-            <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-5 text-center">
+            <div className="mt-4 rounded-2xl bg-surface-subtle px-4 py-5 text-center">
               <p className="text-sm font-medium text-ink">Tidak ada yang cocok.</p>
               <p className="mt-1 text-sm text-ink-2">
                 Tambahkan sebagai entri pribadi, atau buat dompet manual tanpa label bank.
@@ -438,7 +471,7 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
           ) : (
             <div className="mt-4 space-y-5">
               {state.official.length === 0 && (state.custom.length > 0 || state.archivedCustom.length > 0) ? (
-                <p className="rounded-2xl bg-blue-wash px-4 py-3 text-xs text-ink-2">
+                <p className="rounded-2xl bg-surface-subtle px-4 py-3 text-xs text-ink-2">
                   Katalog bank resmi belum tersedia. Entri pribadi dan dompet manual tetap bisa
                   dipakai.
                 </p>
@@ -486,30 +519,6 @@ export function BankPickerSheet({ open, current, onClose, onSelect }: BankPicker
             </div>
           )}
 
-          <div className="mt-5 space-y-2 border-t border-row-divider pt-4">
-            <button
-              type="button"
-              onClick={() => setQuickAddOpen(true)}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-blue bg-card px-5 text-sm font-semibold text-blue hover:bg-blue-wash"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Tambah bank atau penyedia
-            </button>
-            <button
-              type="button"
-              onClick={chooseManual}
-              className="inline-flex min-h-11 w-full flex-col items-start rounded-2xl border border-dashed border-blue bg-card px-4 py-2.5 text-left hover:bg-blue-wash"
-            >
-              <span className="text-sm font-semibold text-ink">Dompet manual / bank lain</span>
-              <span className="text-xs text-placeholder">
-                Buat dompet tanpa label bank. Nama dompet tetap kamu isi sendiri.
-              </span>
-            </button>
-            <p className="rounded-2xl bg-blue-wash px-4 py-3 text-xs text-ink-2">
-              Entri pribadi hanya terlihat olehmu. Jika dipakai di dompet Bersama, nama bank tampil
-              sebagai metadata dompet bagi anggota yang berhak melihatnya.
-            </p>
-          </div>
         </div>
       </div>
 
@@ -614,8 +623,8 @@ function InstitutionGroup({
                   }
                 }}
                 className={cn(
-                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-blue-wash",
-                  selected ? "border-blue bg-blue-wash ring-1 ring-blue" : "border-card-border",
+                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-surface-subtle",
+                  selected ? "border-green bg-mint ring-1 ring-green" : "border-card-border",
                 )}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
@@ -624,7 +633,7 @@ function InstitutionGroup({
                     className={cn(
                       "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                       row.kind === "OFFICIAL"
-                        ? "bg-blue-tint text-blue"
+                        ? "bg-surface-subtle text-green"
                         : "bg-mint text-green",
                     )}
                   >
@@ -636,7 +645,7 @@ function InstitutionGroup({
                   </span>
                 </span>
                 {selected ? (
-                  <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-blue">
+                  <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-green">
                     <Check className="h-4 w-4" aria-hidden="true" />
                     Dipilih
                   </span>
@@ -689,7 +698,7 @@ function PrivateInstitutionGroup({
       </p>
 
       <div
-        className="mt-2 inline-flex gap-1 rounded-full bg-blue-wash p-1"
+        className="mt-2 inline-flex gap-1 rounded-full bg-surface-subtle p-1"
         role="tablist"
         aria-label="Tampilan bank/penyedia pribadi"
       >
@@ -733,7 +742,7 @@ function PrivateInstitutionGroup({
             <button
               type="button"
               onClick={() => onChooseOfficialOffer(officialOffer)}
-              className="mt-2 inline-flex min-h-11 items-center rounded-full bg-card px-4 text-sm font-semibold text-blue ring-1 ring-blue hover:bg-blue-wash"
+              className="mt-2 inline-flex min-h-11 items-center rounded-full bg-card px-4 text-sm font-semibold text-green ring-1 ring-green hover:bg-surface-subtle"
             >
               Pilih {officialOffer.name}
             </button>
@@ -744,7 +753,7 @@ function PrivateInstitutionGroup({
       <div id="bank-private-panel" role="tabpanel" aria-labelledby={`bank-private-tab-${view}`}>
         {view === "active" ? (
           activeRows.length === 0 ? (
-            <p className="mt-2 rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
+            <p className="mt-2 rounded-2xl bg-surface-subtle px-4 py-3 text-sm text-ink-2">
               Belum ada entri pribadi di tampilan Aktif.
             </p>
           ) : (
@@ -757,7 +766,7 @@ function PrivateInstitutionGroup({
                     key={row.id}
                     className={cn(
                       "rounded-2xl border px-2 py-1.5",
-                      selected ? "border-blue bg-blue-wash" : "border-card-border",
+                      selected ? "border-green bg-mint" : "border-card-border",
                     )}
                   >
                     <div className="flex items-center gap-1">
@@ -799,7 +808,7 @@ function PrivateInstitutionGroup({
                           </span>
                         </span>
                         {selected ? (
-                          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-blue">
+                          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-green">
                             <Check className="h-4 w-4" aria-hidden="true" />
                             Dipilih
                           </span>
@@ -823,7 +832,7 @@ function PrivateInstitutionGroup({
             </ul>
           )
         ) : archivedRows.length === 0 ? (
-          <p className="mt-2 rounded-2xl bg-blue-wash px-4 py-3 text-sm text-ink-2">
+          <p className="mt-2 rounded-2xl bg-surface-subtle px-4 py-3 text-sm text-ink-2">
             Belum ada entri di Arsip. Entri yang kamu arsipkan lewat tombol Arsipkan tampil di
             sini.
           </p>

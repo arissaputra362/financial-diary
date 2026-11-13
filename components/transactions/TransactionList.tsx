@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, RefreshCw, Trash2, Undo2 } from "lucide-react";
+import { RefreshCw, Trash2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -15,7 +15,7 @@ import {
 import { formatSignedIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
-import { categoryEmoji, categoryLabel, categoryTone, isTransferLeg } from "./categories";
+import { CategoryIcon, categoryLabel, isTransferLeg } from "./categories";
 
 export interface TransactionListProps {
   rows: TransactionDTO[];
@@ -264,17 +264,9 @@ function RowItem({
           onClick={() => onOpenDetail(row)}
           disabled={busy}
           aria-label={`Buka detail transaksi ${signedAmount} ${title}`}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 text-left hover:bg-blue-wash"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 text-left hover:bg-mint"
         >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl",
-              transfer ? "bg-blue-wash text-blue" : categoryTone(row.category),
-            )}
-          >
-            {transfer ? <ArrowLeftRight className="h-5 w-5" /> : categoryEmoji(row.category)}
-          </span>
+          <CategoryIcon category={row.category} transfer={transfer} />
 
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-medium text-ink">{title}</span>

@@ -28,8 +28,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F1F5FA" },
-    { media: "(prefers-color-scheme: dark)", color: "#111B26" },
+    { media: "(prefers-color-scheme: light)", color: "#F6F9F7" },
+    { media: "(prefers-color-scheme: dark)", color: "#08140E" },
   ],
 };
 
@@ -59,7 +59,7 @@ const THEME_BOOTSTRAP = `(function () {
       : preference;
     root.dataset.theme = preference;
     root.dataset.colorScheme = resolved;
-    var themeColor = resolved === "dark" ? "#111B26" : "#F1F5FA";
+    var themeColor = resolved === "dark" ? "#08140E" : "#F6F9F7";
     var themeColorTags = document.querySelectorAll('meta[name="theme-color"]');
     for (var index = 0; index < themeColorTags.length; index += 1) {
       themeColorTags[index].setAttribute("content", themeColor);

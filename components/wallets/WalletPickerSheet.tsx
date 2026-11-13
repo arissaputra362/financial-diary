@@ -3,11 +3,12 @@
 import { useRef, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { WalletDTO } from "@/types/api";
-import { ScopePill, WalletMark } from "./scope";
+import { WalletMark } from "./scope";
 import { useWallets } from "./useWallets";
 
 export interface WalletPickerSheetProps {
@@ -48,7 +49,8 @@ export function WalletPickerSheet({
     focusedId: string | null;
   } | null>(null);
 
-  useDialogFocusTrap(open, panelRef, onClose);
+  const { closing, requestClose } = useAnimatedClose(onClose);
+  useDialogFocusTrap(open, panelRef, requestClose);
 
   if (!open) return null;
 
@@ -75,9 +77,12 @@ export function WalletPickerSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+      className={cn(
+        "modal-overlay fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4",
+        closing && "modal-closing-overlay",
+      )}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -86,7 +91,10 @@ export function WalletPickerSheet({
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="wallet-picker-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className={cn(
+          "max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6",
+          closing && "modal-closing-panel",
+        )}
       >
         <div className="flex items-center justify-between">
           <h2 id="wallet-picker-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -94,9 +102,9 @@ export function WalletPickerSheet({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Tutup"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -120,7 +128,7 @@ export function WalletPickerSheet({
             </button>
           </div>
         ) : wallets.length === 0 ? (
-          <div className="mt-4 rounded-2xl bg-blue-wash px-4 py-5 text-center">
+          <div className="mt-4 rounded-2xl bg-surface-subtle px-4 py-5 text-center">
             <p className="text-sm text-ink-2">
               Kamu belum punya dompet. Buat dompet agar uang tersimpan ke tempat yang tepat.
             </p>
@@ -145,14 +153,14 @@ export function WalletPickerSheet({
                 onFocusOption={moveFocus}
                 onSelect={(wallet) => {
                   onSelect(wallet);
-                  onClose();
+                  requestClose();
                 }}
               />
             ))}
             <button
               type="button"
               onClick={onCreate}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-blue-border bg-card px-5 text-sm font-semibold text-blue hover:bg-blue-wash"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-success-border bg-card px-5 text-sm font-semibold text-green hover:bg-surface-subtle"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Buat dompet baru
@@ -202,7 +210,6 @@ function WalletGroup({
         {wallets.map((wallet) => {
           const selected = wallet.id === selectedWalletId;
           const focusable = wallet.id === tabbableId;
-          const longBalance = formatIDR(wallet.balanceMinor).length > 13;
           return (
             /* `role="none"` keeps the option a direct child of the listbox. */
             <li key={wallet.id} role="none">
@@ -215,8 +222,8 @@ function WalletGroup({
                 onFocus={() => onFocusOption(wallet.id)}
                 onClick={() => onSelect(wallet)}
                 className={cn(
-                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-blue-wash",
-                  selected ? "border-blue bg-blue-wash ring-1 ring-blue" : "border-card-border",
+                  "flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left hover:bg-surface-subtle",
+                  selected ? "border-green bg-mint ring-1 ring-green" : "border-card-border",
                 )}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
@@ -227,25 +234,14 @@ function WalletGroup({
                         {wallet.name}
                         {selected ? <span className="sr-only"> (dompet terpilih)</span> : null}
                       </span>
-                      <ScopePill scope={wallet.scope} className="shrink-0" />
                     </span>
                     {wallet.purpose ? (
                       <span className="block truncate text-xs text-ink-3">{wallet.purpose}</span>
                     ) : null}
-                    {longBalance ? (
-                      <span className="mt-1 block whitespace-nowrap text-sm font-semibold tabular-nums text-ink sm:hidden">
-                        {formatIDR(wallet.balanceMinor)}
-                      </span>
-                    ) : null}
                   </span>
                 </span>
-                <span
-                  className={cn(
-                    "shrink-0 items-center gap-2",
-                    longBalance ? "hidden sm:flex" : "flex",
-                  )}
-                >
-                  {selected ? <Check className="h-4 w-4 text-blue" aria-hidden="true" /> : null}
+                <span className="flex shrink-0 items-center gap-2">
+                  {selected ? <Check className="h-4 w-4 text-green" aria-hidden="true" /> : null}
                   <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ink">
                     {formatIDR(wallet.balanceMinor)}
                   </span>

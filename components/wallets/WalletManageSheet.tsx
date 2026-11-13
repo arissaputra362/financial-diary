@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Archive, Plus, RotateCcw, X } from "lucide-react";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -38,15 +39,19 @@ export function WalletManageSheet({
   const { wallets, loading, error, reload } = useWallets(tab, open);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useDialogFocusTrap(open, panelRef, onClose);
+  const { closing, requestClose } = useAnimatedClose(onClose);
+  useDialogFocusTrap(open, panelRef, requestClose);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[75] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+      className={cn(
+        "modal-overlay fixed inset-0 z-[75] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4",
+        closing && "modal-closing-overlay",
+      )}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -55,7 +60,10 @@ export function WalletManageSheet({
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="wallet-manage-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className={cn(
+          "max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6",
+          closing && "modal-closing-panel",
+        )}
       >
         <div className="flex items-center justify-between">
           <h2 id="wallet-manage-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -63,15 +71,15 @@ export function WalletManageSheet({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Tutup"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="mt-4 flex gap-1 rounded-full bg-blue-wash p-1" role="tablist" aria-label="Daftar dompet">
+        <div className="mt-4 flex gap-1 rounded-full bg-surface-subtle p-1" role="tablist" aria-label="Daftar dompet">
           {(
             [
               ["active", "Aktif"],
@@ -133,7 +141,7 @@ export function WalletManageSheet({
                     <button
                       type="button"
                       onClick={() => onEdit(wallet)}
-                      className="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-semibold text-ink-2 hover:bg-blue-wash"
+                      className="inline-flex min-h-11 items-center rounded-full px-3 text-xs font-semibold text-ink-2 hover:bg-surface-subtle"
                     >
                       Ubah
                     </button>
@@ -167,7 +175,7 @@ export function WalletManageSheet({
         <button
           type="button"
           onClick={onCreate}
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-blue-border bg-card px-5 text-sm font-semibold text-blue hover:bg-blue-wash"
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-success-border bg-card px-5 text-sm font-semibold text-green hover:bg-surface-subtle"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Buat dompet baru

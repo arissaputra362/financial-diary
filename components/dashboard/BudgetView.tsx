@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarClock, PiggyBank, RefreshCw, Wallet } from "lucide-react";
+import { CalendarClock, RefreshCw, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { apiRequest } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
@@ -10,10 +10,11 @@ import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { GoalsSection } from "@/components/goals/GoalsSection";
+import { GoalsSummaryCard } from "@/components/goals/GoalsSummaryCard";
 import { formatDateLabel, formatDateRangeLabel } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import { isValidMoneyAmount } from "@/lib/money-input";
+import { cn } from "@/lib/utils";
 import type { BudgetCycleDTO, BudgetCycleModeDTO, MonthlyBudgetDTO } from "@/types/api";
 
 export type Me = {
@@ -88,7 +89,7 @@ function BudgetCycleFields({
             onChange={(event) => onChange({ ...value, day: event.target.value })}
             aria-invalid={!dayValid ? true : undefined}
             aria-describedby={!dayValid ? `${idPrefix}-budget-cycle-day-error` : `${idPrefix}-budget-cycle-day-helper`}
-            className="w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] tabular-nums text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+            className="w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] tabular-nums text-ink focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
           />
           {!dayValid ? (
             <p id={`${idPrefix}-budget-cycle-day-error`} role="alert" className="text-xs text-danger">
@@ -125,7 +126,14 @@ export function BudgetView({
   const [budgets, setBudgets] = useState<BudgetMap>(
     initialData?.budgets ?? { SHARED: null, PERSONAL: null },
   );
-  const [amountInputs, setAmountInputs] = useState<AmountMap>({ SHARED: "", PERSONAL: "" });
+  const [amountInputs, setAmountInputs] = useState<AmountMap>(() => ({
+    SHARED: initialData?.budgets.SHARED?.budgetMinor
+      ? String(initialData.budgets.SHARED.budgetMinor)
+      : "",
+    PERSONAL: initialData?.budgets.PERSONAL?.budgetMinor
+      ? String(initialData.budgets.PERSONAL.budgetMinor)
+      : "",
+  }));
   const [cycleInputs, setCycleInputs] = useState<CycleMap>(() => ({
     SHARED: toCycleInput(initialData?.budgets.SHARED?.cycle ?? { mode: "CALENDAR_MONTH", day: null }),
     PERSONAL: toCycleInput(initialData?.budgets.PERSONAL?.cycle ?? { mode: "CALENDAR_MONTH", day: null }),
@@ -375,11 +383,10 @@ export function BudgetView({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow={me?.household?.name ?? "Keluarga"}
         title="Budget"
-        icon={PiggyBank}
         description="Budget keluarga dan budget pribadimu dihitung terpisah."
       />
 
@@ -435,7 +442,7 @@ export function BudgetView({
               onUndo={() => void handleUndoDelete()}
             />
           ) : null}
-          <GoalsSection />
+          <GoalsSummaryCard />
           <ConfirmActionDialog
             open={deleteOpen}
             title="Hapus budget periode ini?"
@@ -496,7 +503,6 @@ function BudgetContent({
     budget.isSet && budget.budgetMinor && budget.budgetMinor > 0
       ? Math.min(100, Math.round((budget.spentMinor / budget.budgetMinor) * 100))
       : 0;
-  const longRemaining = formatIDR(budget.remainingMinor ?? 0).length > 16;
   const amountLength = Math.max(
     formatIDR(budget.budgetMinor ?? 0).length,
     formatIDR(budget.spentMinor).length,
@@ -504,73 +510,81 @@ function BudgetContent({
   const veryLongAmounts = amountLength > 16;
   const longAmounts = amountLength > 13;
 
+  /* Status is derived from real remaining/spent values, never estimated. */
+  const remainingMinor = budget.remainingMinor ?? 0;
+  const overBudget = budget.isSet && remainingMinor < 0;
+  const nearLimit = budget.isSet && !overBudget && spentPercent >= 80;
+  const budgetStatus = overBudget
+    ? { label: "Melewati budget", tone: "bg-danger-bg text-danger", ring: "#b91c1c" }
+    : nearLimit
+      ? { label: "Mendekati batas", tone: "bg-warning-bg text-warning", ring: "#8a5a00" }
+      : { label: "Sesuai rencana", tone: "bg-mint text-green", ring: "#16764f" };
+
   return (
     <>
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
         <section
           id="budget-summary"
           aria-labelledby="budget-summary-title"
-          className="rounded-3xl border border-card-border bg-card p-6 shadow-bento lg:col-span-7"
+          className="surface-hero rounded-feature p-5 text-white shadow-bento sm:p-6 lg:col-span-12"
         >
-          <h2
-            id="budget-summary-title"
-            className="flex items-center gap-2 text-lg font-semibold text-ink"
-          >
-            <Wallet className="h-5 w-5 text-blue" aria-hidden="true" />
-            Budget periode ini
-          </h2>
-          <p className="mt-1 text-sm font-medium text-ink-2">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h2
+              id="budget-summary-title"
+              className="flex items-center gap-2 text-lg font-semibold text-white"
+            >
+              <Wallet className="h-5 w-5 text-white/90" aria-hidden="true" />
+              Budget periode ini
+            </h2>
+            {budget.isSet ? (
+              <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", budgetStatus.tone)}>
+                {budgetStatus.label}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm font-medium text-white/85">
             {formatDateRangeLabel(budget.periodStart, budget.periodEnd)}
           </p>
-          <p className="mt-1 text-xs text-ink-3">Siklus: {cycleLabel(budget.cycle)}</p>
+          <p className="mt-1 text-xs text-white/75">Siklus: {cycleLabel(budget.cycle)}</p>
 
           {budget.isSet ? (
             <>
-              <p
-                className={
-                  longRemaining
-                    ? "mt-4 whitespace-nowrap text-[clamp(1.1rem,4.5vw,1.875rem)] font-bold tracking-tight tabular-nums text-ink"
-                    : "mt-4 whitespace-nowrap text-[clamp(1.6rem,6vw,1.875rem)] font-bold tracking-tight tabular-nums text-ink"
-                }
-              >
-                {formatIDR(budget.remainingMinor ?? 0)}
-              </p>
-              <p className="mt-1 text-sm text-ink-2">
-                {isPersonal ? "sisa dari budget pribadimu" : "sisa dari budget bersama"}
-              </p>
-              <div
-                className="mt-5 h-3 overflow-hidden rounded-full bg-bar-track"
-                role="img"
-                aria-label={`${spentPercent} persen budget terpakai`}
-              >
-                <div
-                  className="h-full rounded-full bg-blue"
-                  style={{ width: `${spentPercent}%` }}
-                />
+              <div className="mt-4">
+                <p className="text-xs font-medium text-white/85">Total budget periode ini</p>
+                <p className={veryLongAmounts ? "mt-1 whitespace-nowrap text-xl font-bold tabular-nums text-white" : longAmounts ? "mt-1 whitespace-nowrap text-2xl font-bold tabular-nums text-white" : "mt-1 whitespace-nowrap text-3xl font-bold tabular-nums text-white"}>
+                  {formatIDR(budget.budgetMinor ?? 0)}
+                </p>
               </div>
-              <div
-                className={
-                  veryLongAmounts
-                    ? "mt-3 grid grid-cols-1 gap-3 text-sm"
-                    : longAmounts
-                      ? "mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2"
-                      : "mt-3 grid grid-cols-2 gap-3 text-sm"
-                }
-              >
-                <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
-                  <p className="text-xs font-semibold text-ink-2">Budget</p>
-                  <p className="mt-1 whitespace-nowrap font-bold tabular-nums text-ink">
-                    {formatIDR(budget.budgetMinor ?? 0)}
-                  </p>
+
+              <div className="mt-4 flex items-center gap-3">
+                <div
+                  className="h-2 flex-1 overflow-hidden rounded-full bg-white/20"
+                  role="img"
+                  aria-label={`${spentPercent} persen budget terpakai`}
+                >
+                  <div className="h-full rounded-full bg-white" style={{ width: `${spentPercent}%` }} />
                 </div>
-                <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
-                  <p className="text-xs font-semibold text-ink-2">Terpakai</p>
-                  <p className="mt-1 whitespace-nowrap font-bold tabular-nums text-ink">
+                <span className="shrink-0 text-sm font-bold tabular-nums text-white">
+                  {spentPercent}%
+                </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="min-w-0 rounded-xl bg-black/15 p-3">
+                  <p className="text-xs font-medium text-white/85">Terpakai</p>
+                  <p className="financial-value mt-0.5 truncate text-base font-semibold tabular-nums text-white">
                     {formatIDR(budget.spentMinor)}
                   </p>
                 </div>
+                <div className="min-w-0 rounded-xl bg-black/15 p-3">
+                  <p className="text-xs font-medium text-white/85">Sisa</p>
+                  <p className="financial-value mt-0.5 truncate text-base font-semibold tabular-nums text-white">
+                    {formatIDR(budget.remainingMinor ?? 0)}
+                  </p>
+                </div>
               </div>
-              <p className="mt-3 text-xs text-ink-3">
+
+              <p className="mt-3 text-xs text-white/80">
                 {isPersonal
                   ? "Dihitung dari dompet pribadimu."
                   : "Dihitung dari dompet keluarga saja."}
@@ -578,19 +592,19 @@ function BudgetContent({
             </>
           ) : (
             <>
-              <p className="mt-4 text-lg font-bold text-ink">
+              <p className="mt-4 text-lg font-bold text-white">
                 {isPersonal
                   ? "Belum ada budget pribadi untuk periode ini"
                   : "Belum ada budget untuk periode ini"}
               </p>
-              <p className="mt-1 text-sm text-ink-2">
+              <p className="mt-1 text-sm text-white/85">
                 {isPersonal
-                  ? "Isi budget di samping supaya pengeluaran pribadimu lebih terkendali."
+                  ? "Isi budget di bawah supaya pengeluaran pribadimu lebih terkendali."
                   : canEdit
-                    ? "Isi budget di samping supaya pengeluaran keluarga lebih terkendali."
+                    ? "Isi budget di bawah supaya pengeluaran keluarga lebih terkendali."
                     : "Pemilik keluarga belum mengatur budget untuk periode ini."}
               </p>
-              <p className="mt-3 text-xs text-ink-3">
+              <p className="mt-3 text-xs text-white/75">
                 {isPersonal
                   ? "Dihitung dari dompet pribadimu."
                   : "Dihitung dari dompet keluarga saja."}
@@ -601,7 +615,7 @@ function BudgetContent({
 
         <section
           aria-labelledby="budget-form-title"
-          className="rounded-3xl border border-card-border bg-card p-6 shadow-bento lg:col-span-5"
+          className="rounded-feature border border-card-border bg-card p-5 shadow-bento sm:p-6 lg:col-span-12"
         >
           <h2 id="budget-form-title" className="text-lg font-semibold text-ink">
             {isPersonal
@@ -634,7 +648,7 @@ function BudgetContent({
           {canEdit ? (
             <form className="mt-4 space-y-3" onSubmit={onSubmit} noValidate>
               {!budget.isSet ? (
-                <div className="space-y-3 rounded-2xl bg-blue-wash p-4">
+                <div className="space-y-3 rounded-2xl bg-surface-subtle p-4">
                   <div>
                     <p className="text-sm font-semibold text-ink">Pilih siklus budget</p>
                     <p className="mt-1 text-xs text-ink-3">Siklus ini langsung dipakai untuk budget pertamamu.</p>
@@ -655,7 +669,7 @@ function BudgetContent({
                 aria-invalid={fieldError ? true : undefined}
                 aria-describedby={fieldError ? "budget-amount-error" : "budget-amount-helper"}
                 placeholder="Contoh: 3000000"
-                className="w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] tabular-nums text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+                className="w-full rounded-2xl border border-input-border bg-card px-4 py-3 text-[15px] tabular-nums text-ink placeholder:text-placeholder focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
               />
               {fieldError ? (
                 <p id="budget-amount-error" role="alert" className="text-xs text-danger">
@@ -791,7 +805,7 @@ function BudgetCycleCard({
         id="budget-cycle-title"
         className="flex items-center gap-2 text-lg font-semibold text-ink"
       >
-        <CalendarClock className="h-5 w-5 text-blue" aria-hidden="true" />
+        <CalendarClock className="h-5 w-5 text-green" aria-hidden="true" />
         {isPersonal ? "Siklus budget pribadi" : "Siklus budget bersama"}
       </h2>
       <p className="mt-1 text-sm text-ink-2">

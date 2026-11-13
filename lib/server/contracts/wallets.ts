@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { hasAtMostTwoDecimals } from "@/lib/money-input";
 import { walletInstitutionSchema } from "./institutions";
 
 /*
@@ -62,3 +61,4 @@ export const listWalletsQuerySchema = z.object({
 export type CreateWalletInput = z.infer<typeof createWalletSchema>;
 export type UpdateWalletInput = z.infer<typeof updateWalletSchema>;
 export type ListWalletsQuery = z.infer<typeof listWalletsQuerySchema>;
+import { hasAtMostTwoDecimals } from "@/lib/money-input";

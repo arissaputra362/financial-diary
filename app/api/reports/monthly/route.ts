@@ -20,6 +20,8 @@ export async function GET(request: Request): Promise<NextResponse> {
     const report = query.scope !== undefined || query.walletIds?.length
       ? await session.reports.getSelection(actor, {
           month: query.month,
+          from: query.from,
+          to: query.to,
           scope: query.scope ?? "all",
           walletIds: query.walletIds ?? (query.walletId ? [query.walletId] : []),
         })

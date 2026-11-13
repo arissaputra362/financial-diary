@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
+import { monthKeyLabel } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import type { ActivityWalletSummaryDTO } from "@/types/api";
 
 type Scope = "all" | "personal" | "shared";
 
+/**
+ * Monthly flow card for the activity list. One surface with dividers replaces
+ * the previous four-tile grid (phase 2 mockup): the reader scans opening, in,
+ * out, and closing in one line instead of four competing cards.
+ */
 export function ActivityMonthSummaryCard({
   month,
   scope,
@@ -61,44 +67,45 @@ export function ActivityMonthSummaryCard({
     };
   }, [month, refreshToken, requestKey, scope, walletIds]);
 
+  const metrics = [
+    { label: "Saldo awal", value: totals?.opening },
+    { label: "Uang masuk", value: totals?.income },
+    { label: "Uang keluar", value: totals?.expense },
+    { label: "Sisa saldo", value: totals?.closing },
+  ];
+
   return (
-    <section className="rounded-3xl border border-card-border bg-card p-3 shadow-bento" aria-label="Ringkasan transaksi bulan ini">
-      <div className="grid grid-cols-2 gap-2">
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
-          <p className="text-xs font-semibold text-ink-2">Saldo awal</p>
-          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-bold tracking-tight tabular-nums text-ink" aria-live="polite">
-            {totals ? formatIDR(totals.opening) : error ? "Tidak tersedia" : "Memuat..."}
-          </p>
-        </div>
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
-          <p className="text-xs font-semibold text-ink-2">Uang masuk</p>
-          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-bold tracking-tight tabular-nums text-ink" aria-live="polite">
-            {totals ? formatIDR(totals.income) : error ? "Tidak tersedia" : "Memuat..."}
-          </p>
-        </div>
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
-          <p className="text-xs font-semibold text-ink-2">Uang keluar</p>
-          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-bold tracking-tight tabular-nums text-ink" aria-live="polite">
-            {totals ? formatIDR(totals.expense) : error ? "Tidak tersedia" : "Memuat..."}
-          </p>
-        </div>
-        <div className="min-w-0 rounded-2xl bg-blue-wash p-3">
-          <p className="text-xs font-bold text-blue">Sisa saldo</p>
-          <p className="mt-2 whitespace-nowrap text-[clamp(0.75rem,3.4vw,1.125rem)] font-extrabold tracking-tight tabular-nums text-ink" aria-live="polite">
-            {totals ? formatIDR(totals.closing) : error ? "Tidak tersedia" : "Memuat..."}
-          </p>
-        </div>
+    <section
+      className="surface-hero overflow-hidden rounded-feature p-3 text-white shadow-bento sm:p-4"
+      aria-label="Ringkasan transaksi bulan ini"
+    >
+      <div className="flex items-center justify-between gap-2 px-1">
+        <p className="text-sm font-semibold text-white">Ringkasan {monthKeyLabel(month)}</p>
+        {onOpenReport ? (
+          <button
+            type="button"
+            onClick={onOpenReport}
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+          >
+            <BarChart3 className="h-4 w-4" aria-hidden="true" />
+            Laporan
+          </button>
+        ) : null}
       </div>
-      {onOpenReport ? (
-        <button
-          type="button"
-          onClick={onOpenReport}
-          className="mt-1 inline-flex min-h-11 w-full items-center gap-1 rounded-xl px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
-        >
-          Lihat ringkasan lengkap
-          <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </button>
-      ) : null}
+
+      <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="min-w-0 rounded-2xl bg-black/15 p-3">
+            <dt className="text-xs font-semibold text-white/80">{metric.label}</dt>
+            <dd
+              className="financial-value mt-1.5 truncate text-[clamp(0.95rem,4vw,1.15rem)] font-bold tabular-nums text-white"
+              aria-live="polite"
+            >
+              {totals ? formatIDR(metric.value ?? 0) : error ? "Tidak tersedia" : "Memuat..."}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

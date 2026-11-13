@@ -244,6 +244,8 @@ describe("report repository aggregate (PostgreSQL)", () => {
       closingMinor: 1_150_000,
       moneyInMinor: 100_000,
       moneyOutMinor: 0,
+      transferInMinor: 0,
+      transferOutMinor: 0,
     });
 
     expect(aggregate.dailyBalances).toHaveLength(31);

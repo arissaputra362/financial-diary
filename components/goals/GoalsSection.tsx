@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { UndoToast } from "@/components/transactions/UndoToast";
 import { formatDateLabel, todayJakarta } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import type { GoalDTO, GoalListDTO } from "@/types/api";
 
@@ -38,12 +39,16 @@ export function GoalsSection() {
   const [deadline, setDeadline] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   const [adjust, setAdjust] = useState<AdjustTarget | null>(null);
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustError, setAdjustError] = useState<string | null>(null);
   const [adjusting, setAdjusting] = useState(false);
   const adjustPanelRef = useRef<HTMLDivElement>(null);
+  const { closing: adjustClosing, requestClose: requestAdjustClose } = useAnimatedClose(() =>
+    setAdjust(null),
+  );
 
   const [showTrash, setShowTrash] = useState(false);
   const [trash, setTrash] = useState<GoalDTO[] | null>(null);
@@ -54,7 +59,7 @@ export function GoalsSection() {
   const [goalToTrash, setGoalToTrash] = useState<GoalDTO | null>(null);
   const [trashingId, setTrashingId] = useState<string | null>(null);
 
-  useDialogFocusTrap(adjust !== null, adjustPanelRef, () => setAdjust(null));
+  useDialogFocusTrap(adjust !== null, adjustPanelRef, requestAdjustClose);
 
   const reload = useCallback(async () => {
     try {
@@ -138,6 +143,7 @@ export function GoalsSection() {
       setName("");
       setTarget("");
       setDeadline("");
+      setShowCreate(false);
       return;
     }
     const fieldMessage = response.data?.error?.fieldErrors;
@@ -264,11 +270,26 @@ export function GoalsSection() {
       <div className="flex items-start justify-between gap-3">
         <h2 id="goals-title" className="flex items-center gap-2 text-lg font-semibold text-ink">
           <Target className="h-5 w-5 text-green" aria-hidden="true" />
-          Target tabungan
+          Daftar target
         </h2>
         <span className="shrink-0 rounded-full bg-card/75 px-3 py-1 text-xs font-semibold text-ink-2">
           {goals?.length ?? 0} aktif
         </span>
+      </div>
+      <p className="mt-1 text-sm text-ink-2">
+        Mencatat progres di sini tidak memindahkan uang.
+      </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowCreate((value) => !value)}
+          aria-expanded={showCreate}
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-success-border bg-card px-4 text-sm font-semibold text-green hover:bg-card/70"
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          {showCreate ? "Tutup formulir" : "Buat target baru"}
+        </button>
       </div>
 
       {goals && goals.length > 0 ? (
@@ -307,15 +328,15 @@ export function GoalsSection() {
                   </span>
                   <span className="font-normal tabular-nums text-ink-2">
                     dari {formatIDR(goal.targetAmountMinor)}
-                    {goal.deadline ? ` * ${formatDateLabel(goal.deadline)}` : ""}
-                    {` * genggam: ${formatIDR(goal.targetAmountMinor - goal.savedAmountMinor)} lagi`}
+                    {goal.deadline ? ` · ${formatDateLabel(goal.deadline)}` : ""}
+                    {` · kurang ${formatIDR(Math.max(0, goal.targetAmountMinor - goal.savedAmountMinor))} lagi`}
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => startAdjust(goal, "add")}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-success-border bg-card px-4 text-sm font-semibold text-green hover:bg-blue-wash"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-success-border bg-card px-4 text-sm font-semibold text-green hover:bg-surface-subtle"
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
                     Catat progres
@@ -323,7 +344,7 @@ export function GoalsSection() {
                   <button
                     type="button"
                     onClick={() => startAdjust(goal, "subtract")}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-blue-border bg-card px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-card-border bg-card px-4 text-sm font-semibold text-ink-2 hover:bg-surface-subtle"
                   >
                     <Minus className="h-4 w-4" aria-hidden="true" />
                     Koreksi progres
@@ -346,12 +367,13 @@ export function GoalsSection() {
       )}
       {goals && goals.length === 0 ? (
         <p className="mt-1 text-sm text-ink-2">
-          Tentukan target pertama di samping, misal dana darurat atau liburan keluarga.
+          Tentukan target pertamamu lewat tombol Buat target baru, misal dana darurat atau liburan keluarga.
         </p>
       ) : null}
 
-      <form className="mt-6 space-y-3 rounded-2xl bg-card/75 p-4" onSubmit={handleCreate} noValidate>
-        <h3 className="text-sm font-bold text-ink">Buat target baru</h3>
+      {showCreate ? (
+        <form className="mt-6 space-y-3 rounded-2xl bg-card/75 p-4" onSubmit={handleCreate} noValidate>
+        <h3 className="text-sm font-bold text-ink">Isi target baru</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-name">
             Nama target <span className="text-danger" aria-hidden="true">*</span>
@@ -363,7 +385,7 @@ export function GoalsSection() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Contoh: Dana darurat"
-              className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-2 text-sm text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+              className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-2 text-sm text-ink placeholder:text-placeholder focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
             />
           </label>
           <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-target">
@@ -374,7 +396,7 @@ export function GoalsSection() {
               value={target}
               onValueChange={setTarget}
               placeholder="Contoh: 3000000"
-              className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-2 text-sm tabular-nums text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+              className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-2 text-sm tabular-nums text-ink placeholder:text-placeholder focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
             />
           </label>
           <label className="block text-xs font-semibold text-ink-2" htmlFor="goal-deadline">
@@ -385,7 +407,7 @@ export function GoalsSection() {
               type="date"
               value={deadline}
               onChange={(event) => setDeadline(event.target.value)}
-              className="mt-1 min-h-11 w-full rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+              className="mt-1 min-h-11 w-full rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-green focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
             />
           </label>
         </div>
@@ -405,6 +427,7 @@ export function GoalsSection() {
           Simpan target
         </Button>
       </form>
+      ) : null}
 
       <div className="mt-6">
         <button
@@ -431,7 +454,7 @@ export function GoalsSection() {
                     type="button"
                     onClick={() => void handleRestore(goal)}
                     disabled={restoringId === goal.id}
-                    className="inline-flex min-h-11 rounded-full border border-success-border bg-card px-4 text-sm font-semibold text-green hover:bg-blue-wash disabled:cursor-not-allowed disabled:bg-chip-slate disabled:text-ink-2"
+                    className="inline-flex min-h-11 rounded-full border border-success-border bg-card px-4 text-sm font-semibold text-green hover:bg-surface-subtle disabled:cursor-not-allowed disabled:bg-chip-slate disabled:text-ink-2"
                   >
                     {restoringId === goal.id ? "Memulihkan" : "Pulihkan"}
                   </button>
@@ -463,9 +486,9 @@ export function GoalsSection() {
 
       {adjust ? (
         <div
-          className="fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+          className={`modal-overlay fixed inset-0 z-[80] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4${adjustClosing ? " modal-closing-overlay" : ""}`}
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setAdjust(null);
+            if (event.target === event.currentTarget) requestAdjustClose();
           }}
         >
           <div
@@ -475,7 +498,7 @@ export function GoalsSection() {
             aria-labelledby="goal-adjust-title"
             tabIndex={-1}
             data-testid="adjust-dialog"
-            className="w-full max-w-lg rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+            className={`w-full max-w-lg rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6${adjustClosing ? " modal-closing-panel" : ""}`}
           >
             <div className="flex items-center justify-between gap-3">
               <h3 id="goal-adjust-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -483,9 +506,9 @@ export function GoalsSection() {
               </h3>
               <button
                 type="button"
-                onClick={() => setAdjust(null)}
+                onClick={requestAdjustClose}
                 aria-label="Tutup"
-                className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
@@ -497,7 +520,7 @@ export function GoalsSection() {
                 id="goal-adjust-amount"
                 value={adjustAmount}
                 onValueChange={setAdjustAmount}
-                className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-3 text-lg tabular-nums text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+                className="mt-1 w-full rounded-2xl border border-input-border bg-card px-3 py-3 text-lg tabular-nums text-ink focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
               />
             </label>
             {adjustError ? (
@@ -511,7 +534,7 @@ export function GoalsSection() {
               </p>
             )}
             <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Button type="button" variant="secondary" onClick={() => setAdjust(null)} disabled={adjusting}>
+              <Button type="button" variant="secondary" onClick={requestAdjustClose} disabled={adjusting}>
                 Batal
               </Button>
               <Button type="button" onClick={() => void submitAdjust()} isLoading={adjusting} loadingLabel="Menyimpan">

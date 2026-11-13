@@ -98,6 +98,10 @@ export type StoredTransactionType = "MONEY_IN" | "MONEY_OUT";
 export interface ListFilters {
   type?: StoredTransactionType;
   source?: "MANUAL" | "OCR";
+  category?: string;
+  categories?: string[];
+  /** Case-insensitive search across merchant and note. */
+  q?: string;
   from?: Date;
   to?: Date;
   walletId?: string;
@@ -469,7 +473,18 @@ export function createTransactionRepository(db: Db): TransactionRepository {
 
   return {
     async create(data) {
-      return db.transaction.create({ data }).then(numberizeAmount);
+      const { householdId, createdByUserId, walletId, receiptId, ...transactionData } = data;
+      return db.transaction
+        .create({
+          data: {
+            ...transactionData,
+            household: { connect: { id: householdId } },
+            createdBy: { connect: { id: createdByUserId } },
+            wallet: { connect: { id: walletId } },
+            ...(receiptId ? { receipt: { connect: { id: receiptId } } } : {}),
+          },
+        })
+        .then(numberizeAmount);
     },
     async updateActive(actor, id, data) {
       const result = await db.transaction.updateMany({
@@ -485,11 +500,29 @@ export function createTransactionRepository(db: Db): TransactionRepository {
     async createTransferPair(householdId, createdByUserId, outLeg, inLeg) {
       const transferGroupId = crypto.randomUUID();
       return db.$transaction(async (tx) => {
+        const { walletId: outWalletId, ...outData } = outLeg;
+        const { walletId: inWalletId, ...inData } = inLeg;
         const out = await tx.transaction.create({
-          data: { ...outLeg, householdId, createdByUserId, type: "MONEY_OUT", source: "MANUAL", transferGroupId },
+          data: {
+            ...outData,
+            type: "MONEY_OUT",
+            source: "MANUAL",
+            transferGroupId,
+            household: { connect: { id: householdId } },
+            createdBy: { connect: { id: createdByUserId } },
+            wallet: { connect: { id: outWalletId } },
+          },
         });
         const inn = await tx.transaction.create({
-          data: { ...inLeg, householdId, createdByUserId, type: "MONEY_IN", source: "MANUAL", transferGroupId },
+          data: {
+            ...inData,
+            type: "MONEY_IN",
+            source: "MANUAL",
+            transferGroupId,
+            household: { connect: { id: householdId } },
+            createdBy: { connect: { id: createdByUserId } },
+            wallet: { connect: { id: inWalletId } },
+          },
         });
         return [numberizeAmount(out), numberizeAmount(inn)];
       });
@@ -518,6 +551,19 @@ export function createTransactionRepository(db: Db): TransactionRepository {
             : {}),
         ...(filters.type ? { type: filters.type } : {}),
         ...(filters.source ? { source: filters.source } : {}),
+        ...(filters.categories?.length
+          ? { category: { in: filters.categories } }
+          : filters.category
+            ? { category: filters.category }
+            : {}),
+        ...(filters.q
+          ? {
+              OR: [
+                { merchant: { contains: filters.q, mode: "insensitive" as const } },
+                { note: { contains: filters.q, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
         ...(filters.from || filters.to
           ? { occurredAt: { ...(filters.from ? { gte: filters.from } : {}), ...(filters.to ? { lte: filters.to } : {}) } }
           : {}),

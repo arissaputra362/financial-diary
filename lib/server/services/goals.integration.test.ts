@@ -65,7 +65,7 @@ describe("Goals + advisor DB integration (T-007)", () => {
     await service.adjustSaved({ userId: fixtures.userId, householdId: fixtures.householdId }, id, 400_000);
     await service.adjustSaved({ userId: fixtures.userId, householdId: fixtures.householdId }, id, 600_000);
     const row = await prisma.savingsGoal.findFirst({ where: { id } });
-    expect(row?.savedAmountMinor).toBe(1_000_000);
+    expect(Number(row?.savedAmountMinor)).toBe(1_000_000);
 
     /* Negative result rejected by the conditional update, no change. */
     const rejected = await service
@@ -74,7 +74,7 @@ describe("Goals + advisor DB integration (T-007)", () => {
     expect(rejected).toBeInstanceOf(AppError);
     expect((rejected as AppError).code).toBe("SAVED_AMOUNT_INVALID");
     const unchanged = await prisma.savingsGoal.findFirst({ where: { id } });
-    expect(unchanged?.savedAmountMinor).toBe(1_000_000);
+    expect(Number(unchanged?.savedAmountMinor)).toBe(1_000_000);
 
     /* Trashed goal: increment becomes 404, list loses it, restore brings it back. */
     const actor = { userId: fixtures.userId, householdId: fixtures.householdId };

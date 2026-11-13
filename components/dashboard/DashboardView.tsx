@@ -1,23 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, RefreshCw } from "lucide-react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import Link from "next/link";
+import { RefreshCw, UserRound } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
-import { todayJakarta } from "@/lib/dates";
-import type { DashboardDTO, DashboardPeriodKey, WalletCardDTO, WalletDTO } from "@/types/api";
-import { WalletDetailSheet } from "@/components/wallets/WalletDetailSheet";
-import { WalletFormSheet } from "@/components/wallets/WalletFormSheet";
-import { WalletManageSheet } from "@/components/wallets/WalletManageSheet";
-import { WalletSummaryPair } from "@/components/wallets/WalletSummaryPair";
-import { BudgetCard } from "./BudgetCard";
-import { GoalsSummaryCard } from "./GoalsSummaryCard";
+import { currentMonthKey } from "@/lib/dates";
+import type { DashboardDTO } from "@/types/api";
+import { BalanceHero } from "./BalanceHero";
+import { FinnyTipCard } from "./FinnyTipCard";
+import { MonthlySummaryCard } from "./MonthlySummaryCard";
 import { RecentActivityCard } from "./RecentActivityCard";
-import { SpendingChart } from "./SpendingChart";
-import { TotalWealthCard } from "./TotalWealthCard";
 
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   weekday: "long",
@@ -27,43 +21,51 @@ const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
 });
 
-interface FormState {
-  open: boolean;
-  mode: "create" | "edit";
-  wallet: WalletDTO | null;
+const hourFormatter = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  hourCycle: "h23",
+  timeZone: "Asia/Jakarta",
+});
+
+function greetingForNow(): string {
+  const hour = Number(hourFormatter.format(new Date()));
+  if (hour < 11) return "Selamat pagi";
+  if (hour < 15) return "Selamat siang";
+  if (hour < 19) return "Selamat sore";
+  return "Selamat malam";
 }
 
 /**
  * Dashboard orchestrator (AC-F2-*; T-009 AC-F6-7; T-010 R-9 order). One
- * `GET /api/dashboard` call is the single source of truth. Wallet
- * creation/editing/archiving happens in sheets here; every figure is rendered
- * exactly as the server computed it.
+ * `GET /api/dashboard` call is the single source of truth. Wallet lifecycle
+ * actions are handled on the dedicated wallet screen.
  */
 export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
   const router = useRouter();
   const [data, setData] = useState<DashboardDTO | null>(initialData ?? null);
   const [loading, setLoading] = useState(!initialData);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<DashboardPeriodKey>("7D");
-  const hasFetchedNonInitialPeriod = useRef(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
-  const [manageOpen, setManageOpen] = useState(false);
-  const [manageTab, setManageTab] = useState<"active" | "archived">("active");
-  const [form, setForm] = useState<FormState>({ open: false, mode: "create", wallet: null });
-  const [detail, setDetail] = useState<WalletDTO | null>(null);
-  const [archiveCandidate, setArchiveCandidate] = useState<WalletDTO | WalletCardDTO | null>(null);
-  const [archiving, setArchiving] = useState(false);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialData && period === "7D" && reloadToken === 0 && !hasFetchedNonInitialPeriod.current) {
-      return;
-    }
-    if (period !== "7D") hasFetchedNonInitialPeriod.current = true;
     let active = true;
-    apiRequest<DashboardDTO>(`/api/dashboard?period=${period}`)
+    apiRequest<{ user?: { displayName?: string } }>("/api/auth/me")
+      .then((response) => {
+        if (active && response.ok) {
+          setDisplayName(response.data?.user?.displayName?.trim() || null);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (initialData && reloadToken === 0) return;
+    let active = true;
+    apiRequest<DashboardDTO>("/api/dashboard?period=7D")
       .then((response) => {
         if (!active) return;
         if (response.status === 401) {
@@ -85,93 +87,45 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
         if (active) setError("Ringkasan keuangan belum bisa dimuat.");
       })
       .finally(() => {
-        if (active) {
-          setLoading(false);
-          setRefreshing(false);
-        }
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [initialData, period, reloadToken, router]);
+  }, [initialData, reloadToken, router]);
 
   const retry = useCallback(() => {
     setLoading(true);
     setReloadToken((token) => token + 1);
   }, []);
 
-  const changePeriod = (next: DashboardPeriodKey) => {
-    if (next === period) return;
-    setRefreshing(true);
-    setPeriod(next);
-  };
-
-  const openDetail = async (card: WalletCardDTO) => {
-    const response = await apiRequest<WalletDTO>(`/api/wallets/${card.id}`);
-    if (response.ok && response.data) setDetail(response.data);
-  };
-
-  const archiveWallet = async () => {
-    if (!archiveCandidate) return;
-    setArchiving(true);
-    setArchiveError(null);
-    const wallet = archiveCandidate;
-    try {
-      const response = await apiRequest(`/api/wallets/${wallet.id}/archive`, { method: "POST" });
-      if (!response.ok) {
-        setArchiveError("Dompet belum bisa diarsipkan. Coba lagi.");
-        return;
-      }
-      setArchiveCandidate(null);
-      setDetail(null);
-      setManageOpen(false);
-      setNotice("Dompet diarsipkan.");
-      retry();
-    } catch {
-      setArchiveError("Dompet belum bisa diarsipkan. Periksa koneksimu lalu coba lagi.");
-    } finally {
-      setArchiving(false);
-    }
-  };
-
-  const restoreWallet = async (wallet: WalletDTO | WalletCardDTO) => {
-    const response = await apiRequest(`/api/wallets/${wallet.id}/restore`, { method: "POST" });
-    if (!response.ok) {
-      setNotice("Dompet belum bisa dipulihkan. Coba lagi.");
-      return;
-    }
-    setDetail(null);
-    setManageOpen(false);
-    setNotice("Dompet dipulihkan.");
-    retry();
-  };
-
-  const todayMinor =
-    data?.spending.byDay.find((day) => day.date === todayJakarta())?.amountMinor ?? 0;
+  const firstName = displayName?.split(/\s+/u)[0] ?? null;
+  const month = currentMonthKey();
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Financial Diary"
-        title="Beranda"
-        icon={LayoutDashboard}
-        description={dateFormatter.format(new Date())}
-      />
-
-      {notice ? (
-        <p
-          role="status"
-          aria-live="polite"
-          className="rounded-2xl bg-mint px-4 py-3 text-sm font-medium text-green"
+    <div className="space-y-5 sm:space-y-6">
+      <header className="flex items-start justify-between gap-4 px-1">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold tracking-wide text-green">FinDiary</p>
+          <h1 className="mt-1 truncate text-xl font-bold tracking-tight text-ink sm:text-2xl">
+            {greetingForNow()}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
+          <p className="mt-1 text-xs text-ink-3 sm:text-sm">{dateFormatter.format(new Date())}</p>
+        </div>
+        <Link
+          href="/profile"
+          aria-label="Buka profil"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-success-border bg-mint text-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:hidden"
         >
-          {notice}
-        </p>
-      ) : null}
+          <UserRound className="h-5 w-5" aria-hidden="true" />
+        </Link>
+      </header>
 
       {loading ? (
         <DashboardSkeleton />
       ) : error ? (
-        <div className="rounded-3xl border border-danger-border bg-danger-bg p-6 text-center">
+        <div className="rounded-feature border border-danger-border bg-danger-bg p-6 text-center">
           <p className="text-[15px] font-semibold text-danger">{error}</p>
           <p className="mt-1 text-sm text-ink-2">Periksa koneksimu lalu coba lagi.</p>
           <button
@@ -184,128 +138,36 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
           </button>
         </div>
       ) : data ? (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-12">
-            <TotalWealthCard
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start lg:gap-5">
+          <div className="order-1 lg:col-span-8 lg:self-stretch">
+            <BalanceHero
               sharedBalanceMinor={data.sharedBalanceMinor}
               personalBalanceMinor={data.personalBalanceMinor}
+              wallets={data.wallets}
+            />
+          </div>
+
+          <div className="order-3 lg:order-2 lg:col-span-4 lg:self-stretch">
+            <FinnyTipCard
               sharedBudget={data.monthlyBudget}
               personalBudget={data.personalMonthlyBudget}
-              sharedTodayMinor={todayMinor}
-              personalTodayMinor={data.personalSpending.byDay.find((day) => day.date === todayJakarta())?.amountMinor ?? 0}
             />
           </div>
 
-          <div className="lg:col-span-12">
-            <WalletSummaryPair
-              wallets={data.wallets}
-              loading={false}
-              error={null}
-              onReload={retry}
-              onOpenWallet={openDetail}
-              onManageWallet={() => {
-                setManageTab("active");
-                setManageOpen(true);
-              }}
-              onCreate={() => setForm({ open: true, mode: "create", wallet: null })}
-              onOpenArchive={() => {
-                setManageTab("archived");
-                setManageOpen(true);
-              }}
-            />
-          </div>
-
-          <div className="lg:col-span-12">
-            <RecentActivityCard initialRows={data.recentActivity} wallets={data.wallets} />
-          </div>
-
-          <div className="lg:col-span-5">
-            <BudgetCard
-              budget={data.monthlyBudget}
-              personalBudget={data.personalMonthlyBudget}
-            />
-          </div>
-          <div className="lg:col-span-7">
-            <SpendingChart
+          <div className="order-2 lg:order-3 lg:col-span-7">
+            <MonthlySummaryCard
+              month={month}
               spending={data.spending}
               personalSpending={data.personalSpending}
-              period={period}
-              onPeriodChange={changePeriod}
-              loading={refreshing}
+              refreshToken={reloadToken}
             />
           </div>
 
-          <div className="lg:col-span-12">
-            <GoalsSummaryCard goals={data.goals} />
+          <div className="order-4 lg:col-span-5">
+            <RecentActivityCard initialRows={data.recentActivity} />
           </div>
         </div>
       ) : null}
-
-      <WalletManageSheet
-        key={manageOpen ? `${manageTab}-open` : "manage-closed"}
-        open={manageOpen}
-        initialTab={manageTab}
-        onClose={() => setManageOpen(false)}
-        onEdit={(wallet) => {
-          setManageOpen(false);
-          setForm({ open: true, mode: "edit", wallet });
-        }}
-        onArchive={(wallet) => {
-          setArchiveError(null);
-          setArchiveCandidate(wallet);
-        }}
-        onRestore={(wallet) => void restoreWallet(wallet)}
-        onCreate={() => {
-          setManageOpen(false);
-          setForm({ open: true, mode: "create", wallet: null });
-        }}
-      />
-
-      <WalletDetailSheet
-        wallet={detail}
-        onClose={() => setDetail(null)}
-        onEdit={(wallet) => {
-          setDetail(null);
-          setForm({ open: true, mode: "edit", wallet });
-        }}
-        onArchive={(wallet) => {
-          setArchiveError(null);
-          setArchiveCandidate(wallet);
-        }}
-        onRestore={(wallet) => void restoreWallet(wallet)}
-      />
-
-      <WalletFormSheet
-        key={form.open ? `${form.mode}-${form.wallet?.id ?? "new"}` : "form-closed"}
-        open={form.open}
-        mode={form.mode}
-        wallet={form.wallet}
-        onClose={() => setForm({ open: false, mode: "create", wallet: null })}
-        onSaved={() => {
-          setForm({ open: false, mode: "create", wallet: null });
-          setNotice(form.mode === "create" ? "Dompet tersimpan." : "Perubahan disimpan.");
-          retry();
-        }}
-      />
-
-      <ConfirmActionDialog
-        open={archiveCandidate !== null}
-        title="Arsipkan dompet?"
-        description={
-          archiveCandidate
-            ? `“${archiveCandidate.name}” akan dipindahkan ke Arsip. Riwayat dan saldo tetap tersimpan, dan dompet bisa dipulihkan nanti.`
-            : "Dompet akan dipindahkan ke Arsip."
-        }
-        confirmLabel="Arsipkan dompet"
-        busy={archiving}
-        error={archiveError}
-        onCancel={() => {
-          if (archiving) return;
-          setArchiveCandidate(null);
-          setArchiveError(null);
-        }}
-        onConfirm={() => void archiveWallet()}
-      />
     </div>
   );
 }
@@ -334,18 +196,14 @@ function isDashboardPayload(value: DashboardDTO | null): value is DashboardDTO {
 function DashboardSkeleton() {
   return (
     <div
-      className="grid grid-cols-1 gap-5 lg:grid-cols-12"
+      className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5"
       aria-busy="true"
       aria-label="Memuat ringkasan"
     >
-      <Skeleton className="h-40 lg:col-span-12" />
-      <Skeleton className="h-24 lg:col-span-6" />
-      <Skeleton className="h-24 lg:col-span-6" />
-      <Skeleton className="h-44 lg:col-span-12" />
-      <Skeleton className="h-64 lg:col-span-12" />
-      <Skeleton className="h-56 lg:col-span-5" />
-      <Skeleton className="h-56 lg:col-span-7" />
-      <Skeleton className="h-48 lg:col-span-12" />
+      <Skeleton className="h-52 rounded-feature lg:col-span-8" />
+      <Skeleton className="h-52 rounded-feature lg:col-span-4" />
+      <Skeleton className="h-72 rounded-feature lg:col-span-7" />
+      <Skeleton className="h-72 rounded-feature lg:col-span-5" />
     </div>
   );
 }

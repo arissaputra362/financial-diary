@@ -1,15 +1,10 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <title>Financial Diary</title>
-  <rect width="512" height="512" rx="112" fill="#14283F"/>
-  <rect x="30" y="30" width="452" height="452" rx="92" stroke="#C9A96E" stroke-opacity=".72" stroke-width="2"/>
-  <path d="M256 151C217 126 166 126 117 143V355C168 338 219 340 256 366V151Z" fill="#F6F3EA"/>
-  <path d="M256 151C295 126 346 126 395 143V355C344 338 293 340 256 366V151Z" fill="#E8E2D5"/>
-  <path d="M256 151V366" stroke="#C9A96E" stroke-width="8" stroke-linecap="round"/>
-  <path d="M147 190C177 183 205 185 228 195" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
-  <path d="M147 222C177 215 205 217 228 227" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
-  <path d="M365 190C335 183 307 185 284 195" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
-  <path d="M365 222C335 215 307 217 284 227" stroke="#9AA9B7" stroke-width="8" stroke-linecap="round"/>
-  <path d="M285 303L315 276L339 286L371 249" stroke="#166534" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="371" cy="249" r="8" fill="#C9A96E"/>
-  <path d="M144 385H368" stroke="#C9A96E" stroke-opacity=".85" stroke-width="3" stroke-linecap="round"/>
+  <title>FinDiary</title>
+  <rect width="512" height="512" rx="112" fill="#16764F"/>
+  <path d="M256 392V250" stroke="#E3F3EA" stroke-width="28" stroke-linecap="round"/>
+  <path d="M254 272C254 202 212 160 142 154C142 236 188 280 254 272Z" fill="#A8E784"/>
+  <path d="M258 318C258 256 298 218 364 212C364 286 322 326 258 318Z" fill="#E3F3EA"/>
+  <circle cx="368" cy="366" r="34" fill="#FBBF24"/>
+  <circle cx="368" cy="366" r="24" stroke="#D97706" stroke-width="3" opacity="0.65"/>
+  <path d="M358 371C362 376 374 376 378 371" stroke="#7C4A03" stroke-width="5" stroke-linecap="round"/>
 </svg>

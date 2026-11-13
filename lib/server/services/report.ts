@@ -14,11 +14,14 @@ import { notFound, reportScopeUnavailable } from "../errors";
 import { jakartaDateOnly } from "../jakarta";
 import type { ReportCategorySum, ReportRepository } from "../repositories/reports";
 import type { WalletActor } from "../repositories/ledger";
-import { PeriodService } from "./period";
+import { PeriodService, addDaysToDateOnly, type MonthPeriod } from "./period";
 import type { ActivityWalletSummaryQuery } from "../contracts/reports";
 
 export interface MonthlyReportOptions {
   month?: string;
+  /* Inclusive date range; takes precedence over `month` when both are present. */
+  from?: string;
+  to?: string;
   scope?: "all" | "shared" | "personal";
   walletId?: string;
   walletIds?: string[];
@@ -27,8 +30,16 @@ export interface MonthlyReportOptions {
 
 export interface MonthlyReportSelectionOptions {
   month?: string;
+  from?: string;
+  to?: string;
   scope: "all" | "shared" | "personal";
   walletIds: string[];
+}
+
+function daysInclusive(from: string, to: string): number {
+  const start = new Date(`${from}T00:00:00.000Z`).getTime();
+  const end = new Date(`${to}T00:00:00.000Z`).getTime();
+  return Math.round((end - start) / 86_400_000) + 1;
 }
 
 function categoryName(value: string | null): string | null {
@@ -108,13 +119,15 @@ export class ReportService {
       throw reportScopeUnavailable();
     }
 
-    const transferWalletIds = selectedIds.length > 0 ? selectedIds : selectedWallets.map((wallet) => wallet.id);
+    const transferWalletIds = selectedIds.length > 0 ? selectedIds : undefined;
     const reportScopes = walletsByScope.filter((item) => item.wallets.length > 0);
     if (reportScopes.length === 0) reportScopes.push({ scope: scopes[0] ?? "SHARING", wallets: [] });
 
     const reports = await Promise.all(reportScopes.map(({ scope, wallets }) =>
       this.get(actor, {
         month,
+        from: options.from,
+        to: options.to,
         scope: scope === "PERSONAL" ? "personal" : "shared",
         walletIds: wallets.length ? wallets.map((wallet) => wallet.id) : undefined,
         transferWalletIds,
@@ -131,8 +144,21 @@ export class ReportService {
   async get(actor: WalletActor, options: MonthlyReportOptions = {}): Promise<MonthlyReportDTO> {
     const month = options.month ?? jakartaDateOnly().slice(0, 7);
     const scope = options.scope === "personal" ? "PERSONAL" : "SHARING";
-    const period = this.periods.month(month);
-    const previous = this.periods.month(shiftMonthKey(month, -1));
+    const today = jakartaDateOnly();
+    let period: MonthPeriod;
+    let previous: MonthPeriod;
+    let periodMonth = month;
+    if (options.from && options.to) {
+      period = this.periods.range(options.from, options.to);
+      const length = daysInclusive(options.from, options.to);
+      const previousEnd = addDaysToDateOnly(options.from, -1);
+      const previousStart = addDaysToDateOnly(previousEnd, -(length - 1));
+      previous = this.periods.range(previousStart, previousEnd);
+      periodMonth = options.to.slice(0, 7);
+    } else {
+      period = this.periods.month(month);
+      previous = this.periods.month(shiftMonthKey(month, -1));
+    }
 
     const wallets = await this.repo.listScopedWallets(actor, scope, options.walletId, options.walletIds);
     if (options.walletId && wallets.length === 0) {
@@ -146,7 +172,7 @@ export class ReportService {
       scope,
       walletId: options.walletId,
       walletIds: options.walletIds,
-      transferWalletIds: options.transferWalletIds ?? options.walletIds ?? (options.walletId ? [options.walletId] : wallets.map((wallet) => wallet.id)),
+      transferWalletIds: options.transferWalletIds ?? options.walletIds ?? (options.walletId ? [options.walletId] : undefined),
       period,
       previous,
     });
@@ -164,10 +190,10 @@ export class ReportService {
     const expenseTotal = aggregate.moneyOutMinor + aggregate.transferOutMinor;
 
     return {
-      month,
+      month: periodMonth,
       periodStart: period.periodStartDateOnly,
       periodEnd: period.periodEndDateOnly,
-      isCurrentMonth: month === jakartaDateOnly().slice(0, 7),
+      isCurrentMonth: period.periodStartDateOnly <= today && today <= period.periodEndDateOnly,
       scope: scope === "SHARING" ? "SHARED" : "PERSONAL",
       wallet: selectedWallet ? { id: selectedWallet.id, name: selectedWallet.name } : null,
       openingMinor: aggregate.openingMinor,

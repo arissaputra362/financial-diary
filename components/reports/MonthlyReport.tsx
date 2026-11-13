@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDownLeft, ArrowUpRight, Printer, X } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Check, ChevronDown, FileDown, Search, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { apiRequest } from "@/lib/api-client";
-import { monthKeyLabel } from "@/lib/dates";
+import { openPdfBlob } from "@/lib/pdf-download";
+import { currentMonthKey, formatDateLabel, monthKeyLabel, todayJakarta, toJakartaDateOnly } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type {
@@ -20,15 +20,13 @@ import type {
   TransactionListDTO,
   WalletDTO,
 } from "@/types/api";
-import { activityHref, activityListUrl } from "../transactions/activityUrl";
+import { activityHref, activityListUrl, type ActivityPeriod } from "../transactions/activityUrl";
 import { BalanceMovementChart } from "./BalanceMovementChart";
-import { CategoryDonutChart } from "./CategoryDonutChart";
-import { GoldReportSection } from "./GoldReportSection";
+import { CategoryBreakdownList, CategoryDonutChart } from "./CategoryDonutChart";
 import {
   buildReportHistoricalLedger,
   canOfferPrint,
   collectReportDetailRows,
-  formatReportDetailDate,
   type ReportLedgerRow,
 } from "./reportDetail";
 
@@ -41,8 +39,18 @@ export interface MonthlyReportProps {
   walletsError: string | null;
   scope: ReportScope;
   walletIds: string[];
-  onScopeChange: (scope: ReportScope) => void;
-  onWalletChange: (walletIds: string[]) => void;
+  period: ActivityPeriod;
+  /** Resolved range start/end for non-month periods. */
+  from: string;
+  to: string;
+  onFilterChange: (next: {
+    period: ActivityPeriod;
+    month: string;
+    from: string;
+    to: string;
+    scope: ReportScope;
+    walletIds: string[];
+  }) => void;
 }
 
 const longDateFormatter = new Intl.DateTimeFormat("id-ID", {
@@ -57,9 +65,17 @@ function longDate(value: string): string {
   return Number.isNaN(date.getTime()) ? value : longDateFormatter.format(date);
 }
 
-/** "Oktober 2026" -> "Oktober" for the adaptive hero label (AC-F7-3). */
-function monthNameOnly(month: string): string {
-  return monthKeyLabel(month).replace(/\s+\d{4}$/, "");
+const PERIOD_OPTIONS: ReadonlyArray<readonly [ActivityPeriod, string]> = [
+  ["month", "Bulan ini"],
+  ["7d", "7 hari"],
+  ["30d", "30 hari"],
+  ["range", "Rentang"],
+];
+
+function shiftDateKey(key: string, deltaDays: number): string {
+  const base = new Date(`${key}T00:00:00+07:00`);
+  base.setUTCDate(base.getUTCDate() + deltaDays);
+  return toJakartaDateOnly(base);
 }
 
 function scopeWallets(wallets: WalletDTO[], scope: ReportScope): WalletDTO[] {
@@ -76,8 +92,10 @@ export function MonthlyReport({
   walletsError,
   scope,
   walletIds,
-  onScopeChange,
-  onWalletChange,
+  period,
+  from,
+  to,
+  onFilterChange,
 }: MonthlyReportProps) {
   const router = useRouter();
   const [result, setResult] = useState<{
@@ -87,7 +105,19 @@ export function MonthlyReport({
   } | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [walletSearch, setWalletSearch] = useState("");
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const { closing: filterSheetClosing, requestClose: requestFilterClose } = useAnimatedClose(
+    () => setFilterSheetOpen(false),
+  );
+  const [draftScope, setDraftScope] = useState<ReportScope>(scope);
+  const [draftWalletIds, setDraftWalletIds] = useState<string[]>(walletIds);
+  const [draftPeriod, setDraftPeriod] = useState<ActivityPeriod>(period);
+  const [draftMonth, setDraftMonth] = useState<string>(month);
+  const [draftFrom, setDraftFrom] = useState<string>(from);
+  const [draftTo, setDraftTo] = useState<string>(to);
+  const [filterError, setFilterError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [printRun, setPrintRun] = useState<{
     key: string;
     report: MonthlyReportDTO;
@@ -100,9 +130,89 @@ export function MonthlyReport({
   const hasPersonalWallet = wallets.some((wallet) => wallet.scope === "PERSONAL");
   const personalUnavailable = !walletsLoading && !walletsError && !hasPersonalWallet;
   const selectedWallets = available.filter((wallet) => walletIds.includes(wallet.id));
-  const searchedWallets = available.filter((wallet) =>
+  const draftAvailable = scopeWallets(wallets, draftScope);
+  const searchedDraftWallets = draftAvailable.filter((wallet) =>
     wallet.name.toLocaleLowerCase("id-ID").includes(walletSearch.trim().toLocaleLowerCase("id-ID")),
   );
+  const draftSharedWallets = searchedDraftWallets.filter((wallet) => wallet.scope === "SHARING");
+  const draftPersonalWallets = searchedDraftWallets.filter((wallet) => wallet.scope === "PERSONAL");
+  const periodLabel =
+    period === "month"
+      ? monthKeyLabel(month)
+      : period === "7d"
+        ? "7 hari terakhir"
+        : period === "30d"
+          ? "30 hari terakhir"
+          : from && to
+            ? `${formatDateLabel(from)} sampai ${formatDateLabel(to)}`
+            : "Rentang tanggal";
+  const scopeSummary = scope === "all" ? "Semua" : scope === "shared" ? "Bersama" : "Pribadi";
+  const walletSummary = walletIds.length
+    ? `${walletIds.length} dompet`
+    : `Semua dompet (${available.length})`;
+  const filterSummary = `${periodLabel} · ${scopeSummary} · ${walletSummary}`;
+
+  const toggleDraftWallet = (id: string) => {
+    setDraftWalletIds((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    );
+  };
+
+  const chooseDraftScope = (next: ReportScope) => {
+    setDraftScope(next);
+    if (next !== "all") {
+      setDraftWalletIds((current) =>
+        current.filter((id) => wallets.some((wallet) =>
+          wallet.id === id && wallet.scope === (next === "shared" ? "SHARING" : "PERSONAL"),
+        )),
+      );
+    }
+  };
+
+  const openFilterSheet = () => {
+    setDraftScope(scope);
+    setDraftWalletIds(walletIds);
+    setDraftPeriod(period);
+    setDraftMonth(month);
+    setDraftFrom(from);
+    setDraftTo(to);
+    setFilterError(null);
+    setWalletSearch("");
+    setFilterSheetOpen(true);
+  };
+
+  const applyReportFilter = () => {
+    let nextFrom = "";
+    let nextTo = "";
+    if (draftPeriod === "7d" || draftPeriod === "30d") {
+      const days = draftPeriod === "7d" ? 6 : 29;
+      nextTo = todayJakarta();
+      nextFrom = shiftDateKey(nextTo, -days);
+    } else if (draftPeriod === "range") {
+      if (!draftFrom || !draftTo) {
+        setFilterError("Isi tanggal mulai dan tanggal akhir.");
+        return;
+      }
+      if (draftFrom > draftTo) {
+        setFilterError("Tanggal mulai tidak boleh setelah tanggal akhir.");
+        return;
+      }
+      nextFrom = draftFrom;
+      nextTo = draftTo;
+    }
+    const validWalletIds = draftScope === "all"
+      ? draftWalletIds
+      : draftWalletIds.filter((id) => draftAvailable.some((wallet) => wallet.id === id));
+    onFilterChange({
+      period: draftPeriod,
+      month: draftMonth,
+      from: nextFrom,
+      to: nextTo,
+      scope: draftScope,
+      walletIds: validWalletIds,
+    });
+    setFilterSheetOpen(false);
+  };
   /*
     Never request a scope or wallet the selector cannot represent. The parent
     resets both from the URL; until then the report keeps its loading shape
@@ -111,8 +221,8 @@ export function MonthlyReport({
   const waitingForScope = walletsLoading ||
     (scope === "personal" && personalUnavailable) ||
     (walletIds.length > 0 && !walletsError && selectedWallets.length !== walletIds.length);
-  const requestKey = `${month}|${scope}|${walletIds.join(",")}|${reloadToken}`;
-  const printKey = `${month}|${scope}|${walletIds.join(",")}`;
+  const requestKey = `${period}|${month}|${from}|${to}|${scope}|${walletIds.join(",")}|${reloadToken}`;
+  const printKey = `${period}|${month}|${from}|${to}|${scope}|${walletIds.join(",")}`;
   const printKeyRef = useRef(printKey);
   const loading = result?.key !== requestKey;
   const data = result?.key === requestKey ? result.data : null;
@@ -123,7 +233,13 @@ export function MonthlyReport({
     let active = true;
     const controller = new AbortController();
 
-    const params = new URLSearchParams({ month, scope });
+    const params = new URLSearchParams({ scope });
+    if (period !== "month" && from && to) {
+      params.set("from", from);
+      params.set("to", to);
+    } else {
+      params.set("month", month);
+    }
     walletIds.forEach((id) => params.append("walletId", id));
     apiRequest<MonthlyReportDTO>(`/api/reports/monthly?${params.toString()}`, { signal: controller.signal })
       .then((response) => {
@@ -155,17 +271,16 @@ export function MonthlyReport({
       active = false;
       controller.abort();
     };
-  }, [month, requestKey, router, scope, waitingForScope, walletIds]);
+  }, [from, month, period, requestKey, router, scope, to, waitingForScope, walletIds]);
 
   /*
-    A print run belongs to one month + scope + wallet combination. Changing any
-    of them discards the rows and aborts an in-flight page loop (AC-F7-17), so a
-    detail page can never print for a combination that is no longer on screen.
+    A PDF run belongs to one month + scope + wallet combination. Changing any of
+    them discards the rows and aborts an in-flight page loop (AC-F7-17), so a
+    stale ledger can never be exported for the combination on screen.
   */
   useEffect(() => {
     printKeyRef.current = printKey;
     printAbortRef.current?.abort();
-    setPreviewOpen(false);
   }, [printKey]);
 
   useEffect(
@@ -176,7 +291,6 @@ export function MonthlyReport({
   );
 
   const showLoading = loading || waitingForScope;
-  const monthLabel = monthKeyLabel(month);
   const canPrint = canOfferPrint({
     loading: showLoading,
     error: Boolean(error),
@@ -200,7 +314,7 @@ export function MonthlyReport({
         )
       : null;
 
-  const preparePreview = async () => {
+  const prepareLedger = async (exportAfter = false) => {
     if (preparing || !data) return;
     const key = printKey;
     setPrintRun({ key, report: data, status: "preparing", rows: [] });
@@ -250,152 +364,113 @@ export function MonthlyReport({
       return;
     }
 
-    flushSync(() => {
-      setPrintRun({ key, report: data, status: "ready", rows });
-      setPreviewOpen(true);
-    });
+    setPrintRun({ key, report: data, status: "ready", rows });
+
+    if (exportAfter) {
+      await exportPdf({
+        report: data,
+        ledger: buildReportHistoricalLedger(
+          rows,
+          scope,
+          data,
+          walletIds.length ? selectedWallets : available,
+        ),
+      });
+    }
   };
 
-  const printPreview = () => {
-    if (!historicalLedger || !data) return;
-
-    const originalTitle = document.title;
-    const restoreTitle = () => {
-      document.title = originalTitle;
-    };
-    window.addEventListener("afterprint", restoreTitle, { once: true });
-    const scopeLabel = scope === "all" ? "Semua" : scope === "shared" ? "Bersama" : "Pribadi";
-    const walletLabel = (data.wallet?.name ?? (walletIds.length ? `${walletIds.length} dompet` : "Semua dompet"))
-      .replace(/[<>:"/\\|?*\u0000-\u001F]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    /* Browsers commonly use the page title as the suggested PDF filename. */
-    document.title = `Ringkasan ${monthKeyLabel(month)} - ${scopeLabel} - ${walletLabel}`;
+  /*
+    Build a vector PDF in the browser so mobile can open or share the file
+    directly. Page 1 is the A4 summary; the transaction ledger follows on the
+    next pages, so nothing is sliced or cut off at the page edge.
+  */
+  const exportPdf = async (payload?: {
+    report: MonthlyReportDTO;
+    ledger: ReportLedgerRow[];
+  }) => {
+    const report = payload?.report ?? data;
+    const ledger = payload?.ledger ?? historicalLedger;
+    if (!report || !ledger || exporting) return;
+    setExporting(true);
+    setExportError(null);
     try {
-      window.print();
+      const { createReportPdf } = await import("./report-pdf");
+      const scopeLabel = scope === "all" ? "Semua" : scope === "shared" ? "Bersama" : "Pribadi";
+      const walletLabel =
+        report.wallet?.name ??
+        (walletIds.length
+          ? selectedWallets.map((wallet) => wallet.name).join(", ")
+          : "Semua dompet");
+      const { blob, filename } = createReportPdf({
+        report,
+        ledger,
+        periodLabel,
+        scopeLabel,
+        walletLabel,
+      });
+      await openPdfBlob(blob, filename);
+    } catch (error) {
+      if ((error as DOMException | undefined)?.name !== "AbortError") {
+        setExportError("PDF belum bisa dibuat. Coba lagi.");
+      }
     } finally {
-      /* Synchronous restore plus the afterprint listener cover Cancel/Escape. */
-      restoreTitle();
+      setExporting(false);
     }
+  };
+
+  /* One click: prepare the detail rows, then build and open the PDF. */
+  const handleExportClick = () => {
+    if (preparing || exporting) return;
+    if (currentPrint?.status === "ready" && historicalLedger) {
+      void exportPdf();
+      return;
+    }
+    void prepareLedger(true);
   };
 
   return (
     <section aria-label="Laporan bulanan" className="space-y-5">
-      {previewOpen ? (
-        <div className="sticky top-2 z-20 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-card-border bg-card/95 p-3 shadow-bento backdrop-blur print:hidden">
-          <p className="text-sm font-semibold text-ink">Pratinjau laporan {monthLabel}</p>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setPreviewOpen(false)} className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash">
-              <X className="h-4 w-4" aria-hidden="true" /> Tutup
-            </button>
-            <button type="button" onClick={printPreview} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover">
-              <Printer className="h-4 w-4" aria-hidden="true" /> Cetak / simpan PDF
-            </button>
-          </div>
-        </div>
-      ) : null}
-      <div className={cn("space-y-2 print:hidden", previewOpen && "hidden")}>
-        <div className="flex flex-wrap items-end gap-3">
-          <SegmentedControl<ReportScope>
-            label="Lingkup laporan"
-            value={scope}
-            options={[
-              { value: "all", label: "Semua" },
-              {
-                value: "personal",
-                label: "Pribadi",
-                disabled: personalUnavailable,
-                disabledReason: "Kamu belum punya dompet pribadi.",
-              },
-              { value: "shared", label: "Bersama" },
-            ]}
-            onChange={(next) => {
-              onScopeChange(next);
-            }}
-          />
-
-          <fieldset className="w-full space-y-2 rounded-2xl border border-card-border bg-card p-3 sm:flex-1">
-            <legend className="px-1 text-sm font-semibold text-ink">Pilih dompet</legend>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-medium text-ink-2" aria-live="polite">
-                {walletsLoading ? "Memuat dompet..." : walletIds.length ? `${walletIds.length} dipilih` : `Semua dompet (${available.length})`}
-              </span>
-              {walletIds.length ? (
-                <button
-                  type="button"
-                  onClick={() => onWalletChange([])}
-                  className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2"
-                >
-                  Hapus pilihan
-                </button>
-              ) : null}
-            </div>
-            <label className="block">
-              <span className="sr-only">Cari dompet laporan</span>
-              <input
-                type="search"
-                value={walletSearch}
-                onChange={(event) => setWalletSearch(event.target.value)}
-                placeholder="Cari nama dompet"
-                disabled={walletsLoading || Boolean(walletsError)}
-                className="min-h-11 w-full rounded-xl border border-input-border bg-card px-3 text-sm text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15 disabled:opacity-60"
-              />
-            </label>
-            <div className="max-h-48 space-y-1 overflow-y-auto" role="group" aria-label="Daftar dompet laporan">
-              {walletsLoading ? (
-                <p className="px-2 py-3 text-sm text-ink-3">Memuat daftar dompet...</p>
-              ) : walletsError ? (
-                <p className="px-2 py-3 text-sm text-danger">Dompet tidak tersedia.</p>
-              ) : searchedWallets.length ? searchedWallets.map((wallet) => (
-                <label key={wallet.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 text-sm text-ink hover:bg-blue-wash">
-                  <input
-                    type="checkbox"
-                    checked={walletIds.includes(wallet.id)}
-                    onChange={(event) => onWalletChange(event.target.checked
-                      ? [...walletIds, wallet.id]
-                      : walletIds.filter((id) => id !== wallet.id))}
-                    className="h-4 w-4 accent-blue"
-                  />
-                  <span className="min-w-0 flex-1 truncate">{wallet.name}</span>
-                  <span className="shrink-0 text-xs text-ink-3">
-                    {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}{wallet.archivedAt ? ", Arsip" : ""}
-                  </span>
-                </label>
-              )) : (
-                <p className="px-2 py-3 text-sm text-ink-3">
-                  {available.length ? "Tidak ada dompet yang cocok." : "Belum ada dompet untuk cakupan ini."}
-                </p>
-              )}
-            </div>
-            <p className="text-xs text-ink-3">
-              Transfer antar-dompet yang seluruh sisinya ada di pilihan tidak masuk ke pemasukan atau pengeluaran. Jika sisi pasangannya berada di dompet yang tidak dipilih, transfer dihitung sebagai pemasukan atau pengeluaran sesuai arah pada dompet terpilih.
-            </p>
-          </fieldset>
+      <div className="space-y-2 print:hidden">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={openFilterSheet}
+            aria-haspopup="dialog"
+            aria-expanded={filterSheetOpen}
+            className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-card-border bg-card px-4 text-sm font-semibold text-ink shadow-sm transition-colors hover:bg-surface-subtle sm:max-w-md sm:flex-none"
+          >
+            <SlidersHorizontal className="h-4 w-4 shrink-0 text-green" aria-hidden="true" />
+            <span className="min-w-0 truncate">{filterSummary}</span>
+            <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-ink-3" aria-hidden="true" />
+          </button>
 
           {canPrint ? (
             <button
               type="button"
-              onClick={() => void preparePreview()}
-              disabled={preparing}
-              aria-busy={preparing || undefined}
-              className="ml-auto inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash disabled:cursor-not-allowed disabled:text-ink-2 disabled:hover:bg-transparent sm:w-auto sm:min-w-52"
+              onClick={handleExportClick}
+              disabled={preparing || exporting}
+              aria-busy={preparing || exporting || undefined}
+              className="ml-auto inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:min-w-52"
             >
-              <Printer className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {preparing ? "Menyiapkan pratinjau..." : "Pratinjau laporan"}
+              <FileDown className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {preparing || exporting ? "Menyiapkan PDF..." : "Buka PDF"}
             </button>
           ) : null}
         </div>
         {printFailed ? (
           <p role="status" className="text-xs text-danger">
-            Detail transaksi belum bisa disiapkan.{" "}
+            PDF belum bisa disiapkan.{" "}
             <button
               type="button"
-              onClick={() => void preparePreview()}
-              className="min-h-11 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
+              onClick={() => void prepareLedger(true)}
+              className="min-h-11 rounded-full px-2 text-sm font-semibold text-green hover:bg-mint"
             >
               Coba lagi
             </button>
           </p>
+        ) : null}
+        {exportError ? (
+          <p role="status" className="text-xs text-danger">{exportError}</p>
         ) : null}
         {personalUnavailable ? (
           <p className="text-xs text-ink-3">Kamu belum punya dompet pribadi.</p>
@@ -406,6 +481,275 @@ export function MonthlyReport({
           </p>
         ) : null}
       </div>
+
+      {filterSheetOpen ? (
+        <div
+          className={cn(
+            "modal-overlay fixed inset-0 z-50 flex items-end justify-center bg-scrim/35 sm:items-center sm:p-4 print:hidden",
+            filterSheetClosing && "modal-closing-overlay",
+          )}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) requestFilterClose();
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="report-filter-title"
+            className={cn(
+              "max-h-[88vh] w-full overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:max-w-lg sm:rounded-3xl",
+              filterSheetClosing && "modal-closing-panel",
+            )}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 id="report-filter-title" className="text-lg font-semibold text-ink">Filter ringkasan</h2>
+                <p className="mt-1 text-sm text-ink-3">Pilih cakupan dan dompet yang dihitung di laporan ini.</p>
+              </div>
+              <button
+                type="button"
+                onClick={requestFilterClose}
+                aria-label="Tutup filter ringkasan"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-sm font-semibold text-ink-2">Periode</p>
+              <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Periode laporan">
+                {PERIOD_OPTIONS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={draftPeriod === value}
+                    onClick={() => {
+                      setDraftPeriod(value);
+                      if (value === "range" && !draftFrom && !draftTo) {
+                        const today = todayJakarta();
+                        setDraftFrom(shiftDateKey(today, -29));
+                        setDraftTo(today);
+                      }
+                      setFilterError(null);
+                    }}
+                    className={cn(
+                      "min-h-10 rounded-full px-3.5 text-xs font-semibold transition-colors",
+                      draftPeriod === value
+                        ? "bg-brand-green text-white"
+                        : "border border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {draftPeriod === "month" ? (
+                <label className="mt-3 block text-xs font-semibold text-ink-2">
+                  Bulan
+                  <input
+                    type="month"
+                    value={draftMonth}
+                    max={currentMonthKey()}
+                    onChange={(event) => setDraftMonth(event.target.value)}
+                    className="mt-1 min-h-11 w-full rounded-xl border border-input-border bg-card px-3 text-sm text-ink accent-green focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
+                  />
+                </label>
+              ) : null}
+
+              {draftPeriod === "range" ? (
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <label className="flex flex-col gap-1 text-xs font-semibold text-ink-2">
+                    Dari
+                    <input
+                      type="date"
+                      value={draftFrom}
+                      max={draftTo || undefined}
+                      onChange={(event) => setDraftFrom(event.target.value)}
+                      className="min-h-11 w-full min-w-0 rounded-xl border border-input-border px-2 text-sm text-ink focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs font-semibold text-ink-2">
+                    Sampai
+                    <input
+                      type="date"
+                      value={draftTo}
+                      min={draftFrom || undefined}
+                      onChange={(event) => setDraftTo(event.target.value)}
+                      className="min-h-11 w-full min-w-0 rounded-xl border border-input-border px-2 text-sm text-ink focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
+                    />
+                  </label>
+                </div>
+              ) : null}
+
+              {filterError ? (
+                <p role="alert" className="mt-2 text-xs text-danger">{filterError}</p>
+              ) : null}
+            </div>
+
+            <div className="mt-5">
+              <p className="text-sm font-semibold text-ink-2">Cakupan</p>
+              <div className="mt-2 flex items-center gap-1 rounded-xl bg-surface-subtle p-1" role="group" aria-label="Cakupan laporan">
+                {([
+                  ["all", "Semua"],
+                  ["personal", "Pribadi"],
+                  ["shared", "Bersama"],
+                ] as const).map(([value, label]) => {
+                  const disabled = value === "personal" && personalUnavailable;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={draftScope === value}
+                      disabled={disabled}
+                      onClick={() => chooseDraftScope(value)}
+                      className={cn(
+                        "min-h-11 flex-1 rounded-full px-3 text-sm font-semibold transition-colors",
+                        draftScope === value ? "bg-card text-ink shadow-sm" : "text-ink-2 hover:bg-card",
+                        disabled && "cursor-not-allowed text-ink-3 hover:bg-transparent",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              {personalUnavailable ? (
+                <p className="mt-1 text-xs text-ink-3">Kamu belum punya dompet pribadi.</p>
+              ) : null}
+            </div>
+
+            <div className="mt-5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-ink-2">Dompet</p>
+                <span className="text-xs font-medium text-ink-3">
+                  {draftWalletIds.length ? `${draftWalletIds.length} dipilih` : "Semua dompet"}
+                </span>
+              </div>
+              <label className="relative mt-2 block">
+                <span className="sr-only">Cari dompet laporan</span>
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
+                  aria-hidden="true"
+                />
+                <input
+                  type="search"
+                  value={walletSearch}
+                  onChange={(event) => setWalletSearch(event.target.value)}
+                  placeholder="Cari nama dompet"
+                  disabled={walletsLoading || Boolean(walletsError)}
+                  className="min-h-11 w-full rounded-xl border border-input-border bg-card pl-10 pr-3 text-sm text-ink placeholder:text-placeholder focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15 disabled:opacity-60"
+                />
+              </label>
+
+              {!walletsLoading && !walletsError && draftAvailable.length > 0 ? (
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDraftWalletIds(draftAvailable.map((wallet) => wallet.id))}
+                    className="min-h-9 rounded-full px-2 text-xs font-semibold text-green hover:bg-mint"
+                  >
+                    Pilih semua
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraftWalletIds([])}
+                    className="min-h-9 rounded-full px-2 text-xs font-semibold text-ink-2 hover:bg-surface-subtle"
+                  >
+                    Kosongkan
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="mt-2 max-h-56 space-y-2 overflow-y-auto" role="group" aria-label="Daftar dompet laporan">
+                {walletsLoading ? (
+                  <p className="px-2 py-3 text-sm text-ink-3">Memuat daftar dompet...</p>
+                ) : walletsError ? (
+                  <p className="px-2 py-3 text-sm text-danger">Dompet tidak tersedia.</p>
+                ) : searchedDraftWallets.length ? (
+                  [
+                    { label: "Bersama", list: draftSharedWallets },
+                    { label: "Pribadi", list: draftPersonalWallets },
+                  ].map((group) =>
+                    group.list.length ? (
+                      <div key={group.label} className="space-y-1">
+                        <p className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                          {group.label}
+                        </p>
+                        {group.list.map((wallet) => {
+                          const checked = draftWalletIds.includes(wallet.id);
+                          return (
+                            <button
+                              key={wallet.id}
+                              type="button"
+                              aria-pressed={checked}
+                              onClick={() => toggleDraftWallet(wallet.id)}
+                              className={cn(
+                                "flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 text-left text-sm transition-colors",
+                                checked
+                                  ? "border-brand-green bg-mint text-green"
+                                  : "border-card-border bg-card text-ink hover:bg-surface-subtle",
+                              )}
+                            >
+                              <span
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-subtle text-ink-2"
+                                aria-hidden="true"
+                              >
+                                <Wallet className="h-4 w-4" />
+                              </span>
+                              <span className="min-w-0 flex-1 truncate font-semibold">{wallet.name}</span>
+                              {wallet.archivedAt ? (
+                                <span className="shrink-0 rounded-full bg-chip-slate px-2 py-0.5 text-[10px] font-semibold text-ink-2">
+                                  Arsip
+                                </span>
+                              ) : null}
+                              <span
+                                className={cn(
+                                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                                  checked ? "border-brand-green bg-brand-green text-white" : "border-input-border",
+                                )}
+                                aria-hidden="true"
+                              >
+                                {checked ? <Check className="h-3 w-3" /> : null}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null,
+                  )
+                ) : (
+                  <p className="px-2 py-3 text-sm text-ink-3">
+                    {draftAvailable.length ? "Tidak ada dompet yang cocok." : "Belum ada dompet untuk cakupan ini."}
+                  </p>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-ink-3">
+                Transfer antar-dompet yang seluruh sisinya ada di pilihan tidak masuk ke pemasukan atau pengeluaran.
+              </p>
+            </div>
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={requestFilterClose}
+                className="min-h-11 rounded-full border border-card-border px-4 text-sm font-semibold text-ink-2 hover:bg-surface-subtle"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={applyReportFilter}
+                className="min-h-11 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
+              >
+                Terapkan
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {showLoading ? (
         <ReportSkeleton />
@@ -420,43 +764,31 @@ export function MonthlyReport({
           </Button>
         </Card>
       ) : (
-        <>
-          <div className={cn("space-y-5 print:space-y-2 print:break-after-page", previewOpen && "rounded-3xl border border-card-border bg-card p-3 sm:p-5")}>
+        <div className="space-y-5">
+          <div className="space-y-5 print:space-y-2 print:break-after-page">
             <h2 className="hidden text-2xl font-bold tracking-tight text-ink print:mb-1 print:block print:text-xl">
-              Laporan {monthLabel}
+              Laporan {periodLabel}
             </h2>
-            <BalanceCard report={data} month={month} />
+            <BalanceCard report={data} periodLabel={periodLabel} />
             <MovementTrace report={data} hasWalletSelection={walletIds.length > 0} />
             {data.transactionCount === 0 ? (
               <Card className="text-center print:hidden">
                 <p className="text-[15px] font-medium text-ink">
                   {data.wallet
-                    ? `Belum ada transaksi pada dompet ${data.wallet.name} untuk ${monthLabel}.`
-                    : `Belum ada transaksi pada ${monthLabel}.`}
+                    ? `Belum ada transaksi pada dompet ${data.wallet.name} untuk ${periodLabel}.`
+                    : `Belum ada transaksi pada ${periodLabel}.`}
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-5 lg:grid-cols-2 print:grid-cols-2 print:gap-2">
+              <div className="grid gap-5 lg:grid-cols-3 print:grid-cols-2 print:gap-2">
                 <BreakdownCard
-                  title="Pemasukan"
-                  type="income"
-                  breakdown={data.income}
-                  delta={data.delta.moneyInMinor}
-                  monthLabel={monthLabel}
-                  actionHref={activityHref({
-                    view: "active",
-                    month,
-                    filter: "in",
-                    scope,
-                    walletIds,
-                  })}
-                />
-                <BreakdownCard
+                  className="lg:col-span-2"
+                  chart="donut"
                   title="Pengeluaran"
                   type="expense"
                   breakdown={data.expense}
                   delta={data.delta.moneyOutMinor}
-                  monthLabel={monthLabel}
+                  monthLabel={periodLabel}
                   actionHref={activityHref({
                     view: "active",
                     month,
@@ -466,22 +798,33 @@ export function MonthlyReport({
                   })}
                   actionLabel="Lihat semua pengeluaran"
                 />
+                <BreakdownCard
+                  chart="list"
+                  title="Pemasukan"
+                  type="income"
+                  breakdown={data.income}
+                  delta={data.delta.moneyInMinor}
+                  monthLabel={periodLabel}
+                  actionHref={activityHref({
+                    view: "active",
+                    month,
+                    filter: "in",
+                    scope,
+                    walletIds,
+                  })}
+                />
               </div>
             )}
             <BalanceMovementChart
               key={`${month}-${scope}-${walletIds.join(",") || "all"}`}
               data={data.dailyBalances}
-              monthLabel={monthLabel}
+              monthLabel={periodLabel}
               isCurrentMonth={data.isCurrentMonth}
               scopeLabel={scope === "all" ? "semua" : scope === "shared" ? "bersama" : "pribadi"}
             />
-            <GoldReportSection scope={scope} liquidBalanceMinor={data.closingMinor} />
             <ReportFootnotes report={data} scope={scope} walletLabel={walletIds.length ? selectedWallets.map((wallet) => wallet.name).join(", ") : "Semua dompet"} />
           </div>
-          {historicalLedger ? (
-            <PrintTransactionDetail rows={historicalLedger} monthLabel={monthLabel} preview={previewOpen} />
-          ) : null}
-        </>
+        </div>
       )}
     </section>
   );
@@ -504,20 +847,38 @@ function DeltaLine({
   );
 }
 
-function BalanceCard({ report, month }: { report: MonthlyReportDTO; month: string }) {
-  const label = report.isCurrentMonth ? "Sisa bulan ini" : `Sisa akhir ${monthNameOnly(month)}`;
+function BalanceCard({ report, periodLabel }: { report: MonthlyReportDTO; periodLabel: string }) {
+  const label = `Ringkasan ${periodLabel}`;
   return (
-    <Card
-      variant="navy"
-      className="w-full p-6 sm:p-8 print:break-inside-avoid print:p-3"
+    <section
+      aria-label={`Ringkasan ${periodLabel}`}
+      className="relative w-full overflow-hidden rounded-feature surface-hero p-5 text-white shadow-bento sm:p-6 print:break-inside-avoid print:p-3"
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-on-dark-soft print:text-[8pt]">{label}</p>
-      <p className="mt-2 whitespace-nowrap text-4xl font-bold tabular-nums tracking-tight text-white sm:text-[2.5rem] print:mt-0.5 print:text-2xl">
-        {formatIDR(report.closingMinor)}
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/90 print:text-[8pt]">{label}</p>
+      <p className="mt-2 text-xs font-medium text-white/85 print:mt-0.5 print:text-[7pt]">Pengeluaran</p>
+      <p className="financial-value mt-0.5 whitespace-nowrap text-[clamp(1.6rem,7vw,2.5rem)] font-bold tracking-tight print:text-2xl">
+        {formatIDR(report.moneyOutMinor)}
       </p>
-      <DeltaLine amountMinor={report.delta.closingMinor} className="mt-2 text-sm text-on-dark-soft print:mt-0.5 print:text-[8pt]" />
-      <p className="mt-3 text-xs text-on-dark-muted print:mt-0.5 print:text-[8pt]">Setelah seluruh pengeluaran tercatat.</p>
-    </Card>
+      <DeltaLine amountMinor={report.delta.moneyOutMinor} className="mt-2 text-xs text-white/85 print:mt-0.5 print:text-[8pt]" />
+
+      <div className="mt-4 grid grid-cols-2 gap-2 print:mt-2 print:gap-1">
+        <div className="min-w-0 rounded-2xl bg-black/15 p-3 print:bg-white/10 print:p-1.5">
+          <p className="text-[11px] font-medium text-white/85 print:text-[7pt]">Pemasukan</p>
+          <p className="financial-value mt-1 truncate text-lg font-bold tabular-nums print:mt-0.5 print:text-xs">
+            {formatIDR(report.moneyInMinor)}
+          </p>
+        </div>
+        <div className="min-w-0 rounded-2xl bg-black/15 p-3 print:bg-white/10 print:p-1.5">
+          <p className="text-[11px] font-medium text-white/85 print:text-[7pt]">Sisa akhir</p>
+          <p className="financial-value mt-1 truncate text-lg font-bold tabular-nums print:mt-0.5 print:text-xs">
+            {formatIDR(report.closingMinor)}
+          </p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-white/85 print:mt-1 print:text-[7pt]">
+        Dari {report.transactionCount} transaksi, {longDate(report.periodStart)} sampai {longDate(report.periodEnd)}.
+      </p>
+    </section>
   );
 }
 
@@ -599,6 +960,8 @@ function BreakdownCard({
   monthLabel,
   actionHref,
   actionLabel,
+  chart = "donut",
+  className,
 }: {
   title: "Pemasukan" | "Pengeluaran";
   type: "income" | "expense";
@@ -607,6 +970,9 @@ function BreakdownCard({
   monthLabel: string;
   actionHref?: string;
   actionLabel?: "Lihat semua pemasukan" | "Lihat semua pengeluaran";
+  /** Expense uses the donut; income uses a compact list to avoid two donuts. */
+  chart?: "donut" | "list";
+  className?: string;
 }) {
   const income = type === "income";
   const emptyCopy = income
@@ -614,12 +980,12 @@ function BreakdownCard({
     : `Belum ada pengeluaran pada ${monthLabel}.`;
 
   return (
-    <Card className="flex flex-col p-5 sm:p-6 print:break-inside-avoid print:p-3">
+    <Card className={cn("flex flex-col p-5 sm:p-6 print:break-inside-avoid print:p-3", className)}>
       <div className="flex items-center gap-3">
         <span
           className={cn(
             "flex h-11 w-11 shrink-0 items-center justify-center rounded-full print:h-7 print:w-7",
-            income ? "bg-mint text-green" : "bg-blue-tint text-blue",
+            income ? "bg-mint text-green" : "bg-danger-bg text-danger",
           )}
           aria-hidden="true"
         >
@@ -635,7 +1001,7 @@ function BreakdownCard({
       <p
         className={cn(
           "mt-3 whitespace-nowrap text-2xl font-semibold tabular-nums print:mt-1 print:text-lg",
-          income ? "text-green" : "text-ink",
+          income ? "text-green" : "text-danger",
         )}
       >
         {formatIDR(breakdown.totalMinor)}
@@ -648,7 +1014,11 @@ function BreakdownCard({
       breakdown.otherCategoryCount === 0 ? (
         <p className="mt-4 text-sm text-ink-3 print:mt-2 print:text-[8pt]">{emptyCopy}</p>
       ) : (
-        <CategoryDonutChart title={title} breakdown={breakdown} />
+        chart === "donut" ? (
+          <CategoryDonutChart title={title} breakdown={breakdown} />
+        ) : (
+          <CategoryBreakdownList breakdown={breakdown} />
+        )
       )}
 
       <div className="mt-auto pt-4 print:pt-2">
@@ -657,7 +1027,7 @@ function BreakdownCard({
           <span
             className={cn(
               "whitespace-nowrap text-base font-bold tabular-nums print:text-sm",
-              income ? "text-green" : "text-ink",
+              income ? "text-green" : "text-danger",
             )}
           >
             {formatIDR(breakdown.totalMinor)}
@@ -668,7 +1038,7 @@ function BreakdownCard({
       {actionHref ? (
         <Link
           href={actionHref}
-          className="mt-2 inline-flex min-h-11 items-center self-start rounded-full px-4 text-sm font-semibold text-blue hover:bg-blue-wash print:hidden"
+          className="mt-2 inline-flex min-h-11 items-center self-start rounded-full px-4 text-sm font-semibold text-green hover:bg-mint print:hidden"
         >
           {actionLabel ?? (income ? "Lihat semua pemasukan" : "Lihat semua pengeluaran")}
         </Link>
@@ -703,89 +1073,10 @@ function ReportFootnotes({
   );
 }
 
-/*
-  Second page of the print document (AC-F7-17). Every node is print-only:
-  `hidden` keeps it out of layout, tab order, and the screen reader while the
-  report is read on screen.
-*/
-function PrintTransactionDetail({
-  rows,
-  monthLabel,
-  preview,
-}: {
-  rows: ReportLedgerRow[];
-  monthLabel: string;
-  preview: boolean;
-}) {
-  return (
-    <section className={cn(preview ? "rounded-3xl border border-card-border bg-card p-3 sm:p-5" : "hidden print:block print:break-before-page")}>
-      <h2 className="text-2xl font-bold text-ink">
-        Rincian transaksi {monthLabel}
-      </h2>
-      {preview ? (
-        <div className="mt-4 space-y-2 sm:hidden">
-          {rows.map((row) => {
-            const amount = row.amountMinor;
-            return (
-              <article key={row.id} className="rounded-2xl border border-row-divider bg-card p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs text-ink-3">{formatReportDetailDate(row.occurredAt)}</p>
-                    <p className="mt-1 break-words text-sm font-semibold text-ink">{row.description}</p>
-                  </div>
-                  <p className={cn("shrink-0 text-right text-sm font-semibold tabular-nums", amount === null ? "text-ink-3" : amount >= 0 ? "text-green" : "text-ink")}>
-                    {amount === null ? "—" : `${amount > 0 ? "+" : amount < 0 ? "−" : ""}${formatIDR(Math.abs(amount))}`}
-                  </p>
-                </div>
-                <p className="mt-2 border-t border-row-divider pt-2 text-xs text-ink-3">
-                  Sisa saldo <span className="font-semibold tabular-nums text-ink">{formatIDR(row.balanceMinor)}</span>
-                </p>
-              </article>
-            );
-          })}
-        </div>
-      ) : null}
-      <div className={cn("mt-4 overflow-x-auto rounded-xl border border-row-divider", preview && "hidden sm:block")}>
-        <table className="w-full border-collapse text-left">
-          <thead className="bg-surface-subtle">
-            <tr className="border-b border-row-divider text-xs font-semibold uppercase tracking-wide text-ink-3">
-              <th className="px-2 py-2">Tanggal</th>
-              <th className="px-2 py-2">Transaksi</th>
-              <th className="px-2 py-2 text-right">Nominal (+/−)</th>
-              <th className="px-2 py-2 text-right">Sisa</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => <PrintLedgerRow key={row.id} row={row} />)}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
-function PrintLedgerRow({
-  row,
-}: {
-  row: ReportLedgerRow;
-}) {
-  const amount = row.amountMinor;
-  return (
-    <tr className={cn("break-inside-avoid border-b border-row-divider", row.kind === "opening" || row.kind === "closing" ? "bg-surface-subtle font-semibold" : "")}>
-      <td className="whitespace-nowrap px-2 py-2 text-xs text-ink-3">{formatReportDetailDate(row.occurredAt)}</td>
-      <td className="px-2 py-2 text-sm text-ink">{row.description}</td>
-      <td className={cn("whitespace-nowrap px-2 py-2 text-right text-sm font-medium tabular-nums", amount === null ? "text-ink-3" : amount >= 0 ? "text-green" : "text-ink")}>
-        {amount === null ? "—" : `${amount > 0 ? "+" : amount < 0 ? "−" : ""}${formatIDR(Math.abs(amount))}`}
-      </td>
-      <td className="whitespace-nowrap px-2 py-2 text-right text-sm font-semibold tabular-nums text-ink">{formatIDR(row.balanceMinor)}</td>
-    </tr>
-  );
-}
-
 function ReportSkeleton() {
   return (
     <div className="space-y-5" aria-busy="true" aria-label="Memuat laporan bulanan">
-      <Card variant="navy" className="p-6 sm:max-w-2xl sm:p-8">
+      <Card className="surface-hero p-6 sm:max-w-2xl sm:p-8">
         <Skeleton className="h-3 w-2/5 bg-white/10" />
         <Skeleton className="mt-3 h-10 w-3/5 bg-white/10" />
         <Skeleton className="mt-3 h-3 w-1/2 bg-white/10" />

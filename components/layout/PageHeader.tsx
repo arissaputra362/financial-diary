@@ -56,7 +56,7 @@ export function PageHeader({
           >
             {Icon ? (
               <Icon
-                className={cn("h-5 w-5 shrink-0 text-blue", iconClassName)}
+                className={cn("h-5 w-5 shrink-0 text-green", iconClassName)}
                 aria-hidden="true"
               />
             ) : null}

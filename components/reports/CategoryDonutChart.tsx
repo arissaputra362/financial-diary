@@ -44,6 +44,12 @@ function shareLabel(amountMinor: number, totalMinor: number): string {
   return share === 0 && amountMinor > 0 ? "<1%" : `${share}%`;
 }
 
+/* Bar width with a visible minimum sliver, capped at 100%. */
+function barWidth(amountMinor: number, totalMinor: number): number {
+  if (totalMinor <= 0) return 0;
+  return Math.max(2, Math.min(100, Math.round((amountMinor / totalMinor) * 100)));
+}
+
 export function CategoryDonutChart({
   title,
   breakdown,
@@ -76,7 +82,7 @@ export function CategoryDonutChart({
     <figure className="mt-4 grid min-w-0 grid-cols-[7rem_minmax(0,1fr)] items-center gap-3 print:grid-cols-[5rem_minmax(0,1fr)] print:gap-2">
       <div className="relative aspect-square w-28 print:w-20" aria-hidden="true">
         <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-          <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="var(--color-blue-wash)" strokeWidth="18" />
+          <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="var(--color-bar-track)" strokeWidth="18" />
           {renderedSlices.map((slice, index) => (
             <circle
               key={`${slice.name}-${index}`}
@@ -99,7 +105,49 @@ export function CategoryDonutChart({
       </div>
       <ul className="min-w-0 space-y-2 print:space-y-0.5" aria-label={`${title} berdasarkan kategori`}>
         {slices.map((slice, index) => (
-          <li key={`${slice.name}-${index}`} className="flex min-w-0 items-center justify-between gap-2">
+          <li key={`${slice.name}-${index}`} className="space-y-1">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span
+                  aria-hidden="true"
+                  className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-white"
+                  style={{ backgroundColor: slice.color }}
+                />
+                <span className="min-w-0 truncate text-xs font-medium text-ink-2 print:text-[7pt]">
+                  {slice.name}
+                </span>
+                <span className="shrink-0 text-[10px] tabular-nums text-ink-3 print:text-[6pt]">
+                  {shareLabel(slice.amountMinor, breakdown.totalMinor)}
+                </span>
+              </span>
+              <span className="shrink-0 text-xs font-semibold tabular-nums text-ink print:text-[7pt]">
+                {formatIDR(slice.amountMinor)}
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-bar-track print:h-1" aria-hidden="true">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${barWidth(slice.amountMinor, breakdown.totalMinor)}%`, backgroundColor: slice.color }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <figcaption className="sr-only">Komposisi {title.toLowerCase()} berdasarkan kategori pada periode ini.</figcaption>
+    </figure>
+  );
+}
+
+/** Category list without the donut, for the secondary (income) breakdown card. */
+export function CategoryBreakdownList({ breakdown }: { breakdown: ReportBreakdownDTO }) {
+  const slices = getSlices(breakdown);
+  if (breakdown.totalMinor <= 0 || slices.length === 0) return null;
+
+  return (
+    <ul className="mt-4 space-y-2 print:space-y-0.5" aria-label="Rincian per kategori">
+      {slices.map((slice, index) => (
+        <li key={`${slice.name}-${index}`} className="space-y-1">
+          <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="flex min-w-0 items-center gap-1.5">
               <span
                 aria-hidden="true"
@@ -116,10 +164,15 @@ export function CategoryDonutChart({
             <span className="shrink-0 text-xs font-semibold tabular-nums text-ink print:text-[7pt]">
               {formatIDR(slice.amountMinor)}
             </span>
-          </li>
-        ))}
-      </ul>
-      <figcaption className="sr-only">Komposisi {title.toLowerCase()} berdasarkan kategori pada periode ini.</figcaption>
-    </figure>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-bar-track print:h-1" aria-hidden="true">
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${barWidth(slice.amountMinor, breakdown.totalMinor)}%`, backgroundColor: slice.color }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

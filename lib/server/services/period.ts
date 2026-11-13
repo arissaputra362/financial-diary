@@ -187,6 +187,14 @@ export class PeriodService {
     return buildMonthPeriod(dateOnly(year, month, 1), lastDayOfMonth(year, month));
   }
 
+  /** An inclusive arbitrary date range, e.g. a rolling 30-day window. */
+  range(startDateOnly: string, endDateOnly: string): MonthPeriod {
+    if (startDateOnly > endDateOnly) {
+      throw new RangeError("Range start must not be after range end.");
+    }
+    return buildMonthPeriod(startDateOnly, endDateOnly);
+  }
+
   /** The last `n` Asia/Jakarta calendar days, inclusive of today (n buckets). */
   lastNDays(now: Date, n: number): DayPeriod {
     if (!Number.isInteger(n) || n < 1) {

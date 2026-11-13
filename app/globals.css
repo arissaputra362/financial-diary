@@ -1,67 +1,69 @@
 @import "tailwindcss";
 
 /*
-  Design tokens for the Bento financial diary.
-  Source of truth: docs/design/01-design-system-tokens.md (PM-approved 2026-10-20).
-  The system color preference selects the active values; semantic utility names
-  stay the same in light and dark mode.
+  FinDiary foundation: a single green brand, mint-tinted neutrals, and clear
+  financial semantics. Green identifies FinDiary actions and income; coral is
+  reserved for expenses and alerts; warm amber is used only for gold.
 */
 @theme {
   --font-sans: var(--font-plus-jakarta-sans), ui-sans-serif, system-ui, sans-serif;
 
-  /* Brand core: blue, white, green */
-  --color-canvas: #f1f5fa;
+  /* Brand core: FinDiary green and mint-tinted neutrals. */
+  --color-canvas: #f6f9f7;
   --color-card: #ffffff;
-  --color-navy: #14273f;
-  --color-blue: #1d4f87;
-  --color-blue-tint: #dcebfa;
-  --color-blue-wash: #eff4fa;
-  --color-blue-border: #bfd3e8;
-  --color-brand-blue: #1d4f87;
-  --color-brand-blue-hover: #173f6c;
-  --color-surface-subtle: #f8fafc;
-  --color-green: #166534;
-  --color-green-hover: #155c30;
-  --color-brand-green: #166534;
-  --color-brand-green-hover: #155c30;
-  --color-mint: #dcfce7;
-  --color-success-bg: #f0fdf4;
-  --color-success-border: #b8dcc0;
-  --color-bar-track: #e5edf5;
+  --color-navy: #0e2a1c;
+  --color-blue: #0f766e;
+  --color-blue-tint: #e6f4f1;
+  --color-blue-wash: #f0f7f5;
+  --color-blue-border: #c8e3dc;
+  --color-brand-blue: #0f766e;
+  --color-brand-blue-hover: #115e59;
+  --color-surface-subtle: #f1f5f2;
+  --color-green: #16764f;
+  --color-green-hover: #105e3e;
+  --color-brand-green: #16764f;
+  --color-brand-green-hover: #105e3e;
+  --color-mint: #e3f3ea;
+  --color-success-bg: #ecf8f1;
+  --color-success-border: #b7dec8;
+  --color-bar-track: #e4ece7;
+  --color-income: #16764f;
+  --color-expense: #d95e54;
+  --color-expense-soft: #fdece9;
 
   /* Text */
-  --color-ink: #17304f;
-  --color-ink-2: #46597a;
-  --color-ink-3: #5c7191;
-  --color-placeholder: #5c6c86;
+  --color-ink: #17231c;
+  --color-ink-2: #52635a;
+  --color-ink-3: #5f6e65;
+  --color-placeholder: #5f6e65;
   --color-on-dark: #ffffff;
-  --color-on-dark-soft: #d9e6f5;
-  --color-on-dark-muted: #9fb9d6;
+  --color-on-dark-soft: #d8f0e5;
+  --color-on-dark-muted: #a9c9b9;
 
   /* Interface neutrals */
-  --color-card-border: #d8e2ee;
-  --color-input-border: #c9d6e4;
-  --color-row-divider: #eaeef4;
-  --color-chip-slate: #e6ecf4;
+  --color-card-border: #e2eae5;
+  --color-input-border: #c9d8cf;
+  --color-row-divider: #edf2ee;
+  --color-chip-slate: #e9f0eb;
   --color-danger-border: #f3c2c2;
   --color-warning-border: #fdf3d7;
   --color-brand-danger: #b91c1c;
   --color-brand-danger-hover: #991b1b;
-  --color-scrim: #10243b;
+  --color-scrim: #0b1b14;
   --color-gold-art-backdrop: #fff8e7;
   --color-gold-art-ink: #775315;
   --color-gold-art-shadow: #9b741f;
   --color-gold-accent: #8a5a00;
-  --color-focus-ring: #1d4f87;
+  --color-focus-ring: #16764f;
   --color-focus-halo: rgba(255, 255, 255, 0.9);
 
   /* Data series remain distinct in either theme. */
-  --color-chart-1: #1d4f87;
-  --color-chart-2: #166534;
-  --color-chart-3: #14273f;
-  --color-chart-4: #46597a;
-  --color-chart-5: #5c7191;
-  --color-chart-6: #5c6c86;
+  --color-chart-1: #16764f;
+  --color-chart-2: #d95e54;
+  --color-chart-3: #f59e0b;
+  --color-chart-4: #0f766e;
+  --color-chart-5: #64748b;
+  --color-chart-6: #84a98c;
 
   /* Category badges keep their data color coding in both themes and print. */
   --color-category-orange-bg: #ffedd5;
@@ -92,11 +94,22 @@
   --color-danger-bg: #fdecec;
 
   /* Elevation */
-  --shadow-bento: 0 10px 30px -5px rgba(20, 39, 63, 0.06),
-    0 0 1px 1px rgba(20, 39, 63, 0.03);
-  --shadow-floating-nav: 0 20px 40px -10px rgba(20, 39, 63, 0.35);
-  --shadow-pill: 0 4px 14px 0 rgba(20, 39, 63, 0.1);
-  --shadow-hover: 0 14px 28px rgba(20, 39, 63, 0.1);
+  --shadow-bento: 0 1px 2px rgba(15, 42, 28, 0.04), 0 10px 28px -20px rgba(15, 42, 28, 0.28);
+  --shadow-floating-nav: 0 12px 32px -12px rgba(15, 42, 28, 0.22);
+  --shadow-pill: 0 1px 2px rgba(15, 42, 28, 0.1);
+  --shadow-hover: 0 8px 20px -10px rgba(15, 42, 28, 0.2);
+}
+
+@theme {
+  --radius-control: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-feature: 1.5rem;
+  --spacing-page: 1.125rem;
+  --text-display: 2rem;
+  --text-page-title: 1.5rem;
+  --text-section-title: 1.125rem;
+  --text-body: 0.9375rem;
+  --text-supporting: 0.8125rem;
 }
 
 :root {
@@ -109,59 +122,66 @@
   :root:not([data-color-scheme]) {
     color-scheme: dark;
 
-    --color-canvas: #111b26;
-    --color-card: #192635;
-    --color-ink: #e9f0f7;
+    --color-canvas: #0b0f0d;
+    --color-card: #141917;
+    --color-ink: #e8edea;
   }
 }
 
 :root[data-color-scheme="dark"] {
   color-scheme: dark;
 
-  --color-canvas: #111b26;
-  --color-card: #192635;
-  --color-navy: #1c3045;
-  --color-blue: #8dbdf0;
-  --color-blue-tint: #233b53;
-  --color-blue-wash: #1d2d3d;
-  --color-blue-border: #3b5878;
-  --color-brand-blue-hover: #2f6da8;
-  --color-green: #64d18e;
-  --color-green-hover: #7be3a2;
-  --color-mint: #193d2b;
-  --color-success-bg: #193b2a;
-  --color-success-border: #315e45;
-  --color-bar-track: #354454;
+  --color-canvas: #0b0f0d;
+  --color-card: #141917;
+  --color-navy: #0e1411;
+  --color-blue: #5eead4;
+  --color-blue-tint: #1b2420;
+  --color-blue-wash: #171d1a;
+  --color-blue-border: #2b3a33;
+  --color-brand-blue: #2dd4bf;
+  --color-brand-blue-hover: #5eead4;
+  --color-green: #4ade80;
+  --color-green-hover: #86efac;
+  --color-brand-green: #16764f;
+  --color-brand-green-hover: #105e3e;
+  --color-mint: #12251b;
+  --color-success-bg: #102019;
+  --color-success-border: #26523a;
+  --color-bar-track: #242b27;
+  --color-income: #4ade80;
+  --color-expense: #fb7185;
+  --color-expense-soft: #3a1a1f;
 
-  --color-ink: #e9f0f7;
-  --color-ink-2: #bdc9d6;
-  --color-ink-3: #a7b5c5;
-  --color-placeholder: #a6b4c4;
-  --color-on-dark: #f7faff;
-  --color-on-dark-soft: #e3edf8;
-  --color-on-dark-muted: #b4c7dc;
+  --color-ink: #e8edea;
+  --color-ink-2: #a6b0ab;
+  --color-ink-3: #87928c;
+  --color-placeholder: #87928c;
+  --color-on-dark: #f7faf8;
+  --color-on-dark-soft: #d7e2dc;
+  --color-on-dark-muted: #a6b8ae;
 
-  --color-card-border: #35485b;
-  --color-input-border: #455a70;
-  --color-row-divider: #2c3c4d;
-  --color-chip-slate: #2b3b4c;
-  --color-surface-subtle: #202f3e;
+  --color-card-border: #262d29;
+  --color-input-border: #333b37;
+  --color-row-divider: #202622;
+  --color-chip-slate: #1e2521;
+  --color-surface-subtle: #1a201d;
   --color-danger-border: #76434c;
   --color-warning-border: #6b552c;
   --color-scrim: #05090f;
+  --color-brand-danger: #b91c1c;
   --color-brand-danger-hover: #991b1b;
-  --color-gold-art-backdrop: #1d2a38;
+  --color-gold-art-backdrop: #1a2a1f;
   --color-gold-art-ink: #e2c46f;
   --color-gold-art-shadow: #d2aa4f;
-  --color-focus-ring: #8dbdf0;
-  --color-focus-halo: rgba(17, 27, 38, 0.95);
+  --color-focus-ring: #4ade80;
+  --color-focus-halo: rgba(11, 15, 13, 0.95);
 
-  --color-chart-1: #8dbdf0;
-  --color-chart-2: #64d18e;
-  --color-chart-3: #c3a3ee;
-  --color-chart-4: #f2c56d;
-  --color-chart-5: #ec91a7;
-  --color-chart-6: #72d1c2;
+  --color-chart-1: #4ade80;
+  --color-chart-2: #fb7185;
+  --color-chart-3: #fbbf24;
+  --color-chart-4: #5eead4;
+  --color-chart-5: #94a3b8;
+  --color-chart-6: #a3e635;
   --color-gold-accent: #f2c56d;
   --color-category-orange-bg: #431407;
   --color-category-orange-text: #fed7aa;
@@ -184,22 +204,112 @@
   --color-category-slate-bg: #334155;
   --color-category-slate-text: #e2e8f0;
 
-  --color-warning: #f2c56d;
+  --color-warning: #fbbf24;
   --color-warning-bg: #44371f;
-  --color-danger: #ff8b8b;
-  --color-danger-bg: #482a31;
+  --color-danger: #fca5a5;
+  --color-danger-bg: #3a1a1f;
 
-  --shadow-bento: 0 10px 30px -5px rgba(0, 0, 0, 0.24),
-    0 0 1px 1px rgba(220, 235, 250, 0.05);
-  --shadow-floating-nav: 0 20px 40px -10px rgba(0, 0, 0, 0.55);
-  --shadow-pill: 0 4px 14px 0 rgba(0, 0, 0, 0.28);
-  --shadow-hover: 0 14px 28px rgba(0, 0, 0, 0.3);
+  --shadow-bento: 0 1px 2px rgba(0, 0, 0, 0.28), 0 12px 30px -20px rgba(0, 0, 0, 0.6);
+  --shadow-floating-nav: 0 12px 32px -12px rgba(0, 0, 0, 0.55);
+  --shadow-pill: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 8px 20px -10px rgba(0, 0, 0, 0.45);
 }
 
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/* Shared brand hero surface. Every page summary card uses this one gradient. */
+.surface-hero {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(135deg, #1a8a5e 0%, #0e5a3b 55%, #0a3a26 100%);
+}
+
+/* Decorative waves sit above the gradient but behind the card content. */
+.surface-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 160' preserveAspectRatio='none'%3E%3Cpath d='M0 96c48-28 84 14 132-2s72-44 118-30 82 54 150 30v66H0Z' fill='%23ffffff' fill-opacity='.08'/%3E%3Cpath d='M0 124c42-20 82 8 126-6s78-38 126-22 84 40 148 22v42H0Z' fill='%23ffffff' fill-opacity='.12'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: 100% 112px;
+}
+
+/* Modal motion: overlay fades; panels rise. Phones slide up from the bottom. */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(100%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-overlay {
+  animation: overlay-in 160ms ease-out;
+}
+
+[role="dialog"] {
+  animation: panel-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Below Tailwind `sm` (640px) every dialog is a bottom sheet: slide it up. */
+@media (max-width: 639px) {
+  [role="dialog"] {
+    animation: sheet-up 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes overlay-out {
+  to { opacity: 0; }
+}
+
+@keyframes panel-out {
+  to { opacity: 0; transform: translateY(10px) scale(0.99); }
+}
+
+@keyframes sheet-down {
+  to { opacity: 0; transform: translateY(100%); }
+}
+
+.modal-closing-overlay {
+  animation: overlay-out 160ms ease-in forwards;
+}
+
+.modal-closing-panel {
+  animation: panel-out 180ms ease-in forwards;
+}
+
+@media (max-width: 639px) {
+  .modal-closing-panel {
+    animation: sheet-down 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  [role="dialog"],
+  .modal-closing-overlay,
+  .modal-closing-panel {
+    animation: none;
+  }
+}
+
+.financial-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
 }
 
 /*
@@ -241,47 +351,48 @@ body {
 
   :root[data-color-scheme="dark"] {
     color-scheme: light;
-    --color-canvas: #f1f5fa;
+    --color-canvas: #f6f9f7;
     --color-card: #ffffff;
-    --color-navy: #14273f;
-    --color-blue: #1d4f87;
-    --color-blue-tint: #dcebfa;
-    --color-blue-wash: #eff4fa;
-    --color-blue-border: #bfd3e8;
-    --color-brand-blue-hover: #173f6c;
-    --color-green: #166534;
-    --color-green-hover: #155c30;
-    --color-mint: #dcfce7;
-    --color-success-bg: #f0fdf4;
-    --color-success-border: #b8dcc0;
-    --color-bar-track: #e5edf5;
-    --color-ink: #17304f;
-    --color-ink-2: #46597a;
-    --color-ink-3: #5c7191;
-    --color-placeholder: #5c6c86;
+    --color-navy: #0e2a1c;
+    --color-blue: #0f766e;
+    --color-blue-tint: #e6f4f1;
+    --color-blue-wash: #f0f7f5;
+    --color-blue-border: #c8e3dc;
+    --color-brand-blue: #0f766e;
+    --color-brand-blue-hover: #115e59;
+    --color-green: #16764f;
+    --color-green-hover: #105e3e;
+    --color-mint: #e3f3ea;
+    --color-success-bg: #ecf8f1;
+    --color-success-border: #b7dec8;
+    --color-bar-track: #e4ece7;
+    --color-ink: #17231c;
+    --color-ink-2: #52635a;
+    --color-ink-3: #5f6e65;
+    --color-placeholder: #5f6e65;
     --color-on-dark: #ffffff;
-    --color-on-dark-soft: #d9e6f5;
-    --color-on-dark-muted: #9fb9d6;
-    --color-card-border: #d8e2ee;
-    --color-input-border: #c9d6e4;
-    --color-row-divider: #eaeef4;
-    --color-chip-slate: #e6ecf4;
-    --color-surface-subtle: #f8fafc;
+    --color-on-dark-soft: #d8f0e5;
+    --color-on-dark-muted: #a9c9b9;
+    --color-card-border: #e2eae5;
+    --color-input-border: #c9d8cf;
+    --color-row-divider: #edf2ee;
+    --color-chip-slate: #e9f0eb;
+    --color-surface-subtle: #f1f5f2;
     --color-danger-border: #f3c2c2;
     --color-warning-border: #fdf3d7;
-    --color-scrim: #10243b;
+    --color-scrim: #0b1b14;
     --color-gold-art-backdrop: #fff8e7;
     --color-gold-art-ink: #775315;
     --color-gold-art-shadow: #9b741f;
     --color-gold-accent: #8a5a00;
-    --color-focus-ring: #1d4f87;
+    --color-focus-ring: #16764f;
     --color-focus-halo: rgba(255, 255, 255, 0.9);
-    --color-chart-1: #1d4f87;
-    --color-chart-2: #166534;
-    --color-chart-3: #14273f;
-    --color-chart-4: #46597a;
-    --color-chart-5: #5c7191;
-    --color-chart-6: #5c6c86;
+    --color-chart-1: #16764f;
+    --color-chart-2: #d95e54;
+    --color-chart-3: #f59e0b;
+    --color-chart-4: #0f766e;
+    --color-chart-5: #64748b;
+    --color-chart-6: #84a98c;
     --color-category-orange-bg: #ffedd5;
     --color-category-orange-text: #c2410c;
     --color-category-indigo-bg: #e0e7ff;

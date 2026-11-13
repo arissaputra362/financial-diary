@@ -216,9 +216,11 @@ export function parseUpdateTransaction(input: unknown): UpdateTransactionInput {
 export function parseListTransactionsQuery(searchParams: URLSearchParams): ListTransactionsQuery {
   const values = Object.fromEntries(searchParams.entries());
   const walletIds = searchParams.getAll("walletId");
+  const categories = searchParams.getAll("category");
   const result = listTransactionsQuerySchema.safeParse({
     ...values,
     ...(walletIds.length > 1 ? { walletIds, walletId: undefined } : {}),
+    ...(categories.length > 1 ? { categories, category: undefined } : {}),
   });
   if (!result.success) throw validationError(result.error);
   return result.data;

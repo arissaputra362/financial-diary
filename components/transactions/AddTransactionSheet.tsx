@@ -3,9 +3,10 @@
 import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { PenLine, Sparkles, X } from "lucide-react";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { cn } from "@/lib/utils";
-import type { TransactionDTO } from "@/types/api";
+import type { TransactionDTO, TransactionType } from "@/types/api";
 import { ManualEntryForm } from "./ManualEntryForm";
 
 const ReceiptScanner = dynamic(
@@ -18,6 +19,8 @@ const ReceiptScanner = dynamic(
 
 export interface AddTransactionSheetProps {
   open: boolean;
+  initialMode?: "manual" | "scan";
+  initialType?: TransactionType;
   onClose: () => void;
   onCreated: (rows: TransactionDTO[]) => void;
 }
@@ -27,8 +30,8 @@ export interface AddTransactionSheetProps {
  * Manual entry and receipt scan live behind one segmented control. This is an
  * action from `/transactions`, not a navigation item (A-31).
  */
-export function AddTransactionSheet({ open, onClose, onCreated }: AddTransactionSheetProps) {
-  const [tab, setTab] = useState<"manual" | "scan">("manual");
+export function AddTransactionSheet({ open, initialMode = "manual", initialType = "MONEY_OUT", onClose, onCreated }: AddTransactionSheetProps) {
+  const [tab, setTab] = useState<"manual" | "scan">(initialMode);
   const panelRef = useRef<HTMLDivElement>(null);
 
   /* Every close path resets the active tab (open state is owned by the parent). */
@@ -43,7 +46,8 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
     sheet closed while a nested wallet picker or create sheet is open, so Escape
     peels one layer at a time (BUG-3/BUG-4).
   */
-  useDialogFocusTrap(open, panelRef, close);
+  const { closing, requestClose } = useAnimatedClose(close);
+  useDialogFocusTrap(open, panelRef, requestClose);
 
   if (!open) return null;
 
@@ -54,9 +58,12 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+      className={cn(
+        "modal-overlay fixed inset-0 z-[60] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4",
+        closing && "modal-closing-overlay",
+      )}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) close();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div
@@ -65,7 +72,10 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="add-transaction-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className={cn(
+          "max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6",
+          closing && "modal-closing-panel",
+        )}
       >
         <div className="flex items-center justify-between">
           <h2 id="add-transaction-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -73,15 +83,15 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
           </h2>
           <button
             type="button"
-            onClick={close}
+            onClick={requestClose}
             aria-label="Tutup"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-blue-wash p-1" role="tablist" aria-label="Cara mengisi transaksi">
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-surface-subtle p-1" role="tablist" aria-label="Cara mengisi transaksi">
           <button
             type="button"
             role="tab"
@@ -114,6 +124,7 @@ export function AddTransactionSheet({ open, onClose, onCreated }: AddTransaction
           {tab === "manual" ? (
             <ManualEntryForm
               onCreated={handleCreated}
+              initialType={initialType}
               onCancel={close}
               onSwitchToScan={() => setTab("scan")}
             />

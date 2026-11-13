@@ -35,7 +35,7 @@ export function ThemeControl() {
   return (
     <section aria-labelledby="theme-control-title">
       <div className="mb-3 flex items-center gap-2">
-        <Sun className="h-4 w-4 text-blue" aria-hidden="true" />
+        <Sun className="h-4 w-4 text-green" aria-hidden="true" />
         <h2 id="theme-control-title" className="font-semibold text-ink">
           Tampilan
         </h2>
@@ -47,7 +47,7 @@ export function ThemeControl() {
         role="group"
         aria-label="Mode tampilan"
         aria-describedby="theme-control-description"
-        className="grid grid-cols-3 gap-1 rounded-full bg-blue-wash p-1"
+        className="grid grid-cols-3 gap-1 rounded-xl bg-blue-wash p-1"
       >
         {options.map(({ value, label, Icon }) => {
           const selected = preference === value;
@@ -58,8 +58,8 @@ export function ThemeControl() {
               aria-pressed={selected}
               onClick={() => choosePreference(value)}
               className={cn(
-                "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-semibold transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-blue-wash",
+                "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-semibold transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-blue-wash",
                 selected
                   ? "bg-card text-ink shadow-sm"
                   : "text-ink-2 hover:bg-card/60 hover:text-ink",

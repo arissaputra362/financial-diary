@@ -148,12 +148,12 @@ export default function FamilyView({
   const active = members.filter((m) => m.status === "APPROVED");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
         <PageHeader
           eyebrow="Kelola keluarga"
           title={householdName || "Keluarga"}
-          icon={Users}
           titleClassName="text-xl font-extrabold"
+          actionsClassName="ml-auto w-full flex-wrap gap-2 sm:w-auto"
           leading={
             <Link
               href="/home"
@@ -166,7 +166,7 @@ export default function FamilyView({
           beforeTitle={
             <Link
               href="/profile"
-              className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash md:hidden"
+              className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-green hover:bg-mint md:hidden"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Kembali ke Profil
@@ -176,6 +176,7 @@ export default function FamilyView({
             <>
               <Button
                 variant="secondary"
+                className="flex-1 sm:flex-none"
                 onClick={() => {
                   setHouseholdDraft(householdName);
                   setHouseholdError("");
@@ -185,7 +186,7 @@ export default function FamilyView({
                 <Pencil className="h-4 w-4" aria-hidden="true" />
                 Edit informasi
               </Button>
-              <Button onClick={handleCreateInvite} isLoading={creatingInvite}>
+              <Button onClick={handleCreateInvite} isLoading={creatingInvite} className="flex-1 sm:flex-none">
                 <UserPlus className="h-4 w-4" aria-hidden="true" />
                 Undang anggota
               </Button>
@@ -202,7 +203,7 @@ export default function FamilyView({
         {inviteCode && (
           <Card variant="tint">
             <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
-              <LinkIcon className="h-4 w-4 text-blue" aria-hidden="true" />
+              <LinkIcon className="h-4 w-4 text-green" aria-hidden="true" />
               Undangan anggota
             </p>
             <div className="space-y-3">
@@ -240,12 +241,12 @@ export default function FamilyView({
         {isOwner && pending.length > 0 && (
           <Card>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ink">
-              <Users className="h-5 w-5 text-blue" aria-hidden="true" />
+              <Users className="h-5 w-5 text-green" aria-hidden="true" />
               Permintaan bergabung ({pending.length})
             </h2>
             <div className="space-y-3">
               {pending.map((m) => (
-                <div key={m.id} className="rounded-2xl bg-blue-wash p-4">
+                <div key={m.id} className="rounded-2xl border border-warning-border bg-warning-bg/45 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-medium text-ink">{m.user?.displayName ?? "Anggota"}</p>
@@ -285,7 +286,7 @@ export default function FamilyView({
 
         <Card>
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-ink">
-            <Users className="h-5 w-5 text-blue" aria-hidden="true" />
+            <Users className="h-5 w-5 text-green" aria-hidden="true" />
             Anggota aktif ({active.length})
           </h2>
           <div className="divide-y divide-row-divider">
@@ -324,11 +325,11 @@ export default function FamilyView({
         <Card variant="tint">
           <div className="space-y-3 text-sm text-ink">
             <p className="flex items-start gap-2">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-green" aria-hidden="true" />
               Item terhapus tetap di Trash sampai dipulihkan
             </p>
             <p className="flex items-start gap-2">
-              <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
+              <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-green" aria-hidden="true" />
               Akses diperiksa ulang di setiap permintaan
             </p>
           </div>
@@ -360,7 +361,7 @@ export default function FamilyView({
                   type="button"
                   onClick={() => setEditOpen(false)}
                   aria-label="Tutup"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
                 >
                   <X className="h-5 w-5" aria-hidden="true" />
                 </button>
@@ -376,7 +377,7 @@ export default function FamilyView({
                   maxLength={80}
                   value={householdDraft}
                   onChange={(event) => setHouseholdDraft(event.target.value)}
-                  className="min-h-12 w-full rounded-2xl border border-input-border bg-card px-4 text-base text-ink outline-none focus:border-blue focus:ring-4 focus:ring-blue/15"
+                  className="min-h-12 w-full rounded-2xl border border-input-border bg-card px-4 text-base text-ink outline-none focus:border-green focus:ring-4 focus:ring-green/15"
                 />
                 {householdError ? <p role="alert" className="text-sm text-danger">{householdError}</p> : null}
                 <div className="flex justify-end gap-2 pt-1">

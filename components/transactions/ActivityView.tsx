@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Plus, ReceiptText, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, LayoutGrid, Plus, Search, SlidersHorizontal, Wallet, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MonthlyReport, type ReportScope } from "@/components/reports/MonthlyReport";
 import { Button } from "@/components/ui/Button";
 import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { Card } from "@/components/ui/Card";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { apiRequest } from "@/lib/api-client";
 import { TRANSACTION_ADD_EVENT, setTransactionAddListenerAttached } from "@/lib/transaction-add-intent";
 import {
@@ -16,15 +17,17 @@ import {
   monthKeyLabel,
   monthKeyRange,
   resolveMonthKey,
-  shiftMonthKey,
+  todayJakarta,
+  toJakartaDateOnly,
 } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { TransactionDTO, TransactionListDTO, WalletDTO } from "@/types/api";
+import type { TransactionDTO, TransactionListDTO, TransactionType, WalletDTO } from "@/types/api";
 import { AddTransactionSheet } from "./AddTransactionSheet";
 import {
   activityHref,
   activityListUrl,
+  type ActivityPeriod,
   type ActivityTypeFilter,
   type ActivityScopeFilter,
   type ActivityViewMode,
@@ -38,14 +41,23 @@ import { TransactionDetailSheet } from "./TransactionDetailSheet";
 import { TransactionList } from "./TransactionList";
 import { ActivityMonthSummaryCard } from "./ActivityMonthSummaryCard";
 import { UndoToast } from "./UndoToast";
-import { categoryLabel, isTransferLeg } from "./categories";
+import { CATEGORY_LABELS, categoriesForType, CategoryIcon, categoryLabel, isTransferLeg } from "./categories";
 
 export interface ActivityViewProps {
   initialView: ActivityViewMode;
   /** Validated `YYYY-MM` from the `?month=` deep link; absent = current month. */
   initialMonth?: string;
+  /** Active-list period from the `?period=` deep link; absent = month. */
+  initialPeriod?: ActivityPeriod;
+  /** Free-text search from the `?q=` deep link. */
+  initialQ?: string;
+  /** Category filters from the repeated `?category=` deep links. */
+  initialCategories?: string[];
   /** `?add=1` from the nav/dashboard "Tambah" action opens the add sheet (A-27). */
   initialAdd?: boolean;
+  /** `?scan=1` opens the receipt scan tab for the dashboard shortcut. */
+  initialScan?: boolean;
+  initialTransactionType?: TransactionType;
   initialFrom?: string;
   initialTo?: string;
   initialFilter?: ActivityTypeFilter;
@@ -67,6 +79,20 @@ const FILTER_OPTIONS: ReadonlyArray<readonly [ListFilter, string]> = [
   ["transfer", "Transfer"],
 ];
 
+const PERIOD_OPTIONS: ReadonlyArray<readonly [ActivityPeriod, string]> = [
+  ["month", "Bulan ini"],
+  ["7d", "7 hari"],
+  ["30d", "30 hari"],
+  ["range", "Rentang"],
+];
+
+/* Pure date-key shift: parses an explicit date string, never Date.now(). */
+function shiftDateKey(key: string, deltaDays: number): string {
+  const base = new Date(`${key}T00:00:00+07:00`);
+  base.setUTCDate(base.getUTCDate() + deltaDays);
+  return toJakartaDateOnly(base);
+}
+
 /**
  * Activity page: grouped active list with soft delete + 5-second undo, month
  * navigation deep-linked as `?month=YYYY-MM` (server-side filter, A-14), type
@@ -80,9 +106,14 @@ const FILTER_OPTIONS: ReadonlyArray<readonly [ListFilter, string]> = [
 export function ActivityView({
   initialView,
   initialMonth,
+  initialPeriod = "month",
+  initialQ = "",
+  initialCategories = [],
   initialFrom,
   initialTo,
   initialAdd = false,
+  initialScan = false,
+  initialTransactionType = "MONEY_OUT",
   initialFilter = "all",
   initialScope = "all",
   initialWalletId,
@@ -108,9 +139,25 @@ export function ActivityView({
   const [walletsError, setWalletsError] = useState<string | null>(null);
   /* Active view is fetched month by month; the month lives in `?month=YYYY-MM`. */
   const [activeMonth, setActiveMonth] = useState<string>(() => resolveMonthKey(initialMonth));
-  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
-  const [monthPickerValue, setMonthPickerValue] = useState(() => resolveMonthKey(initialMonth));
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  /* Active list period: "month" follows activeMonth; the others are date windows. */
+  const [period, setPeriod] = useState<ActivityPeriod>(initialPeriod);
+  /* Captured once so rolling windows stay stable across re-renders. */
+  const [today] = useState(() => todayJakarta());
+  /* Filter sheet: drafts are edited in the sheet and committed by "Terapkan". */
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const { closing: filterSheetClosing, requestClose: requestFilterClose } = useAnimatedClose(
+    () => setFilterSheetOpen(false),
+  );
+  const [draftPeriod, setDraftPeriod] = useState<ActivityPeriod>(initialPeriod);
+  const [draftMonth, setDraftMonth] = useState<string>(() => resolveMonthKey(initialMonth));
+  const [draftListFilter, setDraftListFilter] = useState<ListFilter>(() => filterFromUrl(initialFilter));
+  const [draftScope, setDraftScope] = useState<ActivityScopeFilter>(initialScope);
+  const [draftWalletIds, setDraftWalletIds] = useState<string[]>(initialWalletIds ?? (initialWalletId ? [initialWalletId] : []));
+  /* Server-side search across merchant and note, debounced before fetching. */
+  const [searchInput, setSearchInput] = useState(initialQ);
+  const [appliedQuery, setAppliedQuery] = useState(initialQ);
+  const [categories, setCategories] = useState<string[]>(initialCategories);
+  const [draftCategories, setDraftCategories] = useState<string[]>(initialCategories);
   /* Applied range: drives the fetch and the URL. */
   const [dateFrom, setDateFrom] = useState(initialFrom ?? "");
   const [dateTo, setDateTo] = useState(initialTo ?? "");
@@ -118,6 +165,20 @@ export function ActivityView({
   const [draftFrom, setDraftFrom] = useState(initialFrom ?? "");
   const [draftTo, setDraftTo] = useState(initialTo ?? "");
   const [dateFilterError, setDateFilterError] = useState<string | null>(null);
+  /* Rolling windows derive from today so they can span month boundaries. */
+  const periodRange = useMemo(() => {
+    if (period === "7d") {
+      return { from: shiftDateKey(today, -6), to: today };
+    }
+    if (period === "30d") {
+      return { from: shiftDateKey(today, -29), to: today };
+    }
+    if (period === "range") {
+      const fallback = monthKeyRange(activeMonth);
+      return { from: dateFrom || fallback.from, to: dateTo || fallback.to };
+    }
+    return monthKeyRange(activeMonth);
+  }, [period, dateFrom, dateTo, activeMonth, today]);
   const [loading, setLoading] = useState(initialView !== "ringkasan" && !initialData);
   /* Type-filter fetches keep the filter bar mounted so keyboard focus survives. */
   const [filterLoading, setFilterLoading] = useState(false);
@@ -154,18 +215,24 @@ export function ActivityView({
     (next: {
       view: ActivityViewMode;
       month?: string;
+      period?: ActivityPeriod;
       add?: boolean;
       from?: string;
       to?: string;
       filter?: ListFilter;
       scope?: ActivityScopeFilter;
+      q?: string;
+      categories?: string[];
       walletId?: string;
       walletIds?: string[];
       reportScope?: ReportScope;
       reportWalletIds?: string[];
     }) => {
       const nextMonth = next.month ?? activeMonth;
+      const nextPeriod = next.period ?? period;
       const nextFilter = next.filter ?? listFilter;
+      const nextQuery = next.q ?? appliedQuery;
+      const nextCategories = next.categories ?? categories;
       const nextTransactionScope = next.scope ?? transactionScope;
       const transactionWalletIds = next.walletIds ??
         (next.walletId !== undefined ? (next.walletId ? [next.walletId] : []) : walletIds);
@@ -179,10 +246,13 @@ export function ActivityView({
           view: next.view,
           month: nextMonth,
           add: next.add,
-          from: next.view === "active" ? nextFrom : undefined,
-          to: next.view === "active" ? nextTo : undefined,
+          period: nextPeriod,
+          from: next.view === "active" && nextPeriod === "range" ? nextFrom : undefined,
+          to: next.view === "active" && nextPeriod === "range" ? nextTo : undefined,
           filter: next.view === "active" ? filterToUrl(nextFilter) : "all",
           scope: next.view === "active" ? nextTransactionScope : "all",
+          q: next.view === "active" ? nextQuery || undefined : undefined,
+          categories: next.view === "active" ? nextCategories : undefined,
           walletId: undefined,
           walletIds: next.view === "active" ? transactionWalletIds : undefined,
           reportWalletIds: next.view === "ringkasan" ? nextReportWalletIds : undefined,
@@ -191,7 +261,7 @@ export function ActivityView({
         { scroll: false },
       );
     },
-    [activeMonth, dateFrom, dateTo, listFilter, reportScope, reportWalletIds, router, transactionScope, walletIds],
+    [activeMonth, appliedQuery, categories, dateFrom, dateTo, listFilter, period, reportScope, reportWalletIds, router, transactionScope, walletIds],
   );
 
   /*
@@ -277,6 +347,20 @@ export function ActivityView({
     };
   }, []);
 
+  /* Debounce the search box so typing does not fire a request per keystroke. */
+  useEffect(() => {
+    const timer = setTimeout(() => setAppliedQuery(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const lastSyncedQuery = useRef(initialQ);
+  useEffect(() => {
+    if (lastSyncedQuery.current === appliedQuery) return;
+    lastSyncedQuery.current = appliedQuery;
+    if (view !== "active") return;
+    writeUrl({ view: "active", month: activeMonth });
+  }, [appliedQuery, activeMonth, view, writeUrl]);
+
   useEffect(() => {
     /* Ringkasan draws every number from its own aggregate request (AC-F7-14). */
     if (view === "ringkasan") return;
@@ -290,10 +374,12 @@ export function ActivityView({
         view,
         month: activeMonth,
         walletIds,
-        from: dateFrom,
-        to: dateTo,
+        from: periodRange.from,
+        to: periodRange.to,
         filter: filterToUrl(listFilter),
         scope: transactionScope,
+        q: appliedQuery,
+        categories,
       }),
     )
       .then((response) => {
@@ -333,8 +419,10 @@ export function ActivityView({
     };
   }, [
     activeMonth,
-    dateFrom,
-    dateTo,
+    appliedQuery,
+    categories,
+    periodRange.from,
+    periodRange.to,
     initialData,
     listFilter,
     transactionScope,
@@ -349,37 +437,6 @@ export function ActivityView({
     setReloadToken((token) => token + 1);
   };
 
-  const changeMonth = (delta: -1 | 1) => {
-    const next = shiftMonthKey(activeMonth, delta);
-    if (next === activeMonth) return;
-    setDetail(null);
-    if (view !== "ringkasan") setLoading(true);
-    setActiveMonth(next);
-    resetDateFilter();
-    setFilterPanelOpen(false);
-    /* The report scope and wallet survive the month change (AC-F7-2). */
-    writeUrl({ view, month: next, from: "", to: "" });
-  };
-
-  const openMonthPicker = () => {
-    setMonthPickerValue(activeMonth);
-    setMonthPickerOpen(true);
-  };
-
-  const applyMonthPicker = () => {
-    const next = resolveMonthKey(monthPickerValue);
-    if (next !== activeMonth) {
-      setDetail(null);
-      if (view !== "ringkasan") setLoading(true);
-      setActiveMonth(next);
-      /* The date range belongs to one month, so a new month clears it. */
-      resetDateFilter();
-      setFilterPanelOpen(false);
-      writeUrl({ view, month: next, from: "", to: "" });
-    }
-    setMonthPickerOpen(false);
-  };
-
   const resetDateFilter = () => {
     setDateFrom("");
     setDateTo("");
@@ -388,63 +445,84 @@ export function ActivityView({
     setDateFilterError(null);
   };
 
-  const openFilterPanel = () => {
-    /* Reopening starts from the applied range, not an abandoned draft. */
+  const toggleDraftWallet = (id: string) => {
+    setDraftWalletIds((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    );
+  };
+
+  const openFilterSheet = () => {
+    setDraftPeriod(period);
+    setDraftMonth(activeMonth);
     setDraftFrom(dateFrom);
     setDraftTo(dateTo);
+    setDraftListFilter(listFilter);
+    setDraftScope(transactionScope);
+    setDraftCategories(categories);
+    setDraftWalletIds(walletIds);
+    setWalletSearch("");
     setDateFilterError(null);
-    setFilterPanelOpen(true);
+    setFilterSheetOpen(true);
   };
 
-  const applyDateFilter = () => {
-    const range = monthKeyRange(activeMonth);
-    if (
-      (draftFrom && (draftFrom < range.from || draftFrom > range.to)) ||
-      (draftTo && (draftTo < range.from || draftTo > range.to))
-    ) {
-      setDateFilterError("Rentang tanggal harus berada di bulan yang dipilih.");
-      return;
+  const applyFilters = () => {
+    let nextFrom = "";
+    let nextTo = "";
+    if (draftPeriod === "range") {
+      if (!draftFrom || !draftTo) {
+        setDateFilterError("Isi tanggal mulai dan tanggal akhir.");
+        return;
+      }
+      if (draftFrom > draftTo) {
+        setDateFilterError("Tanggal mulai tidak boleh setelah tanggal akhir.");
+        return;
+      }
+      nextFrom = draftFrom;
+      nextTo = draftTo;
     }
-    if (draftFrom && draftTo && draftFrom > draftTo) {
-      setDateFilterError("Tanggal mulai tidak boleh setelah tanggal akhir.");
-      return;
-    }
+    /* Drop wallets that are outside the chosen scope before committing. */
+    const validWalletIds = draftScope === "all"
+      ? draftWalletIds
+      : draftWalletIds.filter((id) => wallets.some((wallet) =>
+          wallet.id === id && wallet.scope === (draftScope === "personal" ? "PERSONAL" : "SHARING"),
+        ));
+    /* Drop categories that do not belong to the chosen type. */
+    const allowedCategories = categoriesForFilter(draftListFilter);
+    const nextCategories = draftCategories.filter((value) => allowedCategories.includes(value));
     setDateFilterError(null);
-    if (draftFrom !== dateFrom || draftTo !== dateTo) {
-      setLoading(true);
-      setDateFrom(draftFrom);
-      setDateTo(draftTo);
-    }
-    writeUrl({ view: "active", month: activeMonth, from: draftFrom, to: draftTo });
-    setFilterPanelOpen(false);
-  };
-
-  const clearDateFilter = () => {
-    const hadFilter = Boolean(dateFrom || dateTo);
-    resetDateFilter();
-    if (hadFilter) setLoading(true);
-    writeUrl({ view: "active", month: activeMonth, from: "", to: "" });
-  };
-
-  const clearAllFilters = () => {
-    setRows([]);
-    setNextCursor(null);
-    setListFilter("all");
-    setTransactionScope("all");
-    setWalletIds([]);
-    resetDateFilter();
-    setFilterPanelOpen(false);
-    setFilterLoading(false);
-    setLoading(true);
+    setFilterSheetOpen(false);
+    setFilterLoading(true);
+    setPeriod(draftPeriod);
+    setActiveMonth(draftMonth);
+    setDateFrom(nextFrom);
+    setDateTo(nextTo);
+    setListFilter(draftListFilter);
+    setTransactionScope(draftScope);
+    setCategories(nextCategories);
+    setWalletIds(validWalletIds);
     writeUrl({
       view: "active",
-      month: activeMonth,
-      filter: "all",
-      scope: "all",
-      walletIds: [],
-      from: "",
-      to: "",
+      month: draftMonth,
+      period: draftPeriod,
+      filter: draftListFilter,
+      scope: draftScope,
+      categories: nextCategories,
+      walletIds: validWalletIds,
+      from: nextFrom,
+      to: nextTo,
     });
+  };
+
+  const resetFilters = () => {
+    setDraftPeriod("month");
+    setDraftMonth(currentMonthKey());
+    setDraftFrom("");
+    setDraftTo("");
+    setDraftListFilter("all");
+    setDraftScope("all");
+    setDraftCategories([]);
+    setDraftWalletIds([]);
+    setDateFilterError(null);
   };
 
   const loadMore = async () => {
@@ -457,10 +535,12 @@ export function ActivityView({
           cursor: nextCursor,
           month: activeMonth,
           walletIds,
-          from: dateFrom,
-          to: dateTo,
+          from: periodRange.from,
+          to: periodRange.to,
           filter: filterToUrl(listFilter),
           scope: transactionScope,
+          q: appliedQuery,
+          categories,
         }),
       );
       if (response.status === 401) {
@@ -487,8 +567,9 @@ export function ActivityView({
     setTransactionScope("all");
     setWalletIds([]);
     setDetail(null);
-    setFilterPanelOpen(false);
+    setFilterSheetOpen(false);
     resetDateFilter();
+    setPeriod("month");
     setView(next);
     if (next === "ringkasan") {
       setLoading(false);
@@ -503,6 +584,7 @@ export function ActivityView({
     writeUrl({
       view: next,
       month: activeMonth,
+      period: "month",
       filter: "all",
       scope: "all",
       walletIds: [],
@@ -515,7 +597,7 @@ export function ActivityView({
     setView("ringkasan");
     setReportScope(transactionScope);
     setReportWalletIds(walletIds);
-    setFilterPanelOpen(false);
+    setFilterSheetOpen(false);
     setLoading(false);
     writeUrl({
       view: "ringkasan",
@@ -527,7 +609,7 @@ export function ActivityView({
 
   const returnToTransactions = () => {
     setView("active");
-    setFilterPanelOpen(false);
+    setFilterSheetOpen(false);
     initialDataConsumed.current = true;
     setLoading(true);
     writeUrl({
@@ -541,25 +623,30 @@ export function ActivityView({
     });
   };
 
-  const changeReportScope = (next: ReportScope) => {
-    const nextWalletIds = next === "all"
-      ? reportWalletIds
-      : reportWalletIds.filter((id) => wallets.some((wallet) =>
-          wallet.id === id && wallet.scope === (next === "personal" ? "PERSONAL" : "SHARING"),
-        ));
-    setReportScope(next);
-    setReportWalletIds(nextWalletIds);
+  /* Period, scope, and wallets commit together so the URL never holds a mixed state. */
+  const changeReportFilter = (next: {
+    period: ActivityPeriod;
+    month: string;
+    from: string;
+    to: string;
+    scope: ReportScope;
+    walletIds: string[];
+  }) => {
+    setPeriod(next.period);
+    setActiveMonth(next.month);
+    setDateFrom(next.period === "range" ? next.from : "");
+    setDateTo(next.period === "range" ? next.to : "");
+    setReportScope(next.scope);
+    setReportWalletIds(next.walletIds);
     writeUrl({
       view: "ringkasan",
-      month: activeMonth,
-      reportScope: next,
-      reportWalletIds: nextWalletIds,
+      month: next.month,
+      period: next.period,
+      reportScope: next.scope,
+      reportWalletIds: next.walletIds,
+      from: next.period === "range" ? next.from : "",
+      to: next.period === "range" ? next.to : "",
     });
-  };
-
-  const changeReportWallet = (next: string[]) => {
-    setReportWalletIds(next);
-    writeUrl({ view: "ringkasan", month: activeMonth, reportWalletIds: next });
   };
 
   const handleDelete = async () => {
@@ -745,52 +832,57 @@ export function ActivityView({
   );
 
   /*
-    The report needs archived wallets (AC-F7-8); the transaction filter keeps
-    hiding them except when one is the current selection from a shared URL.
+    Wallets inside the filter sheet follow the DRAFT scope and keep archived
+    wallets selectable only when already chosen (AC-F7-8 parity).
   */
-  const transactionWallets = useMemo(
-    () => wallets.filter((wallet) =>
-      (wallet.archivedAt === null || walletIds.includes(wallet.id)) &&
-      (transactionScope === "all" ||
-        (transactionScope === "personal" && wallet.scope === "PERSONAL") ||
-        (transactionScope === "shared" && wallet.scope === "SHARING")),
-    ),
-    [transactionScope, walletIds, wallets],
+  const draftTransactionWallets = wallets.filter((wallet) =>
+    (wallet.archivedAt === null || draftWalletIds.includes(wallet.id)) &&
+    (draftScope === "all" ||
+      (draftScope === "personal" && wallet.scope === "PERSONAL") ||
+      (draftScope === "shared" && wallet.scope === "SHARING")),
   );
-
-  const searchedTransactionWallets = transactionWallets.filter((wallet) =>
+  const searchedDraftWallets = draftTransactionWallets.filter((wallet) =>
     wallet.name.toLocaleLowerCase("id-ID").includes(walletSearch.trim().toLocaleLowerCase("id-ID")),
   );
-  const appliedDateLabel = dateFrom && dateTo
-    ? `Tanggal: ${formatDateLabel(dateFrom)} s.d. ${formatDateLabel(dateTo)}`
-    : dateFrom
-      ? `Dari ${formatDateLabel(dateFrom)}`
-      : dateTo
-        ? `Sampai ${formatDateLabel(dateTo)}`
-        : null;
-  const activeFilterLabels = [
+  const draftSharedWallets = searchedDraftWallets.filter((wallet) => wallet.scope === "SHARING");
+  const draftPersonalWallets = searchedDraftWallets.filter((wallet) => wallet.scope === "PERSONAL");
+
+  const appliedPeriodLabel =
+    period === "month"
+      ? monthKeyLabel(activeMonth)
+      : period === "range" && dateFrom && dateTo
+        ? `${formatDateLabel(dateFrom)} sampai ${formatDateLabel(dateTo)}`
+        : period === "range"
+          ? "Rentang tanggal"
+          : period === "7d"
+            ? "7 hari terakhir"
+            : "30 hari terakhir";
+  const filterSummary = [
+    appliedPeriodLabel,
     listFilter === "all" ? null : FILTER_OPTIONS.find(([value]) => value === listFilter)?.[1] ?? null,
+    categories.length === 0
+      ? null
+      : categories.length <= 2
+        ? categories.map((value) => CATEGORY_LABELS[value] ?? value).join(", ")
+        : `${categories.length} kategori`,
     transactionScope === "all" ? null : transactionScope === "personal" ? "Pribadi" : "Bersama",
-    appliedDateLabel,
-    walletIds.length > 0
-      ? `Dompet: ${walletIds.length} dipilih`
-      : null,
-  ].filter((label): label is string => label !== null);
+    walletIds.length > 0 ? `${walletIds.length} dompet` : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" · ");
   const showFilters = view === "active" && !loading && !error;
 
   return (
-    <div className="space-y-3 md:space-y-4">
+    <div className="space-y-4 md:space-y-5">
       <PageHeader
         className="flex-row flex-wrap items-center justify-between gap-3 print:hidden"
         actionsClassName="ml-auto w-auto flex-row items-center gap-3"
-        eyebrow="Financial Diary"
         title={view === "ringkasan" ? "Ringkasan" : "Aktivitas"}
-        icon={ReceiptText}
         beforeTitle={view === "ringkasan" ? (
           <button
             type="button"
             onClick={returnToTransactions}
-            className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-blue hover:bg-blue-wash"
+            className="mb-2 inline-flex min-h-11 items-center gap-2 rounded-full px-2 text-sm font-semibold text-green hover:bg-mint"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Kembali ke transaksi
@@ -812,7 +904,7 @@ export function ActivityView({
 
       {view !== "ringkasan" ? (
         <div
-          className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center sm:gap-2 print:hidden"
+          className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2 print:hidden"
           role="tablist"
           aria-label="Tampilan aktivitas"
         >
@@ -829,10 +921,10 @@ export function ActivityView({
             aria-controls={`activity-panel-${value}`}
             onClick={() => changeView(value)}
             className={cn(
-              "min-h-11 rounded-full px-2 text-center text-sm font-semibold transition-colors sm:px-5",
+              "min-h-11 rounded-xl px-3 text-center text-sm font-semibold transition-colors sm:px-5",
               view === value
-                ? "bg-navy text-white"
-                : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
+                ? "bg-mint text-green"
+                : "border border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
             )}
           >
             {label}
@@ -845,306 +937,43 @@ export function ActivityView({
         id={`activity-panel-${view}`}
         role="tabpanel"
         aria-labelledby={view === "ringkasan" ? "activity-report-title" : `activity-tab-${view}`}
-        className="space-y-3 md:space-y-5"
+        className="space-y-4 md:space-y-5"
       >
       {view === "ringkasan" ? <h2 id="activity-report-title" className="sr-only">Ringkasan lengkap</h2> : null}
-      {view === "active" || view === "ringkasan" ? (
-        <div
-          className="flex items-center justify-between gap-2 rounded-full border border-card-border bg-card p-1.5 pl-5 print:hidden"
-          role="group"
-          aria-label="Pilih bulan aktivitas"
-        >
-          <button
-            type="button"
-            onClick={openMonthPicker}
-            className="min-h-11 min-w-0 truncate rounded-full px-3 text-left text-sm font-bold text-ink hover:bg-blue-wash focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue/15"
-            aria-label={`Pilih bulan, saat ini ${monthKeyLabel(activeMonth)}`}
-          >
-            {monthKeyLabel(activeMonth)}
-          </button>
-          <div className="flex shrink-0 items-center">
-            <button
-              type="button"
-              onClick={() => changeMonth(-1)}
-              aria-label="Lihat bulan sebelumnya"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
-            >
-              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => changeMonth(1)}
-              disabled={activeMonth >= currentMonthKey()}
-              aria-label="Lihat bulan berikutnya"
-              className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash disabled:cursor-not-allowed disabled:text-ink-3 disabled:hover:bg-transparent"
-            >
-              <ChevronRight className="h-5 w-5" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {showFilters ? (
+      {view === "active" ? (
         <div className="space-y-2 print:hidden">
-          <button
-            type="button"
-            aria-controls="activity-filter-panel"
-            aria-expanded={filterPanelOpen}
-            onClick={() => (filterPanelOpen ? setFilterPanelOpen(false) : openFilterPanel())}
-            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-card-border bg-card px-4 text-left text-sm font-semibold text-ink hover:bg-blue-wash"
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 shrink-0 text-blue" aria-hidden="true" />
-              <span>Filter transaksi</span>
-              {activeFilterLabels.length > 0 ? (
-                <span className="shrink-0 rounded-full bg-blue-tint px-2.5 py-1 text-xs font-semibold text-blue">
-                  {activeFilterLabels.length} aktif
-                </span>
-              ) : null}
-            </span>
-            <ChevronDown
-              className={cn("h-4 w-4 shrink-0 text-ink-3 transition-transform", filterPanelOpen && "rotate-180")}
+          <label className="relative block">
+            <span className="sr-only">Cari transaksi</span>
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
               aria-hidden="true"
             />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Cari nama toko atau catatan"
+              className="min-h-12 w-full rounded-2xl border border-card-border bg-card pl-10 pr-4 text-sm text-ink placeholder:text-placeholder shadow-bento focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={openFilterSheet}
+            aria-haspopup="dialog"
+            aria-expanded={filterSheetOpen}
+            className="flex min-h-12 w-full items-center justify-between gap-3 rounded-2xl border border-card-border bg-card px-4 text-left shadow-bento transition-colors hover:bg-surface-subtle"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4 shrink-0 text-green" aria-hidden="true" />
+              <span className="min-w-0 truncate text-sm font-semibold text-ink">{filterSummary}</span>
+            </span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-ink-3" aria-hidden="true" />
           </button>
-
-          {filterPanelOpen ? (
-            <div
-              id="activity-filter-panel"
-              aria-label="Filter transaksi"
-              className="space-y-4 rounded-2xl border border-card-border bg-card p-4"
-            >
-              <div className="space-y-2">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-ink-2">Cakupan</p>
-                  <div className="flex items-center gap-1 rounded-2xl bg-blue-wash p-1" role="group" aria-label="Cakupan transaksi">
-                    {([['all', 'Semua'], ['personal', 'Pribadi'], ['shared', 'Bersama']] as const).map(([value, label]) => (
-                      <button key={value} type="button" aria-pressed={transactionScope === value}
-                        onClick={() => {
-                          const nextWalletIds = value === "all"
-                            ? walletIds
-                            : walletIds.filter((id) => wallets.some((wallet) =>
-                                wallet.id === id && wallet.scope === (value === "personal" ? "PERSONAL" : "SHARING"),
-                              ));
-                          setRows([]); setNextCursor(null); setFilterLoading(true); setTransactionScope(value);
-                          setWalletIds(nextWalletIds);
-                          writeUrl({ view: 'active', month: activeMonth, scope: value, walletIds: nextWalletIds });
-                        }}
-                        className={cn('min-h-11 flex-1 rounded-full px-3 text-sm font-semibold transition-colors', transactionScope === value ? 'bg-card text-ink shadow-sm' : 'text-ink-2 hover:bg-card')}
-                      >{label}</button>
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm font-semibold text-ink-2">Jenis transaksi</p>
-                <div
-                  className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-1 sm:rounded-2xl sm:bg-blue-wash sm:p-1"
-                  role="group"
-                  aria-label="Saring transaksi"
-                >
-                  {FILTER_OPTIONS.map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={listFilter === value}
-                      onClick={() => {
-                        if (value !== listFilter) {
-                          /* A new type cursor: never continue the previous filter. */
-                          setRows([]);
-                          setNextCursor(null);
-                          setFilterLoading(true);
-                          setListFilter(value);
-                        }
-                        writeUrl({
-                          view: "active",
-                          month: activeMonth,
-                          filter: value,
-                        });
-                      }}
-                      className={cn(
-                        "flex min-h-11 items-center justify-center rounded-full border px-3 text-sm font-semibold transition-colors sm:border-0 sm:px-4",
-                        listFilter === value
-                          ? "border-navy bg-navy text-white shadow-sm sm:bg-card sm:text-ink"
-                          : "border-card-border bg-card text-ink-2 hover:text-ink sm:bg-transparent sm:hover:bg-card",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <fieldset className="space-y-3 rounded-2xl border border-card-border bg-card p-3">
-                <legend className="px-1 text-sm font-semibold text-ink">Pilih dompet</legend>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-ink-2" aria-live="polite">
-                    {walletsLoading ? "Memuat dompet..." : walletIds.length ? `${walletIds.length} dipilih` : "Semua dompet"}
-                  </span>
-                  {walletIds.length ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setWalletIds([]);
-                        setRows([]);
-                        setNextCursor(null);
-                        setLoading(true);
-                        setReloadToken((token) => token + 1);
-                        writeUrl({ view: "active", month: activeMonth, walletIds: [] });
-                      }}
-                      className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2"
-                    >
-                      Hapus pilihan
-                    </button>
-                  ) : null}
-                </div>
-                <label className="block">
-                  <span className="sr-only">Cari dompet</span>
-                  <input
-                    type="search"
-                    value={walletSearch}
-                    onChange={(event) => setWalletSearch(event.target.value)}
-                    placeholder="Cari nama dompet"
-                    disabled={walletsLoading || Boolean(walletsError)}
-                    className="min-h-11 w-full rounded-xl border border-input-border bg-card px-3 text-sm text-ink placeholder:text-placeholder focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15 disabled:opacity-60"
-                  />
-                </label>
-                <div className="max-h-56 space-y-1 overflow-y-auto" role="group" aria-label="Daftar dompet">
-                  {walletsLoading ? (
-                    <p className="px-2 py-3 text-sm text-ink-3">Memuat daftar dompet...</p>
-                  ) : walletsError ? (
-                    <p className="px-2 py-3 text-sm text-danger">Dompet tidak tersedia.</p>
-                  ) : searchedTransactionWallets.length ? searchedTransactionWallets.map((wallet) => (
-                    <label key={wallet.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 text-sm text-ink hover:bg-blue-wash">
-                      <input
-                        type="checkbox"
-                        checked={walletIds.includes(wallet.id)}
-                        onChange={(event) => {
-                          const nextWalletIds = event.target.checked
-                            ? [...walletIds, wallet.id]
-                            : walletIds.filter((id) => id !== wallet.id);
-                          setWalletIds(nextWalletIds);
-                          setRows([]);
-                          setNextCursor(null);
-                          setLoading(true);
-                          setReloadToken((token) => token + 1);
-                          writeUrl({ view: "active", month: activeMonth, walletIds: nextWalletIds });
-                        }}
-                        className="h-4 w-4 accent-blue"
-                      />
-                      <span className="min-w-0 flex-1 truncate">{wallet.name}</span>
-                      <span className="shrink-0 text-xs text-ink-3">
-                        {wallet.scope === "SHARING" ? "Bersama" : "Pribadi"}{wallet.archivedAt ? ", Arsip" : ""}
-                      </span>
-                    </label>
-                  )) : (
-                    <p className="px-2 py-3 text-sm text-ink-3">
-                      {transactionWallets.length ? "Tidak ada dompet yang cocok." : "Belum ada dompet untuk cakupan ini."}
-                    </p>
-                  )}
-                </div>
-                <p className="text-xs text-ink-3">
-                  Transfer dari dompet yang tidak dipilih dihitung sebagai uang masuk. Transfer ke dompet yang tidak dipilih dihitung sebagai uang keluar. Transfer antar-dompet yang sama-sama dipilih tidak dihitung sebagai masuk atau keluar.
-                </p>
-              </fieldset>
-              {walletsError ? (
-                <p role="status" className="text-xs text-danger">{walletsError}</p>
-              ) : null}
-
-              <div className="border-t border-row-divider pt-3">
-                <p className="text-sm font-semibold text-ink-2">
-                  Rentang tanggal <span className="font-normal text-ink-3">(opsional)</span>
-                </p>
-                <p className="mt-1 text-xs text-ink-3">
-                  Pilih rentang di dalam {monthKeyLabel(activeMonth)}.
-                </p>
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
-                    Dari
-                    <input
-                      type="date"
-                      value={draftFrom}
-                      max={draftTo || monthKeyRange(activeMonth).to}
-                      onChange={(event) => setDraftFrom(event.target.value)}
-                      className="min-h-11 w-full min-w-0 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1.5 text-sm font-semibold text-ink-2">
-                    Sampai
-                    <input
-                      type="date"
-                      value={draftTo}
-                      min={draftFrom || monthKeyRange(activeMonth).from}
-                      max={monthKeyRange(activeMonth).to}
-                      onChange={(event) => setDraftTo(event.target.value)}
-                      className="min-h-11 w-full min-w-0 rounded-2xl border border-input-border px-3 text-sm text-ink focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
-                    />
-                  </label>
-                </div>
-                {dateFilterError ? (
-                  <p role="alert" className="mt-2 text-xs text-danger">{dateFilterError}</p>
-                ) : null}
-                <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  {(draftFrom || draftTo) ? (
-                    <button
-                      type="button"
-                      onClick={clearDateFilter}
-                      className="min-h-11 rounded-full border border-blue-border px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
-                    >
-                      Hapus tanggal
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={applyDateFilter}
-                    className="min-h-11 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
-                  >
-                    Terapkan tanggal
-                  </button>
-                </div>
-              </div>
-
-              {activeFilterLabels.length > 0 ? (
-                <div className="flex justify-end border-t border-row-divider pt-2">
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2 hover:text-ink"
-                  >
-                    Hapus semua filter
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {!filterPanelOpen && walletsError ? (
-            <p role="status" className="text-xs text-danger">{walletsError}</p>
-          ) : null}
-
-          {!filterPanelOpen && activeFilterLabels.length > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1" aria-label="Filter aktif">
-              <div className="flex flex-wrap gap-2">
-                {activeFilterLabels.map((label) => (
-                  <span
-                    key={label}
-                    className="max-w-full truncate rounded-full bg-blue-tint px-3 py-1.5 text-xs font-semibold text-blue"
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={clearAllFilters}
-                className="min-h-11 rounded-full px-3 text-sm font-semibold text-blue underline underline-offset-2 hover:text-ink"
-              >
-                Hapus semua filter
-              </button>
-            </div>
-          ) : null}
         </div>
       ) : null}
 
-      {view === "active" ? (
+
+      {view === "active" && period === "month" ? (
         <ActivityMonthSummaryCard
           month={activeMonth}
           scope={transactionScope}
@@ -1154,48 +983,338 @@ export function ActivityView({
         />
       ) : null}
 
-      {monthPickerOpen ? (
+      {filterSheetOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-navy/35 p-4"
+          className={cn(
+            "modal-overlay fixed inset-0 z-50 flex items-end justify-center bg-scrim/35 sm:items-center sm:p-4",
+            filterSheetClosing && "modal-closing-overlay",
+          )}
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setMonthPickerOpen(false);
+            if (event.target === event.currentTarget) requestFilterClose();
           }}
         >
           <div
-            className="w-full max-w-sm rounded-3xl border border-card-border bg-card p-5 shadow-2xl"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="month-picker-title"
+            aria-labelledby="filter-sheet-title"
+            className={cn(
+              "max-h-[88vh] w-full overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:max-w-lg sm:rounded-3xl",
+              filterSheetClosing && "modal-closing-panel",
+            )}
           >
-            <h2 id="month-picker-title" className="text-lg font-semibold text-ink">
-              Pilih bulan aktivitas
-            </h2>
-            <p className="mt-1 text-sm text-ink-3">
-              Pilih bulan dan tahun untuk melihat transaksi.
-            </p>
-            <label className="mt-5 flex flex-col gap-2 text-sm font-semibold text-ink-2">
-              Bulan dan tahun
-              <input
-                type="month"
-                value={monthPickerValue}
-                max={currentMonthKey()}
-                onChange={(event) => setMonthPickerValue(event.target.value)}
-                className="min-h-12 rounded-2xl border border-input-border bg-card px-3 text-base text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
-              />
-            </label>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 id="filter-sheet-title" className="text-lg font-semibold text-ink">Filter transaksi</h2>
+                <p className="mt-1 text-sm text-ink-3">Atur periode, jenis, cakupan, dan dompet.</p>
+              </div>
               <button
                 type="button"
-                onClick={() => setMonthPickerOpen(false)}
-                className="min-h-11 rounded-full border border-blue-border px-4 text-sm font-semibold text-blue hover:bg-blue-wash"
+                onClick={requestFilterClose}
+                aria-label="Tutup filter"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
               >
-                Batal
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-5">
+              <div>
+                <p className="text-sm font-semibold text-ink-2">Periode</p>
+                <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Periode transaksi">
+                  {PERIOD_OPTIONS.map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={draftPeriod === value}
+                      onClick={() => {
+                        if (value === "range" && !draftFrom && !draftTo) {
+                          setDraftFrom(dateFrom || periodRange.from);
+                          setDraftTo(dateTo || periodRange.to);
+                        }
+                        setDraftPeriod(value);
+                        setDateFilterError(null);
+                      }}
+                      className={cn(
+                        "min-h-10 rounded-full px-3.5 text-xs font-semibold transition-colors",
+                        draftPeriod === value
+                          ? "bg-brand-green text-white"
+                          : "border border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {draftPeriod === "month" ? (
+                  <label className="mt-3 block text-xs font-semibold text-ink-2">
+                    Bulan
+                    <input
+                      type="month"
+                      value={draftMonth}
+                      max={currentMonthKey()}
+                      onChange={(event) => setDraftMonth(event.target.value)}
+                      className="mt-1 min-h-11 w-full rounded-xl border border-input-border bg-card px-3 text-sm text-ink accent-green focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
+                    />
+                  </label>
+                ) : null}
+
+                {draftPeriod === "range" ? (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <label className="flex flex-col gap-1 text-xs font-semibold text-ink-2">
+                      Dari
+                      <input
+                        type="date"
+                        value={draftFrom}
+                        max={draftTo || undefined}
+                        onChange={(event) => setDraftFrom(event.target.value)}
+                        className="min-h-11 w-full min-w-0 rounded-xl border border-input-border px-2 text-sm text-ink focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-xs font-semibold text-ink-2">
+                      Sampai
+                      <input
+                        type="date"
+                        value={draftTo}
+                        min={draftFrom || undefined}
+                        onChange={(event) => setDraftTo(event.target.value)}
+                        className="min-h-11 w-full min-w-0 rounded-xl border border-input-border px-2 text-sm text-ink focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+
+                {dateFilterError ? (
+                  <p role="alert" className="mt-2 text-xs text-danger">{dateFilterError}</p>
+                ) : null}
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-ink-2">Jenis transaksi</p>
+                <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Jenis transaksi">
+                  {FILTER_OPTIONS.map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={draftListFilter === value}
+                      onClick={() => {
+                        setDraftListFilter(value);
+                        const allowed = categoriesForFilter(value);
+                        setDraftCategories((current) => current.filter((item) => allowed.includes(item)));
+                      }}
+                      className={cn(
+                        "min-h-10 rounded-full px-3.5 text-xs font-semibold transition-colors",
+                        draftListFilter === value
+                          ? "bg-brand-green text-white"
+                          : "border border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {draftListFilter === "transfer" ? (
+                <div>
+                  <p className="text-sm font-semibold text-ink-2">Kategori</p>
+                  <p className="mt-2 rounded-xl bg-surface-subtle px-3 py-2 text-xs text-ink-3">
+                    Transfer tidak punya kategori.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-semibold text-ink-2">Kategori</p>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3" role="group" aria-label="Kategori transaksi">
+                    <button
+                      type="button"
+                      aria-pressed={draftCategories.length === 0}
+                      onClick={() => setDraftCategories([])}
+                      className={cn(
+                        "flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-sm font-semibold transition-colors",
+                        draftCategories.length === 0
+                          ? "border-brand-green bg-mint text-green"
+                          : "border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
+                      )}
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-ink-2">
+                        <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0 truncate">Semua</span>
+                    </button>
+                    {categoriesForFilter(draftListFilter).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={draftCategories.includes(value)}
+                        onClick={() =>
+                          setDraftCategories((current) =>
+                            current.includes(value)
+                              ? current.filter((item) => item !== value)
+                              : [...current, value],
+                          )
+                        }
+                        className={cn(
+                          "flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-sm font-semibold transition-colors",
+                          draftCategories.includes(value)
+                            ? "border-brand-green bg-mint text-green"
+                            : "border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
+                        )}
+                      >
+                        <CategoryIcon category={value} size="sm" />
+                        <span className="min-w-0 truncate">{CATEGORY_LABELS[value] ?? value}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-sm font-semibold text-ink-2">Cakupan</p>
+                <div className="mt-2 flex items-center gap-1 rounded-xl bg-surface-subtle p-1" role="group" aria-label="Cakupan transaksi">
+                  {([["all", "Semua"], ["personal", "Pribadi"], ["shared", "Bersama"]] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={draftScope === value}
+                      onClick={() => {
+                        setDraftScope(value);
+                        if (value !== "all") {
+                          setDraftWalletIds((current) =>
+                            current.filter((id) => wallets.some((wallet) =>
+                              wallet.id === id && wallet.scope === (value === "personal" ? "PERSONAL" : "SHARING"),
+                            )),
+                          );
+                        }
+                      }}
+                      className={cn(
+                        "min-h-11 flex-1 rounded-full px-3 text-sm font-semibold transition-colors",
+                        draftScope === value ? "bg-card text-ink shadow-sm" : "text-ink-2 hover:bg-card",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-ink-2">Dompet</p>
+                  <span className="text-xs font-medium text-ink-3">
+                    {draftWalletIds.length ? `${draftWalletIds.length} dipilih` : "Semua dompet"}
+                  </span>
+                </div>
+                <label className="mt-2 block">
+                  <span className="sr-only">Cari dompet</span>
+                  <input
+                    type="search"
+                    value={walletSearch}
+                    onChange={(event) => setWalletSearch(event.target.value)}
+                    placeholder="Cari nama dompet"
+                    disabled={walletsLoading || Boolean(walletsError)}
+                    className="min-h-11 w-full rounded-xl border border-input-border bg-card px-3 text-sm text-ink placeholder:text-placeholder focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15 disabled:opacity-60"
+                  />
+                </label>
+
+                {!walletsLoading && !walletsError && draftTransactionWallets.length > 0 ? (
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDraftWalletIds(draftTransactionWallets.map((wallet) => wallet.id))}
+                      className="min-h-9 rounded-full px-2 text-xs font-semibold text-green hover:bg-mint"
+                    >
+                      Pilih semua
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDraftWalletIds([])}
+                      className="min-h-9 rounded-full px-2 text-xs font-semibold text-ink-2 hover:bg-surface-subtle"
+                    >
+                      Kosongkan
+                    </button>
+                  </div>
+                ) : null}
+
+                <div className="mt-2 max-h-56 space-y-2 overflow-y-auto" role="group" aria-label="Daftar dompet">
+                  {walletsLoading ? (
+                    <p className="px-2 py-3 text-sm text-ink-3">Memuat daftar dompet...</p>
+                  ) : walletsError ? (
+                    <p className="px-2 py-3 text-sm text-danger">Dompet tidak tersedia.</p>
+                  ) : searchedDraftWallets.length ? (
+                    [
+                      { label: "Bersama", list: draftSharedWallets },
+                      { label: "Pribadi", list: draftPersonalWallets },
+                    ].map((group) =>
+                      group.list.length ? (
+                        <div key={group.label} className="space-y-1">
+                          <p className="px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                            {group.label}
+                          </p>
+                          {group.list.map((wallet) => {
+                            const checked = draftWalletIds.includes(wallet.id);
+                            return (
+                              <button
+                                key={wallet.id}
+                                type="button"
+                                aria-pressed={checked}
+                                onClick={() => toggleDraftWallet(wallet.id)}
+                                className={cn(
+                                  "flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 text-left text-sm transition-colors",
+                                  checked
+                                    ? "border-brand-green bg-mint text-green"
+                                    : "border-card-border bg-card text-ink hover:bg-surface-subtle",
+                                )}
+                              >
+                                <span
+                                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-subtle text-ink-2"
+                                  aria-hidden="true"
+                                >
+                                  <Wallet className="h-4 w-4" />
+                                </span>
+                                <span className="min-w-0 flex-1 truncate font-semibold">{wallet.name}</span>
+                                {wallet.archivedAt ? (
+                                  <span className="shrink-0 rounded-full bg-chip-slate px-2 py-0.5 text-[10px] font-semibold text-ink-2">
+                                    Arsip
+                                  </span>
+                                ) : null}
+                                <span
+                                  className={cn(
+                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                                    checked ? "border-brand-green bg-brand-green text-white" : "border-input-border",
+                                  )}
+                                  aria-hidden="true"
+                                >
+                                  {checked ? <Check className="h-3 w-3" /> : null}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null,
+                    )
+                  ) : (
+                    <p className="px-2 py-3 text-sm text-ink-3">
+                      {draftTransactionWallets.length ? "Tidak ada dompet yang cocok." : "Belum ada dompet untuk cakupan ini."}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="min-h-11 rounded-full border border-card-border px-4 text-sm font-semibold text-ink-2 hover:bg-surface-subtle"
+              >
+                Reset
               </button>
               <button
                 type="button"
-                onClick={applyMonthPicker}
-                className="min-h-11 rounded-full bg-brand-green px-4 text-sm font-semibold text-white hover:bg-brand-green-hover"
+                onClick={applyFilters}
+                className="min-h-11 rounded-full bg-brand-green px-5 text-sm font-semibold text-white hover:bg-brand-green-hover"
               >
                 Terapkan
               </button>
@@ -1218,8 +1337,10 @@ export function ActivityView({
           walletsError={walletsError}
           scope={reportScope}
           walletIds={reportWalletIds}
-          onScopeChange={changeReportScope}
-          onWalletChange={changeReportWallet}
+          period={period}
+          from={periodRange.from}
+          to={periodRange.to}
+          onFilterChange={changeReportFilter}
         />
       ) : (
         <>
@@ -1256,7 +1377,7 @@ export function ActivityView({
                     setListFilter("all");
                     writeUrl({ view: "active", month: activeMonth, filter: "all" });
                   }}
-                  className="mt-4 inline-flex min-h-11 items-center rounded-full border border-blue-border bg-card px-5 text-sm font-semibold text-blue hover:bg-blue-wash"
+                  className="mt-4 inline-flex min-h-11 items-center rounded-full border border-success-border bg-card px-5 text-sm font-semibold text-green hover:bg-mint"
                 >
                   Tampilkan semua
                 </button>
@@ -1296,7 +1417,7 @@ export function ActivityView({
       )}
       </div>
 
-      <AddTransactionSheet open={sheetOpen} onClose={handleSheetClose} onCreated={handleCreated} />
+      <AddTransactionSheet open={sheetOpen} initialMode={initialScan ? "scan" : "manual"} initialType={initialTransactionType} onClose={handleSheetClose} onCreated={handleCreated} />
 
       <TransactionDetailSheet
         row={detail}
@@ -1348,4 +1469,15 @@ function filterToUrl(filter: ListFilter): ActivityTypeFilter {
   if (filter === "MONEY_OUT") return "out";
   if (filter === "transfer") return "transfer";
   return "all";
+}
+
+/*
+  Category options follow the same per-type vocabulary as the entry form
+  (categoriesForType). Transfer has no category, so its list is empty.
+*/
+function categoriesForFilter(filter: ListFilter): readonly string[] {
+  if (filter === "MONEY_IN") return categoriesForType("MONEY_IN");
+  if (filter === "MONEY_OUT") return categoriesForType("MONEY_OUT");
+  if (filter === "transfer") return [];
+  return Object.keys(CATEGORY_LABELS);
 }

@@ -15,12 +15,12 @@ export interface ButtonProps
   loadingLabel?: string;
 }
 
-/* Doc 01 §5.1: one filled green primary, outlined secondary, blue AI accent. */
+/* Green identifies the primary money action; other variants stay quiet. */
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand-green text-white shadow-pill hover:bg-brand-green-hover active:scale-[0.98]",
+    "bg-brand-green text-white hover:bg-brand-green-hover active:scale-[0.98]",
   secondary:
-    "border border-blue-border bg-card text-blue shadow-sm hover:bg-blue-wash active:scale-[0.98]",
+    "border border-input-border bg-card text-ink hover:bg-blue-wash active:scale-[0.98]",
   ghost:
     "text-ink-2 hover:bg-blue-wash hover:text-ink active:scale-[0.98]",
   danger:
@@ -57,7 +57,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         aria-busy={isLoading || undefined}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all",
+          "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors",
           "disabled:cursor-not-allowed disabled:border-transparent disabled:bg-chip-slate disabled:text-ink-2 disabled:shadow-none disabled:active:scale-100",
           variantClasses[variant],
           sizeClasses[size],

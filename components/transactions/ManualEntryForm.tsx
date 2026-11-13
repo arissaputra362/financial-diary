@@ -16,13 +16,14 @@ import { formatIDR } from "@/lib/format";
 import { isValidMoneyAmount } from "@/lib/money-input";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO, TransactionType, WalletDTO, WalletRefDTO } from "@/types/api";
-import { categoriesForType, CATEGORY_EMOJI, CATEGORY_LABELS } from "./categories";
+import { categoriesForType, CategoryIcon, CATEGORY_LABELS } from "./categories";
 
 const INT32_MAX = 2_147_483_647;
 
 export interface ManualEntryFormProps {
   onCreated?: (rows: TransactionDTO[]) => void;
   initialRow?: TransactionDTO;
+  initialType?: TransactionType;
   onUpdated?: (row: TransactionDTO) => void;
   onCancel: () => void;
   onSwitchToScan?: () => void;
@@ -33,11 +34,11 @@ export interface ManualEntryFormProps {
  * amount once; the server creates both legs. All copy is plain Indonesian and
  * errors render per field.
  */
-export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, onSwitchToScan }: ManualEntryFormProps) {
+export function ManualEntryForm({ onCreated, initialRow, initialType = "MONEY_OUT", onUpdated, onCancel, onSwitchToScan }: ManualEntryFormProps) {
   const initialRowId = initialRow?.id;
   const formRef = useRef<HTMLFormElement>(null);
   const initialDate = initialRow ? toJakartaDateOnly(new Date(initialRow.occurredAt)) : todayJakarta();
-  const [type, setType] = useState<TransactionType>(initialRow?.type ?? "MONEY_OUT");
+  const [type, setType] = useState<TransactionType>(initialRow?.type ?? initialType);
   const [amountDigits, setAmountDigits] = useState(initialRow ? String(initialRow.amountMinor) : "");
   const [category, setCategory] = useState<string | null>(initialRow?.category ?? null);
   const [dateChoice, setDateChoice] = useState<"today" | "yesterday" | "custom">(() =>
@@ -208,8 +209,8 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
               className={cn(
                 "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                 type === value
-                  ? "bg-brand-blue text-white"
-                  : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
+                  ? "bg-brand-green text-white"
+                  : "border border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
               )}
             >
               {label}
@@ -225,7 +226,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
         error={fieldErrors.amountMinor?.[0]}
         helperText={type === "TRANSFER" ? "Masukkan sekali saja, kedua sisi dibuat otomatis." : undefined}
       >
-        <div className="flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-blue focus-within:ring-4 focus-within:ring-blue/15">
+        <div className="flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-green focus-within:ring-4 focus-within:ring-green/15">
           <span className="text-lg font-semibold text-ink-2">Rp</span>
           <MoneyInput
             id="amount"
@@ -281,13 +282,13 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
                   aria-label={CATEGORY_LABELS[value]}
                   onClick={() => setCategory(value)}
                   className={cn(
-                    "flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all",
+                    "flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-all",
                     selected
-                      ? "border-blue bg-blue-tint text-blue"
-                      : "border-blue-border bg-card text-ink-2 hover:bg-blue-wash",
+                      ? "border-brand-green bg-mint text-green"
+                      : "border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
                   )}
                 >
-                  <span aria-hidden="true">{CATEGORY_EMOJI[value]}</span>
+                  <CategoryIcon category={value} size="sm" />
                   {CATEGORY_LABELS[value]}
                 </button>
               );
@@ -321,8 +322,8 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
               className={cn(
                 "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                 dateChoice === value
-                  ? "bg-brand-blue text-white"
-                  : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
+                  ? "bg-brand-green text-white"
+                  : "border border-card-border bg-card text-ink-2 hover:bg-surface-subtle",
               )}
             >
               {label}
@@ -335,7 +336,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
               value={customDate}
               max={todayJakarta()}
               onChange={(event) => setCustomDate(event.target.value)}
-              className="min-h-11 rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-blue focus:border-blue focus:outline-none focus:ring-4 focus:ring-blue/15"
+              className="min-h-11 rounded-2xl border border-input-border bg-card px-3 text-sm text-ink accent-green focus:border-green focus:outline-none focus:ring-4 focus:ring-green/15"
             />
           ) : null}
         </div>
@@ -385,7 +386,7 @@ export function ManualEntryForm({ onCreated, initialRow, onUpdated, onCancel, on
         <p className="flex items-center justify-center gap-1.5 text-xs text-ink-3">
           <CircleDollarSign className="h-3.5 w-3.5" aria-hidden="true" />
           Ada struk?{" "}
-          <button type="button" onClick={() => onSwitchToScan?.()} className="font-semibold text-blue underline">
+          <button type="button" onClick={() => onSwitchToScan?.()} className="font-semibold text-green underline">
             Scan struk
           </button>
         </p>

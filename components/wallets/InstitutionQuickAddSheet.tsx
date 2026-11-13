@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest, idempotencyHeaders } from "@/lib/api-client";
 import { INSTITUTION_NAME_MAX_LENGTH, normalizeInstitutionName } from "@/lib/institution-name";
@@ -46,7 +47,8 @@ export function InstitutionQuickAddSheet({
   const [submitting, setSubmitting] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useDialogFocusTrap(open, panelRef, onClose);
+  const { closing, requestClose } = useAnimatedClose(onClose);
+  useDialogFocusTrap(open, panelRef, requestClose);
 
   if (!open) return null;
 
@@ -127,9 +129,9 @@ export function InstitutionQuickAddSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+      className={`modal-overlay fixed inset-0 z-[90] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4${closing ? " modal-closing-overlay" : ""}`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !submitting) onClose();
+        if (event.target === event.currentTarget && !submitting) requestClose();
       }}
     >
       <div
@@ -138,7 +140,7 @@ export function InstitutionQuickAddSheet({
         aria-modal="true"
         tabIndex={-1}
         aria-labelledby="institution-add-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className={`max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6${closing ? " modal-closing-panel" : ""}`}
       >
         <div className="flex items-center justify-between">
           <h2 id="institution-add-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -146,10 +148,10 @@ export function InstitutionQuickAddSheet({
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             disabled={submitting}
             aria-label="Tutup tambah bank atau penyedia"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -191,7 +193,7 @@ export function InstitutionQuickAddSheet({
               </button>
             </div>
           ) : name.trim() ? (
-            <p className="rounded-2xl bg-blue-wash px-4 py-3 text-xs text-ink-2">
+            <p className="rounded-2xl bg-surface-subtle px-4 py-3 text-xs text-ink-2">
               Belum ada di daftar yang kamu lihat? Simpan sebagai entri pribadi. Entri tidak pernah
               otomatis masuk ke katalog resmi.
             </p>
@@ -214,7 +216,7 @@ export function InstitutionQuickAddSheet({
             >
               Simpan
             </Button>
-            <Button type="button" variant="secondary" size="lg" onClick={onClose} disabled={submitting}>
+            <Button type="button" variant="secondary" size="lg" onClick={requestClose} disabled={submitting}>
               Batal
             </Button>
           </div>

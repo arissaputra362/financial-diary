@@ -52,9 +52,9 @@ describe("createTransactionSchema", () => {
     expect(result.category).toBe("income");
   });
 
-  it("rejects a non-integer amount", () => {
-    const result = createTransactionSchema.safeParse({ ...validBase, amountMinor: 10.5 });
-    expect(result.success).toBe(false);
+  it("accepts up to two decimal places and rejects more", () => {
+    expect(createTransactionSchema.safeParse({ ...validBase, amountMinor: 10.5 }).success).toBe(true);
+    expect(createTransactionSchema.safeParse({ ...validBase, amountMinor: 10.555 }).success).toBe(false);
   });
 
   it("rejects a malformed occurredAt date", () => {

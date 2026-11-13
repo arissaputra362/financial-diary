@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { MoneyInput } from "@/components/ui/MoneyInput";
 import { isValidMoneyAmount } from "@/lib/money-input";
+import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest, idempotencyHeaders } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,8 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
   const [submitting, setSubmitting] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useDialogFocusTrap(open, panelRef, onClose);
+  const { closing, requestClose } = useAnimatedClose(onClose);
+  useDialogFocusTrap(open, panelRef, requestClose);
 
   const locked = mode === "edit" && (wallet?.openingBalanceLocked ?? false);
   const openingMinor = openingDigits ? Number(openingDigits) : 0;
@@ -127,9 +129,12 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
   return (
     <>
       <div
-        className="fixed inset-0 z-[70] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4"
+        className={cn(
+          "modal-overlay fixed inset-0 z-[70] flex items-end justify-center bg-scrim/40 sm:items-center sm:p-4",
+          closing && "modal-closing-overlay",
+        )}
         onMouseDown={(event) => {
-          if (event.target === event.currentTarget) onClose();
+          if (event.target === event.currentTarget) requestClose();
         }}
       >
         <div
@@ -138,7 +143,10 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
           aria-modal="true"
         tabIndex={-1}
         aria-labelledby="wallet-form-title"
-        className="max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6"
+        className={cn(
+          "max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:rounded-3xl sm:p-6",
+          closing && "modal-closing-panel",
+        )}
       >
         <div className="flex items-center justify-between">
           <h2 id="wallet-form-title" className="text-lg font-semibold tracking-tight text-ink">
@@ -146,9 +154,9 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
           </h2>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Tutup"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-blue-wash"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-surface-subtle"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -195,7 +203,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
                   "focus:outline-none focus:ring-4",
                   fieldErrors.institution
                     ? "border-danger focus:border-danger focus:ring-danger/15"
-                    : "border-input-border focus:border-blue focus:ring-blue/15",
+                    : "border-input-border focus:border-green focus:ring-green/15",
                 )}
               >
                 <span
@@ -222,7 +230,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
                       return next;
                     });
                   }}
-                  className="flex min-h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-input-border bg-card text-ink-2 hover:bg-blue-wash"
+                  className="flex min-h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-input-border bg-card text-ink-2 hover:bg-surface-subtle"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -260,8 +268,8 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
                     className={cn(
                       "min-h-11 rounded-full px-4 text-sm font-semibold transition-colors",
                       scope === value
-                        ? "bg-brand-blue text-white"
-                        : "border border-blue-border bg-card text-blue hover:bg-blue-wash",
+                        ? "bg-green text-white"
+                        : "border border-success-border bg-card text-green hover:bg-surface-subtle",
                     )}
                   >
                     {label}
@@ -287,8 +295,8 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
           >
             <div
               className={cn(
-                "flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-blue focus-within:ring-4 focus-within:ring-blue/15",
-                locked && "bg-blue-wash",
+                "flex items-center gap-2 rounded-2xl border border-input-border bg-card px-4 py-3 focus-within:border-green focus-within:ring-4 focus-within:ring-green/15",
+                locked && "bg-surface-subtle",
               )}
             >
               <span className="text-lg font-semibold text-ink-2">Rp</span>
@@ -314,7 +322,7 @@ export function WalletFormSheet({ open, mode, wallet, onClose, onSaved }: Wallet
             <Button type="submit" size="lg" isLoading={submitting} loadingLabel="Menyimpan" className="sm:flex-1">
               {mode === "create" ? "Buat dompet" : "Simpan perubahan"}
             </Button>
-            <Button type="button" variant="secondary" size="lg" onClick={onClose} disabled={submitting}>
+            <Button type="button" variant="secondary" size="lg" onClick={requestClose} disabled={submitting}>
               Batal
             </Button>
           </div>

@@ -48,8 +48,9 @@ describe("adjustSavedSchema", () => {
     }
   });
 
-  it("rejects a non-integer delta", () => {
-    expect(adjustSavedSchema.safeParse({ savedDelta: 1.5 }).success).toBe(false);
+  it("accepts up to two decimal places and rejects more", () => {
+    expect(adjustSavedSchema.safeParse({ savedDelta: 1.5 }).success).toBe(true);
+    expect(adjustSavedSchema.safeParse({ savedDelta: 1.555 }).success).toBe(false);
   });
 });
 

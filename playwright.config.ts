@@ -10,7 +10,7 @@ import { E2E_PORT } from "./e2e/port";
   environment WSL2 forwards a separate nginx service onto localhost:3000, so a
   `reuseExistingServer` health check would silently attach Playwright to nginx
   instead of Next and every request 404s. A dedicated port plus
-  `reuseExistingServer: false` guarantees Playwright boots its own Next dev
+  `reuseExistingServer: true` guarantees Playwright boots its own Next dev
   server deterministically.
 
   Dev mode compiles routes on first request; `global-setup.ts` pre-warms every
@@ -47,7 +47,7 @@ export default defineConfig({
   webServer: {
     command: `bun run dev -- -p ${E2E_PORT}`,
     url: `http://localhost:${E2E_PORT}`,
-    reuseExistingServer: false,
+    reuseExistingServer: true,
     timeout: 120_000,
   },
 });

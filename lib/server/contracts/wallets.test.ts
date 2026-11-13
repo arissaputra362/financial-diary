@@ -14,9 +14,10 @@ describe("wallet contracts (AC-F6-1, C-31)", () => {
     expect(createWalletSchema.safeParse({ name: "a".repeat(81) }).success).toBe(false);
   });
 
-  it("rejects a negative or non-integer opening balance (AC-F6-1)", () => {
+  it("rejects negative or overly precise opening balances", () => {
     expect(createWalletSchema.safeParse({ name: "Kas", openingBalanceMinor: -1 }).success).toBe(false);
-    expect(createWalletSchema.safeParse({ name: "Kas", openingBalanceMinor: 1.5 }).success).toBe(false);
+    expect(createWalletSchema.safeParse({ name: "Kas", openingBalanceMinor: 1.5 }).success).toBe(true);
+    expect(createWalletSchema.safeParse({ name: "Kas", openingBalanceMinor: 1.555 }).success).toBe(false);
   });
 
   it("rejects a purpose over 80 characters", () => {
