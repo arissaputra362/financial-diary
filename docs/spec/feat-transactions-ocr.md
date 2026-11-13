@@ -30,6 +30,15 @@ Semua POST mutation mendukung Idempotency-Key. Tidak ada penyimpanan otomatis da
    → konfirmasi save → tersimpan dengan source=OCR.
 6. User membatalkan → tidak ada transaction tersimpan.
 
+### Foreign receipts
+
+OCR recognizes the ISO 4217 currency code printed on a receipt (for example
+`USD`, `EUR`, or `SGD`) and requests the historical IDR exchange rate for the
+receipt date. The server converts the amount before returning the editable
+draft, keeps the original currency, amount, rate, and rate date as draft
+metadata, and saves the transaction as IDR. If the historical rate is
+unavailable, OCR fails explicitly instead of using today's rate or guessing.
+
 ## Behavior Detail
 
 ### AC-1 (AC-F3-1): Form manual + validasi bahasa awam
@@ -81,8 +90,9 @@ Semua POST mutation mendukung Idempotency-Key. Tidak ada penyimpanan otomatis da
 
 - Kondisi: timeout, rate limit, model unavailable, output tidak valid.
 - Yang terjadi: `POST /api/ocr/receipts` tetap 200 dengan
-  `{ job: { status: FAILED, errorCode }, draft: null }`; errorCode dari namespace:
-  `OCR_TIMEOUT`, `OCR_RATE_LIMITED`, `OCR_INVALID_OUTPUT`, `OCR_MODEL_UNAVAILABLE`.
+  `{ job: { status: FAILED, errorCode }, draft: null }`;   errorCode dari namespace:
+  `OCR_TIMEOUT`, `OCR_RATE_LIMITED`, `OCR_INVALID_OUTPUT`,
+  `OCR_MODEL_UNAVAILABLE`, `OCR_EXCHANGE_RATE_UNAVAILABLE`.
   UI menampilkan state jujur (retry manual sesuai AC-F3-10 / isi manual).
 - Yang tidak boleh terjadi: data karangan mengisi field; retry tak terbatas otomatis;
   kegagalan disimpan sebagai transaction; error 5xx untuk kegagalan model yang sudah

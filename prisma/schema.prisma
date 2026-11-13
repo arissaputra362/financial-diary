@@ -95,6 +95,8 @@ model User {
   email                                   String           @unique @db.VarChar
   passwordHash                            String           @map("password_hash") @db.VarChar
   displayName                             String           @map("display_name") @db.VarChar
+  avatarKey                               String?          @map("avatar_key") @db.VarChar(255)
+  avatarContentType                       String?          @map("avatar_content_type") @db.VarChar(100)
   createdAt                               DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                               DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
   personalBudgetCycleMode                 BudgetCycleMode  @default(CALENDAR_MONTH) @map("personal_budget_cycle_mode")

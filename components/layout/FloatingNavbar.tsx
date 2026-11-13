@@ -49,7 +49,7 @@ export function FloatingNavbar() {
       <nav
         aria-label="Navigasi utama"
         data-nav="top"
-        className="flex w-full max-w-6xl items-center justify-between gap-2 rounded-2xl border border-white/10 bg-navy px-3 py-2 text-white shadow-floating-nav lg:px-4"
+        className="flex w-full max-w-6xl items-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-navy px-3 py-2 text-white shadow-floating-nav lg:px-4"
       >
         <Link
           href="/home"
@@ -67,7 +67,7 @@ export function FloatingNavbar() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-0.5 lg:gap-1">
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-hidden lg:gap-1">
           {navItems.map((item) => {
             const isActive =
               "matchPrefix" in item && item.matchPrefix
@@ -79,16 +79,17 @@ export function FloatingNavbar() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.label}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 items-center gap-1.5 rounded-xl px-2.5 text-sm transition-colors lg:px-3 xl:px-4",
+                  "flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-2.5 text-sm transition-colors lg:px-3 xl:px-4",
                   isActive
                     ? "bg-mint font-medium text-green"
                     : "text-white/70 hover:bg-white/10 hover:text-white",
                 )}
               >
                 <Icon weight="fill" size={18} className="shrink-0" aria-hidden="true" />
-                <span className="whitespace-nowrap">{item.label}</span>
+                <span className="whitespace-nowrap max-xl:hidden">{item.label}</span>
               </Link>
             );
           })}
@@ -102,13 +103,12 @@ export function FloatingNavbar() {
             className="inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-brand-green px-3 text-sm font-semibold text-white transition-colors hover:bg-brand-green-hover xl:px-4"
           >
             <Plus weight="bold" size={18} className="shrink-0" aria-hidden="true" />
-            <span className="hidden lg:inline">Tambah transaksi</span>
-            <span className="lg:hidden">Tambah</span>
+            <span className="hidden xl:inline">Tambah transaksi</span>
           </Link>
           <Link
             href="/profile"
             aria-label="Buka profil kamu"
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-mint text-xs font-bold text-green"
+            className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-mint text-xs font-bold text-green"
           >
             <User weight="fill" size={18} aria-hidden="true" />
           </Link>

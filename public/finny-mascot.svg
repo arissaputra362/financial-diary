@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 200" role="img" aria-labelledby="title desc">
+  <title id="title">Finny</title>
+  <desc id="desc">Maskot bulat berwarna krem dengan dua daun hijau dan koin rupiah.</desc>
+  <defs>
+    <linearGradient id="body" x1="45" y1="66" x2="145" y2="171" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8D9"/>
+      <stop offset="1" stop-color="#DCCA91"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="48" y1="18" x2="128" y2="67" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#75D35E"/>
+      <stop offset="1" stop-color="#198B59"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="121" y1="133" x2="174" y2="185" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD960"/>
+      <stop offset="1" stop-color="#E99A1E"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#3C8E6B" flood-opacity=".2"/>
+    </filter>
+  </defs>
+  <path d="M92 59V39" stroke="#247A4C" stroke-width="5" stroke-linecap="round"/>
+  <path d="M87 47C63 47 45 34 48 10c26 0 43 12 41 33Z" fill="url(#leaf)"/>
+  <path d="M98 48C103 21 124 5 153 10c-4 28-23 45-55 39Z" fill="#309D5E"/>
+  <path d="M49 138c-15 5-20 15-15 27M145 138c15 5 20 15 15 27" fill="none" stroke="#218C61" stroke-width="12" stroke-linecap="round"/>
+  <ellipse cx="97" cy="111" rx="57" ry="55" fill="url(#body)" stroke="#D3C88F" stroke-width="2" filter="url(#shadow)"/>
+  <path d="M43 130c13 28 31 39 54 39s43-11 55-39c-16 12-34 17-55 17s-39-5-54-17Z" fill="#228B62"/>
+  <path d="M49 140c13 19 30 28 48 28s35-9 49-28" fill="none" stroke="#65C78B" stroke-width="5" opacity=".7"/>
+  <ellipse cx="68" cy="121" rx="11" ry="6" fill="#F19D94" opacity=".62"/>
+  <ellipse cx="126" cy="121" rx="11" ry="6" fill="#F19D94" opacity=".62"/>
+  <circle cx="78" cy="105" r="6" fill="#263B34"/>
+  <circle cx="116" cy="105" r="6" fill="#263B34"/>
+  <circle cx="80" cy="103" r="2" fill="#fff"/>
+  <circle cx="118" cy="103" r="2" fill="#fff"/>
+  <path d="M83 125c8 11 19 11 28 0" fill="none" stroke="#263B34" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="148" cy="151" r="24" fill="url(#coin)" stroke="#D78918" stroke-width="3"/>
+  <circle cx="148" cy="151" r="17" fill="none" stroke="#FFF1A8" stroke-width="2" opacity=".8"/>
+  <text x="148" y="158" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#8A5707">Rp</text>
+</svg>

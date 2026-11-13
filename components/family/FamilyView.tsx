@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, Pencil, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -10,13 +11,17 @@ import { ConfirmActionDialog } from "@/components/ui/ConfirmActionDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest } from "@/lib/api-client";
+import { formatDateLabel } from "@/lib/dates";
+import { formatIDR, formatSignedIDR } from "@/lib/format";
+import type { DashboardDTO, TransactionDTO } from "@/types/api";
+import { CategoryIcon, categoryLabel, isTransferLeg } from "@/components/transactions/categories";
 
 type Member = {
   id: string;
   userId: string;
   role: string;
   status: string;
-  user?: { id: string; displayName: string; email: string } | null;
+  user?: { id: string; displayName: string; email: string; avatarUrl?: string | null } | null;
   requestedAt?: string | null;
   approvedAt?: string | null;
 };
@@ -52,10 +57,31 @@ export default function FamilyView({
   const [householdNotice, setHouseholdNotice] = useState("");
   const [memberToRevoke, setMemberToRevoke] = useState<Member | null>(null);
   const editDialogRef = useRef<HTMLDivElement>(null);
+  const [sharedOverview, setSharedOverview] = useState<DashboardDTO | null>(null);
+  const [overviewError, setOverviewError] = useState(false);
 
   const isOwner = me?.role === "OWNER";
 
   useDialogFocusTrap(editOpen, editDialogRef, () => setEditOpen(false));
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<DashboardDTO>("/api/dashboard?period=7D")
+      .then((response) => {
+        if (!active) return;
+        if (!response.ok || !response.data) {
+          setOverviewError(true);
+          return;
+        }
+        setSharedOverview(response.data);
+      })
+      .catch(() => {
+        if (active) setOverviewError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSaveHousehold = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -200,6 +226,13 @@ export default function FamilyView({
           </p>
         ) : null}
 
+        <SharedFinanceOverview
+          householdName={householdName}
+          members={active}
+          overview={sharedOverview}
+          error={overviewError}
+        />
+
         {inviteCode && (
           <Card variant="tint">
             <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
@@ -249,10 +282,15 @@ export default function FamilyView({
                 <div key={m.id} className="rounded-2xl border border-warning-border bg-warning-bg/45 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium text-ink">{m.user?.displayName ?? "Anggota"}</p>
-                      {m.user?.email ? (
-                        <p className="truncate text-sm text-ink-2">{m.user.email}</p>
-                      ) : null}
+                      <div className="flex items-center gap-3">
+                        <MemberAvatar member={m} />
+                        <div className="min-w-0">
+                          <p className="font-medium text-ink">{m.user?.displayName ?? "Anggota"}</p>
+                          {m.user?.email ? (
+                            <p className="truncate text-sm text-ink-2">{m.user.email}</p>
+                          ) : null}
+                        </div>
+                      </div>
                       <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-warning-bg px-3 py-1 text-xs font-semibold text-warning">
                         <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                         Menunggu persetujuan
@@ -292,11 +330,13 @@ export default function FamilyView({
           <div className="divide-y divide-row-divider">
             {active.map((m) => (
               <div key={m.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-ink">
-                    {m.user?.displayName ?? "Anggota"}
-                    {m.userId === me?.user.id ? " (Kamu)" : ""}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <MemberAvatar member={m} />
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink">
+                      {m.user?.displayName ?? "Anggota"}
+                      {m.userId === me?.user.id ? " (Kamu)" : ""}
+                    </p>
                   <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-chip-slate px-2.5 py-0.5 text-xs font-semibold text-ink-2">
                     {m.role === "OWNER" ? (
                       <Crown className="h-3.5 w-3.5 text-green" aria-hidden="true" />
@@ -305,6 +345,7 @@ export default function FamilyView({
                     )}
                     {m.role === "OWNER" ? "Pemilik keluarga" : "Anggota"}
                   </span>
+                  </div>
                 </div>
                 {isOwner && m.role !== "OWNER" && (
                   <Button
@@ -405,5 +446,166 @@ export default function FamilyView({
           }}
         />
     </div>
+  );
+}
+
+function SharedFinanceOverview({
+  householdName,
+  members,
+  overview,
+  error,
+}: {
+  householdName: string;
+  members: Member[];
+  overview: DashboardDTO | null;
+  error: boolean;
+}) {
+  const sharedRows = overview?.recentActivity
+    .filter((row) => row.wallet?.scope === "SHARING")
+    .slice(0, 3) ?? [];
+  const sharedDays = overview?.spending.byDay.slice(-7) ?? [];
+  const maxSpending = Math.max(1, ...sharedDays.map((day) => day.amountMinor));
+  const hasSpending = sharedDays.some((day) => day.amountMinor > 0);
+
+  return (
+    <section aria-labelledby="shared-finance-title" className="space-y-4">
+      <div className="relative overflow-hidden rounded-feature surface-hero p-5 text-white shadow-bento sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/80">
+              Keuangan bersama
+            </p>
+            <h2 id="shared-finance-title" className="mt-1 text-xl font-bold tracking-tight">
+              {householdName || "Keluarga"}
+            </h2>
+          </div>
+          <Users className="h-5 w-5 text-white/80" aria-hidden="true" />
+        </div>
+        <p className="mt-5 text-xs text-white/75">Saldo bersama</p>
+        <p className="financial-value mt-1 text-3xl font-bold tracking-tight">
+          {overview ? formatIDR(overview.sharedBalanceMinor) : error ? "Tidak tersedia" : "Memuat..."}
+        </p>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <div className="flex -space-x-2" aria-label={`${members.length} anggota aktif`}>
+            {members.slice(0, 4).map((member) => (
+              <MemberAvatar key={member.id} member={member} compact />
+            ))}
+            {members.length > 4 ? (
+              <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-green bg-white/20 text-xs font-bold text-white">
+                +{members.length - 4}
+              </span>
+            ) : null}
+          </div>
+          <span className="text-xs text-white/80">{members.length} anggota aktif</span>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-feature border border-card-border bg-card p-4 shadow-bento sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold text-ink">Pengeluaran bersama</h3>
+              <p className="mt-0.5 text-xs text-ink-3">7 hari terakhir</p>
+            </div>
+            <span className="rounded-full bg-mint px-2.5 py-1 text-xs font-semibold text-green">
+              Harian
+            </span>
+          </div>
+          {hasSpending ? (
+            <div
+              className="mt-5 flex h-28 items-end gap-2"
+              role="img"
+              aria-label="Grafik pengeluaran bersama 7 hari terakhir"
+            >
+              {sharedDays.map((day) => (
+                <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                  <div className="flex h-24 w-full items-end">
+                    <div
+                      className="mx-auto w-full max-w-7 rounded-t-lg bg-gradient-to-t from-brand-green to-[#54d68a]"
+                      style={{ height: `${Math.max(8, Math.round((day.amountMinor / maxSpending) * 96))}px` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-ink-3">
+                    {new Date(`${day.date}T00:00:00+07:00`).toLocaleDateString("id-ID", { weekday: "short" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-5 rounded-2xl bg-surface-subtle p-4 text-center text-sm text-ink-2">
+              Belum ada pengeluaran bersama.
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-feature border border-card-border bg-card p-4 shadow-bento sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-base font-semibold text-ink">Aktivitas keluarga</h3>
+            <Link href="/transactions" className="text-xs font-semibold text-green hover:text-green-hover">
+              Lihat semua
+            </Link>
+          </div>
+          {sharedRows.length > 0 ? (
+            <ul className="mt-3 divide-y divide-row-divider">
+              {sharedRows.map((row) => <SharedActivityRow key={row.id} row={row} />)}
+            </ul>
+          ) : (
+            <p className="mt-3 rounded-2xl bg-surface-subtle p-4 text-center text-sm text-ink-2">
+              Belum ada aktivitas bersama.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SharedActivityRow({ row }: { row: TransactionDTO }) {
+  const transfer = isTransferLeg(row);
+  return (
+    <li className="flex items-center gap-3 py-3">
+      <CategoryIcon category={row.category} transfer={transfer} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-ink">
+          {row.merchant ?? row.note ?? categoryLabel(row.category)}
+        </p>
+        <p className="mt-0.5 truncate text-xs text-ink-3">{formatDateLabel(row.occurredAt)}</p>
+      </div>
+      <p className={`shrink-0 text-sm font-bold tabular-nums ${row.type === "MONEY_IN" ? "text-green" : "text-ink"}`}>
+        {transfer ? formatIDR(row.amountMinor) : formatSignedIDR(row.type === "MONEY_IN" ? row.amountMinor : -row.amountMinor)}
+      </p>
+    </li>
+  );
+}
+
+function initials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/u)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase();
+}
+
+function MemberAvatar({ member, compact = false }: { member: Member; compact?: boolean }) {
+  const name = member.user?.displayName ?? "Anggota";
+  const size = compact ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm";
+  return member.user?.avatarUrl ? (
+    <Image
+      src={member.user.avatarUrl}
+      alt={`Foto ${name}`}
+      width={compact ? 36 : 40}
+      height={compact ? 36 : 40}
+      unoptimized
+      className={`${size} shrink-0 rounded-full border-2 border-green object-cover`}
+    />
+  ) : (
+    <span
+      aria-hidden="true"
+      className={`${size} flex shrink-0 items-center justify-center rounded-full border-2 border-green bg-mint font-bold text-green`}
+    >
+      {initials(name)}
+    </span>
   );
 }

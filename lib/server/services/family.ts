@@ -19,7 +19,7 @@ export type MembershipDTO = {
   userId: string;
   role: string;
   status: string;
-  user: { id: string; displayName: string; email: string } | null;
+  user: { id: string; displayName: string; email: string; avatarUrl?: string | null } | null;
   invitedByUserId: string | null;
   inviteId: string | null;
   requestedAt: string | null;
@@ -177,7 +177,7 @@ export class FamilyService {
     declinedAt: Date | null;
     revokedAt: Date | null;
     decisionReason: string | null;
-    user?: { id: string; displayName: string; email: string } | null;
+    user?: { id: string; displayName: string; email: string; avatarKey?: string | null } | null;
   }): MembershipDTO {
     return {
       id: membership.id,
@@ -185,7 +185,16 @@ export class FamilyService {
       userId: membership.userId,
       role: membership.role,
       status: membership.status,
-      user: membership.user ?? null,
+      user: membership.user
+        ? {
+            id: membership.user.id,
+            displayName: membership.user.displayName,
+            email: membership.user.email,
+            avatarUrl: membership.user.avatarKey
+              ? `/api/family/members/${membership.id}/avatar?version=avatar-v3-${encodeURIComponent(membership.user.avatarKey)}`
+              : null,
+          }
+        : null,
       invitedByUserId: membership.invitedByUserId,
       inviteId: membership.inviteId,
       requestedAt: membership.requestedAt?.toISOString() ?? null,

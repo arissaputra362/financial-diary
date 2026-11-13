@@ -24,7 +24,7 @@ import type {
 /* ── Types ──────────────────────────────────────────────────────── */
 
 export type AuthStateDTO = {
-  user: { id: string; email: string; displayName: string };
+  user: { id: string; email: string; displayName: string; avatarUrl?: string | null };
   household: { id: string; name: string } | null;
   role: string;
   status: string;
@@ -116,7 +116,7 @@ export class AuthService {
 
     return {
       state: this.stateFor(
-        { id: user.id, email: user.email, displayName: user.displayName },
+        { id: user.id, email: user.email, displayName: user.displayName, avatarUrl: avatarUrl(user.avatarKey) },
         household,
         membership,
       ),
@@ -131,6 +131,19 @@ export class AuthService {
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<{ displayName: string }> {
     const updated = await this.repos.user.updateDisplayName(userId, input.displayName.trim());
     return { displayName: updated.displayName };
+  }
+
+  async updateAvatar(userId: string, avatarKey: string, avatarContentType: string): Promise<{ avatarUrl: string }> {
+    await this.repos.user.updateAvatar(userId, avatarKey, avatarContentType);
+    return { avatarUrl: avatarUrl(avatarKey) ?? "/api/profile/avatar" };
+  }
+
+  async clearAvatar(userId: string): Promise<void> {
+    await this.repos.user.clearAvatar(userId);
+  }
+
+  async getAvatar(userId: string): Promise<{ avatarKey: string; avatarContentType: string } | null> {
+    return this.repos.user.getAvatar(userId);
   }
 
   async changePassword(
@@ -159,7 +172,7 @@ export class AuthService {
     if (!user || !membership) throw unauthorized("Akun ini belum terhubung ke keluarga mana pun.");
     const household = await this.repos.household.findById(membership.householdId);
     return this.stateFor(
-      { id: user.id, email: user.email, displayName: user.displayName },
+      { id: user.id, email: user.email, displayName: user.displayName, avatarUrl: avatarUrl(user.avatarKey) },
       household,
       membership,
     );
@@ -189,7 +202,7 @@ export class AuthService {
 
     return {
       state: this.stateFor(
-        { id: user.id, email: user.email, displayName: user.displayName },
+        { id: user.id, email: user.email, displayName: user.displayName, avatarUrl: avatarUrl(user.avatarKey) },
         household,
         membership,
       ),
@@ -228,7 +241,7 @@ export class AuthService {
       });
       const sessionId = await this.createSession(repos, user.id);
       return {
-        state: this.stateFor({ id: user.id, email, displayName }, household, membership),
+        state: this.stateFor({ id: user.id, email, displayName, avatarUrl: null }, household, membership),
         sessionId,
       };
     });
@@ -278,7 +291,7 @@ export class AuthService {
       const household = await repos.household.findById(invite.householdId);
       const sessionId = await this.createSession(repos, user.id);
       return {
-        state: this.stateFor({ id: user.id, email, displayName }, household, membership),
+        state: this.stateFor({ id: user.id, email, displayName, avatarUrl: null }, household, membership),
         sessionId,
       };
     });
@@ -296,7 +309,7 @@ export class AuthService {
   }
 
   private stateFor(
-    user: { id: string; email: string; displayName: string },
+    user: { id: string; email: string; displayName: string; avatarUrl?: string | null },
     household: { id: string; name: string } | null,
     membership: Pick<MembershipRecord, "role" | "status">,
   ): AuthStateDTO {
@@ -318,4 +331,8 @@ export class AuthService {
   private sha256(value: string): string {
     return createHash("sha256").update(value, "utf8").digest("hex");
   }
+}
+
+function avatarUrl(avatarKey: string | null | undefined): string | null {
+  return avatarKey ? `/api/profile/avatar?version=avatar-v3-${encodeURIComponent(avatarKey)}` : null;
 }

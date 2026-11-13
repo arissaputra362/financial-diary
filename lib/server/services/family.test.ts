@@ -29,7 +29,7 @@ function membership(overrides: Partial<MembershipRecord> = {}): MembershipRecord
 
 function buildFamily() {
   const repos = {
-    user: { findByEmail: vi.fn(), create: vi.fn(), findById: vi.fn() },
+    user: { findByEmail: vi.fn(), create: vi.fn(), findById: vi.fn(), findCredentialsById: vi.fn(), updateDisplayName: vi.fn(), updateAvatar: vi.fn(), clearAvatar: vi.fn(), getAvatar: vi.fn(), updatePasswordHash: vi.fn() },
     household: { create: vi.fn(), findById: vi.fn() },
     membership: {
       findActiveByUserId: vi.fn(),

@@ -13,7 +13,7 @@ vi.mock("@/lib/server/auth", () => ({
 }));
 
 const STATE: AuthStateDTO = {
-  user: { id: "u1", email: "ana@example.com", displayName: "Ana" },
+  user: { id: "u1", email: "ana@example.com", displayName: "Ana", avatarUrl: null },
   household: { id: "h1", name: "Keluarga Ana" },
   role: "OWNER",
   status: "APPROVED",

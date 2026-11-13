@@ -55,6 +55,7 @@ export function MonthlySummaryCard({
   refreshToken,
 }: MonthlySummaryCardProps) {
   const [scope, setScope] = useState<SummaryScope>("all");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const requestKey = `${month}:${scope}:${refreshToken}`;
   const [state, setState] = useState<SummaryState | null>(null);
   const loaded = state?.key === requestKey ? state : null;
@@ -96,6 +97,7 @@ export function MonthlySummaryCard({
   const reportParams = new URLSearchParams({ view: "ringkasan", month });
   if (scope !== "all") reportParams.set("scope", scope);
   const reportHref = `/transactions?${reportParams.toString()}`;
+  const selectedDay = days.find((day) => day.date === selectedDate) ?? null;
 
   return (
     <section
@@ -189,13 +191,37 @@ export function MonthlySummaryCard({
               >
                 {days.map((day) => {
                   const height = Math.max(6, Math.round((day.amountMinor / maxAmount) * 72));
+                  const selected = selectedDate === day.date;
                   return (
-                    <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                      <div className="flex h-[72px] w-full items-end">
+                    <div key={day.date} className="group relative flex min-w-0 flex-1 flex-col items-center gap-1">
+                      {selected ? (
                         <div
-                          className="mx-auto w-3 rounded-full bg-expense/85 sm:w-3.5"
-                          style={{ height: `${height}px` }}
-                        />
+                          role="status"
+                          className="pointer-events-none absolute bottom-[calc(100%-1.25rem)] z-10 whitespace-nowrap rounded-lg bg-navy px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg"
+                        >
+                          {formatIDR(day.amountMinor)}
+                        </div>
+                      ) : null}
+                      <div className="flex h-[72px] w-full items-end">
+                        <button
+                          type="button"
+                          aria-label={`${formatDateLabel(`${day.date}T12:00:00+07:00`)}: ${formatIDR(day.amountMinor)}`}
+                          aria-pressed={selected}
+                          onClick={() => setSelectedDate(selected ? null : day.date)}
+                          onMouseEnter={() => setSelectedDate(day.date)}
+                          onMouseLeave={() => {
+                            if (selectedDate === day.date) setSelectedDate(null);
+                          }}
+                          className={cn(
+                            "mx-auto flex w-8 items-end justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 sm:w-9",
+                            selected && "bg-surface-subtle",
+                          )}
+                        >
+                          <span
+                            className="block w-3 rounded-full bg-expense/85 transition-[height,background-color] group-hover:bg-expense sm:w-3.5"
+                            style={{ height: `${height}px` }}
+                          />
+                        </button>
                       </div>
                       <span className="text-[10px] font-medium text-ink-3">
                         {weekdayFormatter.format(new Date(`${day.date}T00:00:00+07:00`))}
@@ -204,6 +230,11 @@ export function MonthlySummaryCard({
                   );
                 })}
               </div>
+              <p className="sr-only" aria-live="polite">
+                {selectedDay
+                  ? `${formatDateLabel(`${selectedDay.date}T12:00:00+07:00`)}: ${formatIDR(selectedDay.amountMinor)}`
+                  : "Pilih batang grafik untuk melihat detail pengeluaran."}
+              </p>
               <ul className="sr-only">
                 {days.map((day) => (
                   <li key={day.date}>

@@ -8,11 +8,14 @@ import type { Db } from "./types";
 */
 
 export interface UserRepository {
-  findByEmail(email: string): Promise<{ id: string; email: string; passwordHash: string; displayName: string } | null>;
+  findByEmail(email: string): Promise<{ id: string; email: string; passwordHash: string; displayName: string; avatarKey: string | null; avatarContentType: string | null } | null>;
   create(data: { email: string; passwordHash: string; displayName: string }): Promise<{ id: string; email: string; displayName: string }>;
-  findById(id: string): Promise<{ id: string; email: string; displayName: string } | null>;
+  findById(id: string): Promise<{ id: string; email: string; displayName: string; avatarKey: string | null; avatarContentType: string | null } | null>;
   findCredentialsById(id: string): Promise<{ id: string; passwordHash: string } | null>;
   updateDisplayName(id: string, displayName: string): Promise<{ id: string; displayName: string }>;
+  updateAvatar(id: string, avatarKey: string, avatarContentType: string): Promise<{ avatarKey: string; avatarContentType: string }>;
+  clearAvatar(id: string): Promise<void>;
+  getAvatar(id: string): Promise<{ avatarKey: string; avatarContentType: string } | null>;
   updatePasswordHash(id: string, passwordHash: string): Promise<void>;
 }
 
@@ -33,7 +36,7 @@ export type MembershipRecord = {
   revokedByUserId: string | null;
   decisionReason: string | null;
   /** Present on household listings (joined for the Family page). */
-  user?: { id: string; displayName: string; email: string } | null;
+  user?: { id: string; displayName: string; email: string; avatarKey?: string | null; avatarContentType?: string | null } | null;
 };
 
 export interface HouseholdRepository {
@@ -129,7 +132,7 @@ export function createUserRepository(db: Db): UserRepository {
     async findById(id) {
       return db.user.findUnique({
         where: { id },
-        select: { id: true, email: true, displayName: true },
+        select: { id: true, email: true, displayName: true, avatarKey: true, avatarContentType: true },
       });
     },
     async findCredentialsById(id) {
@@ -137,6 +140,24 @@ export function createUserRepository(db: Db): UserRepository {
     },
     async updateDisplayName(id, displayName) {
       return db.user.update({ where: { id }, data: { displayName }, select: { id: true, displayName: true } });
+    },
+    async updateAvatar(id, avatarKey, avatarContentType) {
+      return db.user.update({
+        where: { id },
+        data: { avatarKey, avatarContentType },
+        select: { avatarKey: true, avatarContentType: true },
+      }) as Promise<{ avatarKey: string; avatarContentType: string }>;
+    },
+    async clearAvatar(id) {
+      await db.user.update({ where: { id }, data: { avatarKey: null, avatarContentType: null } });
+    },
+    async getAvatar(id) {
+      return db.user.findUnique({
+        where: { id },
+        select: { avatarKey: true, avatarContentType: true },
+      }).then((row) => row?.avatarKey && row.avatarContentType
+        ? { avatarKey: row.avatarKey, avatarContentType: row.avatarContentType }
+        : null);
     },
     async updatePasswordHash(id, passwordHash) {
       await db.user.update({ where: { id }, data: { passwordHash } });
@@ -201,7 +222,7 @@ export function createMembershipRepository(db: Db): MembershipRepository {
       const rows = await db.membership.findMany({
         where: { householdId },
         orderBy: { createdAt: "asc" },
-        include: { user: { select: { id: true, displayName: true, email: true } } },
+        include: { user: { select: { id: true, displayName: true, email: true, avatarKey: true, avatarContentType: true } } },
       });
       return rows;
     },

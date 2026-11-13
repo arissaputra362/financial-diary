@@ -30,7 +30,7 @@ function membership(overrides: Partial<MembershipRecord> = {}): MembershipRecord
 
 function buildAuth(transactionOverride?: <T>(fn: (repos: AuthRepositories) => Promise<T>) => Promise<T>) {
   const repos = {
-    user: { findByEmail: vi.fn(), create: vi.fn(), findById: vi.fn(), findCredentialsById: vi.fn(), updateDisplayName: vi.fn(), updatePasswordHash: vi.fn() },
+    user: { findByEmail: vi.fn(), create: vi.fn(), findById: vi.fn(), findCredentialsById: vi.fn(), updateDisplayName: vi.fn(), updateAvatar: vi.fn(), clearAvatar: vi.fn(), getAvatar: vi.fn(), updatePasswordHash: vi.fn() },
     household: { create: vi.fn(), findById: vi.fn() },
     membership: {
       findActiveByUserId: vi.fn(),
