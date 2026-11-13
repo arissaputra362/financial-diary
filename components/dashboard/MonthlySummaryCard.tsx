@@ -185,7 +185,7 @@ export function MonthlySummaryCard({
           </div>
 
           {hasSpending ? (
-            <div className="mt-2 pt-8">
+            <div className="mt-3 pt-10 sm:mt-2 sm:pt-8">
               <div
                 role="img"
                 aria-label={`Grafik pengeluaran harian 7 hari terakhir untuk ${scopeNoun}. Total ${formatIDR(chartTotal)}.`}
