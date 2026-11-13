@@ -53,9 +53,17 @@ describe("T-008 auth lifecycle DB retest", () => {
       await family.approve(owner.state.user.id, membership!.id);
       expect((await auth.revalidate(pending.sessionId)).state.status).toBe("APPROVED");
 
+      const ownerWallet = await db.wallet.create({
+        data: {
+          household: { connect: { id: owner.state.household!.id } },
+          createdBy: { connect: { id: owner.state.user.id } },
+          scope: "PERSONAL",
+          name: "QA wallet",
+        },
+      });
       const txRepo = createTransactionRepository(db as unknown as Db);
       const record = await txRepo.create({ householdId: owner.state.household!.id, createdByUserId: owner.state.user.id,
-        type: "MONEY_OUT", amountMinor: 77, occurredAt: new Date(), source: "MANUAL", note: "qa-t008" });
+        type: "MONEY_OUT", amountMinor: 77, occurredAt: new Date(), source: "MANUAL", note: "qa-t008", walletId: ownerWallet.id });
       expect(await txRepo.findById(other.state.household!.id, record.id)).toBeNull();
 
       await family.revoke(owner.state.user.id, membership!.id);
@@ -74,6 +82,8 @@ describe("T-008 auth lifecycle DB retest", () => {
       await db.session.deleteMany({ where: { userId: { in: ids } } });
       await db.membership.deleteMany({ where: { userId: { in: ids } } });
       if (inviteId) await db.invite.deleteMany({ where: { id: inviteId } });
+      await db.transaction.deleteMany({ where: { householdId: { in: householdIds } } });
+      await db.wallet.deleteMany({ where: { householdId: { in: householdIds } } });
       await db.household.deleteMany({ where: { id: { in: householdIds } } });
       await db.user.deleteMany({ where: { id: { in: ids } } });
       const leftovers = await db.user.count({ where: { email: { startsWith: `qa-t008-auth-${suffix}-` } } });
