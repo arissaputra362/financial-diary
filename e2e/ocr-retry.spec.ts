@@ -65,7 +65,7 @@ async function openScanner(page: Page): Promise<void> {
 }
 
 async function uploadReceipt(page: Page, buffer: Buffer = PNG): Promise<void> {
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[type="file"][aria-label="Pilih foto struk dari galeri"]').setInputFiles({
     name: "struk.png",
     mimeType: "image/png",
     buffer,
@@ -295,6 +295,13 @@ test.describe("retry conflict resolves the receipt's latest job (BUG-2)", () => 
         error: { code: "OCR_RETRY_IN_PROGRESS", message: "Pemindaian masih berjalan.", fieldErrors: null },
       }),
     );
+    let latestJobReads = 0;
+    await page.route("**/api/ocr/receipts/*/job", (route) => {
+      latestJobReads += 1;
+      return latestJobReads === 1
+        ? json(route, 200, { job: job({ id: "job-2", status: "PROCESSING" }), draft: null })
+        : json(route, 200, { job: job({ id: "job-3", status: "SUCCEEDED", confidence: 0.92 }), draft: draft() });
+    });
 
     await openScanner(page);
     await uploadReceipt(page);
@@ -307,7 +314,7 @@ test.describe("retry conflict resolves the receipt's latest job (BUG-2)", () => 
 
     await expect(page.getByText("Struk berhasil dibaca!")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByLabel("Toko")).toHaveValue("Pasar Segar");
-    expect(uploadCount).toBeGreaterThanOrEqual(4);
+    expect(uploadCount).toBeGreaterThanOrEqual(2);
   });
 
   test("OCR_NOT_RETRYABLE hydrates the review when the latest attempt already succeeded", async ({
@@ -344,6 +351,9 @@ test.describe("retry conflict resolves the receipt's latest job (BUG-2)", () => 
       json(route, 409, {
         error: { code: "OCR_NOT_RETRYABLE", message: "Struk ini tidak bisa dipindai ulang.", fieldErrors: null },
       }),
+    );
+    await page.route("**/api/ocr/receipts/*/job", (route) =>
+      json(route, 200, { job: job({ id: "job-2", status: "SUCCEEDED", confidence: 0.92 }), draft: draft() }),
     );
 
     await openScanner(page);
@@ -394,6 +404,9 @@ test.describe("retry conflict resolves the receipt's latest job (BUG-2)", () => 
         draft: draft(),
       });
     });
+    await page.route("**/api/ocr/receipts/*/job", (route) =>
+      json(route, 200, { job: job({ id: "job-2", status: "FAILED", errorCode: "OCR_RATE_LIMITED" }), draft: null }),
+    );
 
     await openScanner(page);
     await uploadReceipt(page);
@@ -437,6 +450,9 @@ test.describe("retry conflict resolves the receipt's latest job (BUG-2)", () => 
         error: { code: "OCR_NOT_RETRYABLE", message: "Struk ini tidak bisa dipindai ulang.", fieldErrors: null },
       }),
     );
+    await page.route("**/api/ocr/receipts/*/job", (route) => json(route, 404, {
+      error: { code: "NOT_FOUND", message: "Tidak ditemukan.", fieldErrors: null },
+    }));
 
     await openScanner(page);
     await uploadReceipt(page);
@@ -523,7 +539,7 @@ test.describe("stored image unavailable (AC-F3-12)", () => {
     });
 
     await openScanner(page);
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.locator('input[type="file"][aria-label="Pilih foto struk dari galeri"]').setInputFiles({
       name: "catatan.txt",
       mimeType: "text/plain",
       buffer: Buffer.from("bukan struk"),

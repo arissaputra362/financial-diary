@@ -29,6 +29,9 @@ test.describe("activity filters (AC-F2-7, AC-F2-8)", () => {
     await expect(page.getByText("Gaji E2E")).toBeVisible();
     await expect(page.getByText("Belanja E2E")).toBeVisible();
 
+    /* Filters stay available behind the compact disclosure on the dashboard. */
+    await page.getByRole("button", { name: "Filter" }).click();
+
     /* type=MONEY_IN -> the money-out row disappears. */
     await page.getByRole("button", { name: "Uang masuk", exact: true }).click();
     await expect(page.getByText("Gaji E2E")).toBeVisible();
@@ -57,16 +60,17 @@ test.describe("navigation per breakpoint (AC-F2-10, AC-VIS-3)", () => {
       width < 768
         ? [
             { name: "Beranda", href: "/home" },
-            { name: "Budget", href: "/budget" },
-            { name: "Tambah transaksi", href: "/transactions?add=1" },
             { name: "Aktivitas", href: "/transactions" },
-            { name: "Keluarga", href: "/family" },
+            { name: "Tambah transaksi", href: "/transactions?add=1" },
+            { name: "Wallet", href: "/wallet" },
           ]
         : [
             { name: "Beranda Financial Diary", href: "/home" },
             { name: "Beranda", href: "/home" },
-            { name: "Budget", href: "/budget" },
             { name: "Aktivitas", href: "/transactions" },
+            { name: "Wallet", href: "/wallet" },
+            { name: "Budget", href: "/budget" },
+            { name: "Emas", href: "/gold" },
             { name: "Keluarga", href: "/family" },
             { name: "Tambah transaksi", href: "/transactions?add=1" },
             { name: "Buka profil kamu", href: "/profile" },
@@ -84,6 +88,16 @@ test.describe("navigation per breakpoint (AC-F2-10, AC-VIS-3)", () => {
     if (width < 768) {
       await expect(bottom).toBeVisible();
       await expect(top).toBeHidden();
+      await bottom.getByRole("button", { name: "Lainnya" }).click();
+      const moreMenu = page.getByRole("navigation", { name: "Navigasi utama" }).getByLabel("Menu lainnya");
+      for (const item of [
+        { name: "Budget", href: "/budget" },
+        { name: "Emas", href: "/gold" },
+        { name: "Keluarga", href: "/family" },
+        { name: "Profil", href: "/profile" },
+      ]) {
+        await expect(moreMenu.getByRole("link", { name: item.name })).toHaveAttribute("href", item.href);
+      }
     } else {
       await expect(top).toBeVisible();
       await expect(bottom).toBeHidden();
@@ -100,14 +114,34 @@ test.describe("navigation per breakpoint (AC-F2-10, AC-VIS-3)", () => {
   });
 });
 
+test.describe("wallet screen and transaction entry intents", () => {
+  test("wallet page exposes balance and existing wallet creation flow", async ({ page }) => {
+    await page.goto("/wallet");
+    await expect(page.getByRole("heading", { name: "Wallet", exact: true })).toBeVisible();
+    await expect(page.getByText("Saldo utama")).toBeVisible();
+    await page.getByRole("button", { name: "Buat wallet" }).click();
+    await expect(page.getByRole("heading", { name: "Buat dompet" })).toBeVisible();
+  });
+
+  test("dashboard receipt shortcut deep link opens the scan tab", async ({ page }) => {
+    await page.goto("/transactions?add=1&scan=1");
+    await expect(page.getByRole("dialog").getByRole("tab", { name: "Scan struk" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("wallet transfer shortcut preselects transfer entry", async ({ page }) => {
+    await page.goto("/transactions?add=1&type=TRANSFER");
+    await expect(page.getByRole("button", { name: "Transfer", exact: true })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 test.describe("budget page (AC-F2-2, AC-F2-3)", () => {
   test("owner can set a budget and the dashboard budget card reflects it", async ({ page }) => {
     await page.goto("/budget");
-    await page.getByLabel("Budget bulan ini (rupiah)").fill("3000000");
+    await page.getByLabel("Budget bersama periode ini (rupiah)").fill("3000000");
     await page.getByRole("button", { name: "Simpan budget" }).click();
-    await expect(page.getByText("Budget bulan ini tersimpan.")).toBeVisible();
+    await expect(page.getByText("Budget bersama tersimpan.")).toBeVisible();
 
     await page.goto("/home");
-    await expect(page.getByText("masih bisa dipakai")).toBeVisible();
+    await expect(page.getByText("Progress budget")).toBeVisible();
   });
 });

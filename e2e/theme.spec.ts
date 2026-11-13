@@ -7,12 +7,12 @@ test.describe("theme preference", () => {
     const root = page.locator("html");
     await expect(root).toHaveAttribute("data-theme", "system");
     await expect(root).toHaveAttribute("data-color-scheme", "dark");
-    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(17, 27, 38)");
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(11, 15, 13)");
     await page.screenshot({ path: testInfo.outputPath("login-dark.png") });
 
     await page.emulateMedia({ colorScheme: "light" });
     await expect(root).toHaveAttribute("data-color-scheme", "light");
-    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(241, 245, 250)");
+    await expect(page.locator("body")).toHaveCSS("background-color", "rgb(246, 249, 247)");
     await page.screenshot({ path: testInfo.outputPath("login-light.png") });
   });
 

@@ -128,7 +128,7 @@ test.describe("dashboard empty state (AC-F2-8)", () => {
     await expect(page.getByText("Uang tersedia bersama")).toBeVisible();
     await expect(page.getByText("Dompet pribadiku")).toBeVisible();
     await expect(page.getByText("Belum ada dompet.")).toBeVisible();
-    await expect(page.getByText("Belum ada budget bulan ini")).toBeVisible();
+    await expect(page.getByText("Belum ada budget untuk periode ini")).toBeVisible();
     await expect(page.getByText("Belum ada target tabungan")).toBeVisible();
     await expect(page.getByText("Belum ada aktivitas")).toBeVisible();
     await expect(page.getByText("Belum ada pengeluaran pada periode ini.")).toBeVisible();

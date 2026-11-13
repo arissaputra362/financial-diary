@@ -18,6 +18,7 @@ export default async function globalSetup(): Promise<void> {
       "/",
       "/home",
       "/budget",
+      "/wallet",
       "/transactions",
       "/family",
       "/profile",

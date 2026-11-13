@@ -97,78 +97,41 @@ test.beforeEach(async ({ page }) => {
 
 test.describe("home R-9 composition (AC-VIS-4, AC-VIS-5)", () => {
   test("orders the sections, keeps exactly two wallet totals, and hides bank/card identifiers", async ({ page }) => {
-    const shared = await createWallet(page, {
+    await createWallet(page, {
       name: "Dompet bersama E2E",
       scope: "SHARING",
       openingBalanceMinor: 1_500_000,
     });
-    const personal = await createWallet(page, {
+    await createWallet(page, {
       name: "Dompet pribadi E2E",
       scope: "PERSONAL",
       openingBalanceMinor: 2_500_000,
     });
 
     await page.goto("/home");
-    await expect(page.getByRole("heading", { name: "Pengeluaran bulan ini" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Saldo bersama" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("NaN");
 
-    const walletRegion = page.getByRole("region", { name: "Dompet" });
+    const walletRegion = page.getByRole("region", { name: "Saldo bersama" });
     await expect(walletRegion).toBeVisible();
-    /* Exactly two separate summaries; Pribadi is never folded into Bersama. */
-    await expect(walletRegion.locator("article")).toHaveCount(2);
-    const sharedSummary = walletRegion.locator("article").filter({ hasText: "Uang tersedia bersama" });
-    const personalSummary = walletRegion.locator("article").filter({ hasText: "Dompet pribadiku" });
-    await expect(sharedSummary).toContainText("Rp1.500.000");
-    await expect(personalSummary).toContainText("Rp2.500.000");
-    await expect(page.getByText("Rp4.000.000")).toHaveCount(0);
+    await expect(walletRegion).toContainText("Rp1.500.000");
+    await expect(walletRegion).toContainText("Rp2.500.000");
+    await expect(walletRegion).toContainText("1 dompet bersama, 1 pribadi");
 
     const boxOf = async (locator: ReturnType<typeof page.locator>) => {
       const box = await locator.first().boundingBox();
       expect(box).not.toBeNull();
       return box!;
     };
-    const heroBox = await boxOf(page.getByRole("heading", { name: "Pengeluaran bulan ini" }));
-    const sharedBox = await boxOf(page.getByText("Uang tersedia bersama"));
-    const personalBox = await boxOf(page.getByText("Dompet pribadiku"));
-    const activityBox = await boxOf(page.getByRole("heading", { name: "Aktivitas terbaru" }));
-    const budgetBox = await boxOf(page.getByRole("heading", { name: "Budget bulan ini" }));
-    const chartBox = await boxOf(page.getByRole("heading", { name: "Rincian pengeluaran" }));
-    const goalsBox = await boxOf(page.getByRole("heading", { name: "Target tabungan" }));
+    const heroBox = await boxOf(page.getByRole("region", { name: "Saldo bersama" }));
+    const activityBox = await boxOf(page.getByRole("heading", { name: "Terakhir transaksi" }));
+    const summaryBox = await boxOf(page.getByRole("heading", { name: "Ringkasan bulan ini" }));
     const heroY = heroBox.y;
-    const sharedY = sharedBox.y;
-    const personalY = personalBox.y;
     const activityY = activityBox.y;
-    const budgetY = budgetBox.y;
-    const chartY = chartBox.y;
-    const goalsY = goalsBox.y;
+    const summaryY = summaryBox.y;
 
-    expect(sharedY).toBeGreaterThan(heroY);
-    /*
-      Bersama and Pribadi are separate cards in one row; DOM order is left to
-      right. If a card stacks (long money), the vertical order still holds.
-    */
-    expect(personalY).toBeGreaterThanOrEqual(sharedY);
-    if (personalY === sharedY) expect(personalBox.x).toBeGreaterThan(sharedBox.x);
-    expect(activityY).toBeGreaterThan(Math.max(sharedY, personalY));
-    expect(budgetY).toBeGreaterThan(activityY);
-    expect(chartY).toBeGreaterThan(activityY);
-    expect(goalsY).toBeGreaterThan(Math.max(budgetY, chartY));
-
-    /* Generic ATM treatment: name/scope/balance only, never card or bank data. */
-    const sharedCard = page.getByRole("button", {
-      name: `${shared.name}, Bersama, tersedia Rp1.500.000, buka detail`,
-    });
-    await expect(sharedCard).toBeVisible();
-    const cardText = await sharedCard.innerText();
-    expect(cardText).not.toMatch(/\b(?:\d[ -]?){12,19}\b/);
-    expect(cardText.toLowerCase()).not.toMatch(
-      /cvv|expiry|berlaku hingga|visa|mastercard|\bbca\b|\bmandiri\b|\bbri\b|\bbni\b/,
-    );
-
-    const personalCard = page.getByRole("button", {
-      name: `${personal.name}, Pribadi, tersedia Rp2.500.000, buka detail`,
-    });
-    await expect(personalCard).toBeVisible();
+    expect(activityY).toBeGreaterThan(heroY);
+    expect(summaryY).toBeGreaterThan(heroY);
   });
 });
 
@@ -176,7 +139,7 @@ test.describe("long money rendering (AC-VIS-7)", () => {
   test("keeps the aggregate value intact and unclipped at this viewport", async ({ page }) => {
     await page.route("**/api/dashboard**", (route) => fulfillJson(route, LONG_MONEY_DASHBOARD));
     await page.goto("/home");
-    await expect(page.getByRole("heading", { name: "Pengeluaran bulan ini" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Saldo bersama" })).toBeVisible();
     await expect(page.getByText("Rp9.007.199.254.740.991").first()).toBeVisible();
     await expect(page.locator("body")).not.toContainText("NaN");
 

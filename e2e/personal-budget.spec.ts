@@ -148,10 +148,10 @@ test.describe("dashboard budget and chart scope controls (AC-F2-2c, AC-F2-5b)", 
     await page.goto("/home");
 
     const budgetCard = page.locator("section", {
-      has: page.getByRole("heading", { name: "Budget bulan ini" }),
+      has: page.getByRole("heading", { name: "Progress budget" }),
     });
     const chart = page.getByTestId("spending-chart");
-    const budgetMode = page.getByRole("tablist", { name: "Mode budget" });
+    const budgetMode = page.getByRole("tablist", { name: "Cakupan anggaran" });
     const chartScope = page.getByRole("tablist", { name: "Lingkup grafik" });
     const periodTabs = page.getByRole("tablist", { name: "Periode grafik" });
 
@@ -250,13 +250,13 @@ test.describe("dashboard budget and chart scope controls (AC-F2-2c, AC-F2-5b)", 
     await page.goto("/home");
 
     const budgetCard = page.locator("section", {
-      has: page.getByRole("heading", { name: "Budget bulan ini" }),
+      has: page.getByRole("heading", { name: "Progress budget" }),
     });
     const chart = page.getByTestId("spending-chart");
-    const budgetMode = page.getByRole("tablist", { name: "Mode budget" });
+    const budgetMode = page.getByRole("tablist", { name: "Cakupan anggaran" });
     const chartScope = page.getByRole("tablist", { name: "Lingkup grafik" });
 
-    await expect(budgetCard.getByText("Belum ada budget bulan ini")).toBeVisible();
+    await expect(budgetCard.getByRole("link", { name: "Atur budget" })).toBeVisible();
     await expect(budgetCard.getByRole("link", { name: "Atur budget" })).toHaveAttribute(
       "href",
       "/budget",
@@ -264,7 +264,7 @@ test.describe("dashboard budget and chart scope controls (AC-F2-2c, AC-F2-5b)", 
     await expect(chart.getByText("Belum ada pengeluaran pada periode ini.")).toBeVisible();
 
     await budgetMode.getByRole("tab", { name: "Pribadi" }).click();
-    await expect(budgetCard.getByText("Belum ada budget pribadi bulan ini")).toBeVisible();
+    await expect(budgetCard.getByRole("link", { name: "Atur budget" })).toBeVisible();
     await expect(budgetCard.getByRole("link", { name: "Atur budget" })).toHaveAttribute(
       "href",
       "/budget?scope=personal",
@@ -291,9 +291,9 @@ test.describe("budget page personal mode (AC-F2-2c)", () => {
       "aria-selected",
       "true",
     );
-    await expect(page.getByText("Belum ada budget pribadi bulan ini")).toBeVisible();
+    await expect(page.getByText("Belum ada budget pribadi untuk periode ini")).toBeVisible();
 
-    await page.getByLabel("Budget pribadi bulan ini (rupiah)").fill("750000");
+    await page.getByLabel("Budget pribadi periode ini (rupiah)").fill("750000");
     await page.getByRole("button", { name: "Simpan budget" }).click();
     await expect(page.getByText("Budget pribadi tersimpan.")).toBeVisible();
     await expect(page.getByText("Rp750.000").first()).toBeVisible();
@@ -303,32 +303,32 @@ test.describe("budget page personal mode (AC-F2-2c)", () => {
       "aria-selected",
       "true",
     );
-    await expect(page.getByLabel("Budget pribadi bulan ini (rupiah)")).toHaveValue(
+    await expect(page.getByLabel("Budget pribadi periode ini (rupiah)")).toHaveValue(
       "750.000",
     );
 
     /* Edit the same cap, not a new one. */
-    await page.getByLabel("Budget pribadi bulan ini (rupiah)").fill("800000");
+    await page.getByLabel("Budget pribadi periode ini (rupiah)").fill("800000");
     await page.getByRole("button", { name: "Simpan budget" }).click();
     await expect(page.getByText("Budget pribadi tersimpan.")).toBeVisible();
     await page.reload();
-    await expect(page.getByLabel("Budget pribadi bulan ini (rupiah)")).toHaveValue(
+    await expect(page.getByLabel("Budget pribadi periode ini (rupiah)")).toHaveValue(
       "800.000",
     );
 
     /* The household cap is still its own value. */
     await mode.getByRole("tab", { name: "Bersama" }).click();
-    await expect(page.getByText("Belum ada budget bulan ini")).toBeVisible();
-    await page.getByLabel("Budget bulan ini (rupiah)").fill("3000000");
+    await expect(page.getByText("Belum ada budget untuk periode ini")).toBeVisible();
+    await page.getByLabel("Budget bersama periode ini (rupiah)").fill("3000000");
     await page.getByRole("button", { name: "Simpan budget" }).click();
-    await expect(page.getByText("Budget bulan ini tersimpan.")).toBeVisible();
+    await expect(page.getByText("Budget bersama tersimpan.")).toBeVisible();
 
     await page.goto("/budget");
-    await expect(page.getByLabel("Budget bulan ini (rupiah)")).toHaveValue("3.000.000");
+    await expect(page.getByLabel("Budget bersama periode ini (rupiah)")).toHaveValue("3.000.000");
     await page.getByRole("tablist", { name: "Mode budget" })
       .getByRole("tab", { name: "Pribadi" })
       .click();
-    await expect(page.getByLabel("Budget pribadi bulan ini (rupiah)")).toHaveValue(
+    await expect(page.getByLabel("Budget pribadi periode ini (rupiah)")).toHaveValue(
       "800.000",
     );
     await expect(page.locator("body")).not.toContainText("3.800.000");
@@ -336,7 +336,7 @@ test.describe("budget page personal mode (AC-F2-2c)", () => {
     /* The dashboard card reads each cap independently, never the sum. */
     await page.goto("/home");
     const budgetCard = page.locator("section", {
-      has: page.getByRole("heading", { name: "Budget bulan ini" }),
+      has: page.getByRole("heading", { name: "Progress budget" }),
     });
     await expect(budgetCard.getByText("Dihitung dari dompet keluarga saja.")).toBeVisible();
     await expect(budgetCard.getByText("Rp3.000.000").first()).toBeVisible();
@@ -356,9 +356,9 @@ test.describe("budget page personal mode (AC-F2-2c)", () => {
 
     /* Owner sets the household cap through the existing shared form. */
     await page.goto("/budget");
-    await page.getByLabel("Budget bulan ini (rupiah)").fill("3000000");
+    await page.getByLabel("Budget bersama periode ini (rupiah)").fill("3000000");
     await page.getByRole("button", { name: "Simpan budget" }).click();
-    await expect(page.getByText("Budget bulan ini tersimpan.")).toBeVisible();
+    await expect(page.getByText("Budget bersama tersimpan.")).toBeVisible();
 
     const baseURL = test.info().project.use.baseURL;
     expect(baseURL).toBeTruthy();
@@ -374,10 +374,10 @@ test.describe("budget page personal mode (AC-F2-2c)", () => {
       await expect(
         member.page.getByText("Hanya pemilik keluarga yang dapat mengubah budget."),
       ).toBeVisible();
-      await expect(member.page.getByLabel("Budget bulan ini (rupiah)")).toHaveCount(0);
+      await expect(member.page.getByLabel("Budget bersama periode ini (rupiah)")).toHaveCount(0);
 
       await memberMode.getByRole("tab", { name: "Pribadi" }).click();
-      const personalInput = member.page.getByLabel("Budget pribadi bulan ini (rupiah)");
+      const personalInput = member.page.getByLabel("Budget pribadi periode ini (rupiah)");
       await expect(personalInput).toBeVisible();
       await personalInput.fill("400000");
       await member.page.getByRole("button", { name: "Simpan budget" }).click();
@@ -389,7 +389,7 @@ test.describe("budget page personal mode (AC-F2-2c)", () => {
       await member.page.getByRole("tablist", { name: "Mode budget" })
         .getByRole("tab", { name: "Bersama" })
         .click();
-      await expect(member.page.getByLabel("Budget bulan ini (rupiah)")).toHaveCount(0);
+      await expect(member.page.getByLabel("Budget bersama periode ini (rupiah)")).toHaveCount(0);
 
       /* The owner's personal view is the owner's own (unset) cap, not the member's. */
       await page.goto("/budget?scope=personal");
@@ -398,7 +398,7 @@ test.describe("budget page personal mode (AC-F2-2c)", () => {
           .getByRole("tablist", { name: "Mode budget" })
           .getByRole("tab", { name: "Pribadi" }),
       ).toHaveAttribute("aria-selected", "true");
-      await expect(page.getByText("Belum ada budget pribadi bulan ini")).toBeVisible();
+      await expect(page.getByText("Belum ada budget pribadi untuk periode ini")).toBeVisible();
       await expect(page.locator("body")).not.toContainText("Rp400.000");
     } finally {
       await member.context.close();

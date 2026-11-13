@@ -114,7 +114,7 @@ test.describe("IDR money inputs (T-013)", () => {
 
     await typeDigits(field, DIGITS, GROUPED);
     await page.getByRole("button", { name: "Simpan budget" }).click();
-    await expect(page.getByText("Budget bulan ini tersimpan.")).toBeVisible();
+    await expect(page.getByText("Budget bersama tersimpan.")).toBeVisible();
 
     const response = await page.request.get("/api/budget");
     expect(response.ok()).toBe(true);
@@ -131,7 +131,7 @@ test.describe("IDR money inputs (T-013)", () => {
     await expect(field).toHaveValue("12.500.000");
 
     await page.getByRole("button", { name: "Simpan budget" }).click();
-    await expect(page.getByText("Budget bulan ini tersimpan.")).toBeVisible();
+    await expect(page.getByText("Budget bersama tersimpan.")).toBeVisible();
 
     const response = await page.request.get("/api/budget");
     expect(response.ok()).toBe(true);
