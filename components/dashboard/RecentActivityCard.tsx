@@ -5,6 +5,7 @@ import { formatIDR, formatSignedIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
 import { CategoryIcon, categoryLabel, isTransferLeg } from "@/components/transactions/categories";
+import { truncateActivityText } from "@/components/transactions/activityDisplay";
 
 export interface RecentActivityCardProps {
   initialRows: TransactionDTO[];
@@ -56,6 +57,11 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
                   <p className="mt-0.5 truncate text-xs text-ink-3">
                     {row.source === "OCR" ? "Hasil scan" : "Manual"} · {formatDateLabel(row.occurredAt)}
                   </p>
+                  {row.merchant && row.note?.trim() ? (
+                    <p className="mt-0.5 truncate text-[11px] leading-4 text-ink-3">
+                      {truncateActivityText(row.note.trim())}
+                    </p>
+                  ) : null}
                 </div>
                 <p
                   className={cn(
@@ -82,5 +88,5 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
 
 function rowTitle(row: TransactionDTO): string {
   if (isTransferLeg(row)) return "Transfer antar dompet";
-  return row.merchant ?? row.note ?? categoryLabel(row.category);
+  return row.merchant ?? (row.note ? truncateActivityText(row.note) : categoryLabel(row.category));
 }

@@ -39,15 +39,15 @@ function getSlices(breakdown: ReportBreakdownDTO): Slice[] {
   return slices;
 }
 
-function shareLabel(amountMinor: number, totalMinor: number): string {
-  const share = Math.round((amountMinor / totalMinor) * 100);
+function shareLabel(amountMinor: number, categoryTotalMinor: number): string {
+  const share = Math.round((amountMinor / categoryTotalMinor) * 100);
   return share === 0 && amountMinor > 0 ? "<1%" : `${share}%`;
 }
 
 /* Bar width with a visible minimum sliver, capped at 100%. */
-function barWidth(amountMinor: number, totalMinor: number): number {
-  if (totalMinor <= 0) return 0;
-  return Math.max(2, Math.min(100, Math.round((amountMinor / totalMinor) * 100)));
+function barWidth(amountMinor: number, categoryTotalMinor: number): number {
+  if (categoryTotalMinor <= 0) return 0;
+  return Math.max(2, Math.min(100, Math.round((amountMinor / categoryTotalMinor) * 100)));
 }
 
 export function CategoryDonutChart({
@@ -117,7 +117,7 @@ export function CategoryDonutChart({
                   {slice.name}
                 </span>
                 <span className="shrink-0 text-[10px] tabular-nums text-ink-3 print:text-[6pt]">
-                  {shareLabel(slice.amountMinor, breakdown.totalMinor)}
+                  {shareLabel(slice.amountMinor, sliceTotal)}
                 </span>
               </span>
               <span className="shrink-0 text-xs font-semibold tabular-nums text-ink print:text-[7pt]">
@@ -127,7 +127,7 @@ export function CategoryDonutChart({
             <div className="h-1.5 overflow-hidden rounded-full bg-bar-track print:h-1" aria-hidden="true">
               <div
                 className="h-full rounded-full"
-                style={{ width: `${barWidth(slice.amountMinor, breakdown.totalMinor)}%`, backgroundColor: slice.color }}
+                style={{ width: `${barWidth(slice.amountMinor, sliceTotal)}%`, backgroundColor: slice.color }}
               />
             </div>
           </li>
@@ -141,7 +141,8 @@ export function CategoryDonutChart({
 /** Category list without the donut, for the secondary (income) breakdown card. */
 export function CategoryBreakdownList({ breakdown }: { breakdown: ReportBreakdownDTO }) {
   const slices = getSlices(breakdown);
-  if (breakdown.totalMinor <= 0 || slices.length === 0) return null;
+  const sliceTotal = slices.reduce((sum, slice) => sum + slice.amountMinor, 0);
+  if (breakdown.totalMinor <= 0 || sliceTotal <= 0) return null;
 
   return (
     <ul className="mt-4 space-y-2 print:space-y-0.5" aria-label="Rincian per kategori">
@@ -158,7 +159,7 @@ export function CategoryBreakdownList({ breakdown }: { breakdown: ReportBreakdow
                 {slice.name}
               </span>
               <span className="shrink-0 text-[10px] tabular-nums text-ink-3 print:text-[6pt]">
-                {shareLabel(slice.amountMinor, breakdown.totalMinor)}
+                {shareLabel(slice.amountMinor, sliceTotal)}
               </span>
             </span>
             <span className="shrink-0 text-xs font-semibold tabular-nums text-ink print:text-[7pt]">
@@ -168,7 +169,7 @@ export function CategoryBreakdownList({ breakdown }: { breakdown: ReportBreakdow
           <div className="h-1.5 overflow-hidden rounded-full bg-bar-track print:h-1" aria-hidden="true">
             <div
               className="h-full rounded-full"
-              style={{ width: `${barWidth(slice.amountMinor, breakdown.totalMinor)}%`, backgroundColor: slice.color }}
+              style={{ width: `${barWidth(slice.amountMinor, sliceTotal)}%`, backgroundColor: slice.color }}
             />
           </div>
         </li>

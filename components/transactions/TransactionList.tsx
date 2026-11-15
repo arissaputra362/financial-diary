@@ -16,6 +16,7 @@ import { formatSignedIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
 import { CategoryIcon, categoryLabel, isTransferLeg } from "./categories";
+import { truncateActivityText } from "./activityDisplay";
 
 export interface TransactionListProps {
   rows: TransactionDTO[];
@@ -234,15 +235,17 @@ function RowItem({
   const transfer = isTransferLeg(row);
   const generic = row.wallet === null && row.source === null;
   const isIncome = row.type === "MONEY_IN";
+  const note = row.note?.trim() || null;
   const title = generic
     ? isIncome
       ? "Transfer dari dompet pribadi"
       : "Transfer ke dompet pribadi"
-    : row.merchant ?? row.note ?? (transfer ? "Transfer antar dompet" : categoryLabel(row.category));
+    : row.merchant ?? (note ? truncateActivityText(note) : transfer ? "Transfer antar dompet" : categoryLabel(row.category));
   const subtitleParts: string[] = generic
     ? ["Aktivitas umum"]
     : [transfer ? "Transfer antar dompet" : categoryLabel(row.category)];
   if (!generic && row.wallet) subtitleParts.push(row.wallet.name);
+  if (note && (generic || row.merchant)) subtitleParts.push(truncateActivityText(note));
   if (mode === "trash") {
     subtitleParts.push(formatDateLabel(row.occurredAt));
     if (row.deletedAt) subtitleParts.push(`Dihapus ${formatDateLabel(row.deletedAt)}`);
@@ -253,6 +256,7 @@ function RowItem({
   const subtitle = subtitleParts.join(" · ");
   const signedAmount = formatSignedIDR(isIncome ? row.amountMinor : -row.amountMinor);
   const longAmount = signedAmount.length > 13;
+  const visibleNote = row.merchant && note ? truncateActivityText(note) : null;
   const amountColor =
     transfer ? "text-ink" : isIncome ? "text-green" : "text-ink";
 
@@ -270,7 +274,14 @@ function RowItem({
 
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-medium text-ink">{title}</span>
-            <span className="mt-0.5 block truncate text-xs text-ink-3">{subtitle}</span>
+            <span className="mt-0.5 block truncate text-xs text-ink-3">
+              {visibleNote ? subtitleParts.filter((part) => part !== visibleNote).join(" · ") : subtitle}
+            </span>
+            {visibleNote ? (
+              <span className="mt-0.5 block truncate text-[11px] leading-4 text-ink-3">
+                {visibleNote}
+              </span>
+            ) : null}
             {longAmount ? (
               <span className={cn("mt-1 block text-sm font-bold tabular-nums sm:hidden", amountColor)}>
                 {signedAmount}
@@ -298,7 +309,7 @@ function RowItem({
             className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-danger-bg hover:text-danger disabled:cursor-not-allowed disabled:text-ink-3"
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-            Hapus
+            <span className="hidden sm:inline">Hapus</span>
           </button>
         ) : (
           <button
@@ -309,10 +320,11 @@ function RowItem({
             className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-mint hover:text-green disabled:cursor-not-allowed disabled:text-ink-3"
           >
             <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
-            Pulihkan
+            <span className="hidden sm:inline">Pulihkan</span>
           </button>
         )}
       </div>
     </li>
   );
 }
+

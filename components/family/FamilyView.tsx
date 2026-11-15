@@ -13,8 +13,10 @@ import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest } from "@/lib/api-client";
 import { formatDateLabel } from "@/lib/dates";
 import { formatIDR, formatSignedIDR } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { DashboardDTO, TransactionDTO } from "@/types/api";
 import { CategoryIcon, categoryLabel, isTransferLeg } from "@/components/transactions/categories";
+import { truncateActivityText } from "@/components/transactions/activityDisplay";
 
 type Member = {
   id: string;
@@ -460,12 +462,15 @@ function SharedFinanceOverview({
   overview: DashboardDTO | null;
   error: boolean;
 }) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const sharedRows = overview?.recentActivity
     .filter((row) => row.wallet?.scope === "SHARING")
     .slice(0, 3) ?? [];
   const sharedDays = overview?.spending.byDay.slice(-7) ?? [];
   const maxSpending = Math.max(1, ...sharedDays.map((day) => day.amountMinor));
   const hasSpending = sharedDays.some((day) => day.amountMinor > 0);
+  const visibleTooltipDate = selectedDate ?? hoveredDate;
 
   return (
     <section aria-labelledby="shared-finance-title" className="space-y-4">
@@ -517,19 +522,49 @@ function SharedFinanceOverview({
               role="img"
               aria-label="Grafik pengeluaran bersama 7 hari terakhir"
             >
-              {sharedDays.map((day) => (
-                <div key={day.date} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                  <div className="flex h-24 w-full items-end">
+              {sharedDays.map((day) => {
+                const selected = selectedDate === day.date;
+                const showTooltip = visibleTooltipDate === day.date;
+                const dayLabel = new Date(`${day.date}T00:00:00+07:00`).toLocaleDateString("id-ID", {
+                  weekday: "short",
+                });
+                return (
+                <div key={day.date} className="group relative flex min-w-0 flex-1 flex-col items-center gap-1">
+                  {showTooltip ? (
                     <div
-                      className="mx-auto w-full max-w-7 rounded-t-lg bg-gradient-to-t from-brand-green to-[#54d68a]"
-                      style={{ height: `${Math.max(8, Math.round((day.amountMinor / maxSpending) * 96))}px` }}
-                    />
+                      role="status"
+                      className="pointer-events-none absolute bottom-[calc(100%+0.25rem)] z-10 whitespace-nowrap rounded-lg bg-navy px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg"
+                    >
+                      {formatIDR(day.amountMinor)}
+                    </div>
+                  ) : null}
+                  <div className="flex h-24 w-full items-end">
+                    <button
+                      type="button"
+                      aria-label={`${dayLabel}: ${formatIDR(day.amountMinor)}`}
+                      aria-pressed={selected}
+                      onClick={() => setSelectedDate(selected ? null : day.date)}
+                      onMouseEnter={() => setHoveredDate(day.date)}
+                      onMouseLeave={() => setHoveredDate(null)}
+                      onFocus={() => setHoveredDate(day.date)}
+                      onBlur={() => setHoveredDate(null)}
+                      className={cn(
+                        "mx-auto flex h-full w-full max-w-7 items-end justify-center rounded-t-lg outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2",
+                        selected && "bg-mint/60",
+                      )}
+                    >
+                      <span
+                        className="block w-full rounded-t-lg bg-gradient-to-t from-brand-green to-[#54d68a] transition-[height,filter] group-hover:brightness-110"
+                        style={{ height: `${Math.max(8, Math.round((day.amountMinor / maxSpending) * 96))}px` }}
+                      />
+                    </button>
                   </div>
                   <span className="text-[10px] font-medium text-ink-3">
-                    {new Date(`${day.date}T00:00:00+07:00`).toLocaleDateString("id-ID", { weekday: "short" })}
+                    {dayLabel}
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p className="mt-5 rounded-2xl bg-surface-subtle p-4 text-center text-sm text-ink-2">
@@ -562,14 +597,20 @@ function SharedFinanceOverview({
 
 function SharedActivityRow({ row }: { row: TransactionDTO }) {
   const transfer = isTransferLeg(row);
+  const note = row.note?.trim() || null;
   return (
     <li className="flex items-center gap-3 py-3">
       <CategoryIcon category={row.category} transfer={transfer} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-ink">
-          {row.merchant ?? row.note ?? categoryLabel(row.category)}
+          {row.merchant ?? (note ? truncateActivityText(note) : categoryLabel(row.category))}
         </p>
         <p className="mt-0.5 truncate text-xs text-ink-3">{formatDateLabel(row.occurredAt)}</p>
+        {row.merchant && note ? (
+          <p className="mt-0.5 truncate text-[11px] leading-4 text-ink-3">
+            {truncateActivityText(note)}
+          </p>
+        ) : null}
       </div>
       <p className={`shrink-0 text-sm font-bold tabular-nums ${row.type === "MONEY_IN" ? "text-green" : "text-ink"}`}>
         {transfer ? formatIDR(row.amountMinor) : formatSignedIDR(row.type === "MONEY_IN" ? row.amountMinor : -row.amountMinor)}
