@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { RefreshCw, UserRound } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { currentMonthKey } from "@/lib/dates";
@@ -12,6 +12,7 @@ import { BalanceHero } from "./BalanceHero";
 import { FinnyTipCard } from "./FinnyTipCard";
 import { MonthlySummaryCard } from "./MonthlySummaryCard";
 import { RecentActivityCard } from "./RecentActivityCard";
+import { AvatarPreview } from "@/components/profile/AvatarPreview";
 
 const dateFormatter = new Intl.DateTimeFormat("id-ID", {
   weekday: "long",
@@ -46,14 +47,16 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let active = true;
-    apiRequest<{ user?: { displayName?: string } }>("/api/auth/me")
+    apiRequest<{ user?: { displayName?: string; avatarUrl?: string | null } }>("/api/auth/me")
       .then((response) => {
         if (active && response.ok) {
           setDisplayName(response.data?.user?.displayName?.trim() || null);
+          setAvatarUrl(response.data?.user?.avatarUrl ?? null);
         }
       })
       .catch(() => undefined);
@@ -116,9 +119,14 @@ export function DashboardView({ initialData }: { initialData?: DashboardDTO }) {
         <Link
           href="/profile"
           aria-label="Buka profil"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-success-border bg-mint text-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:hidden"
         >
-          <UserRound className="h-5 w-5" aria-hidden="true" />
+          <AvatarPreview
+            name={displayName ?? "Pengguna"}
+            src={avatarUrl}
+            className="rounded-full"
+            interactive={false}
+          />
         </Link>
       </header>
 

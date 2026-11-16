@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { apiRequest } from "@/lib/api-client";
 import { ThemeControl } from "@/components/profile/ThemeControl";
+import { AvatarPreview } from "@/components/profile/AvatarPreview";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 
 type MeState = {
@@ -156,6 +157,7 @@ export default function ProfilePage() {
         return;
       }
       setMe((current) => current ? { ...current, user: { ...current.user, avatarUrl: result.data!.avatarUrl } } : current);
+      window.dispatchEvent(new CustomEvent("profile-avatar-updated", { detail: { avatarUrl: result.data.avatarUrl } }));
       setAvatarVersion((version) => version + 1);
       setAvatarMessage("Foto profil berhasil diperbarui.");
       setEditOpen(false);
@@ -182,6 +184,7 @@ export default function ProfilePage() {
         return;
       }
       setMe((current) => current ? { ...current, user: { ...current.user, avatarUrl: result.data!.avatarUrl } } : current);
+      window.dispatchEvent(new CustomEvent("profile-avatar-updated", { detail: { avatarUrl: result.data.avatarUrl } }));
       setAvatarVersion((version) => version + 1);
       setAvatarMessage("Avatar berhasil diperbarui.");
       setEditOpen(false);
@@ -210,7 +213,7 @@ export default function ProfilePage() {
           eyebrow="Profil"
           title={<span className="min-w-0 truncate">{me?.user?.displayName || "Pengguna"}</span>}
           leading={
-            <ProfileAvatar
+            <AvatarPreview
               name={me?.user?.displayName || "Pengguna"}
               src={me?.user?.avatarUrl ? `${me.user.avatarUrl}${me.user.avatarUrl.includes("?") ? "&" : "?"}v=${avatarVersion}` : null}
               size="large"
@@ -220,7 +223,7 @@ export default function ProfilePage() {
 
         <Card>
           <div className="flex items-start gap-4">
-            <ProfileAvatar
+            <AvatarPreview
               name={me?.user?.displayName || "Pengguna"}
               src={me?.user?.avatarUrl ? `${me.user.avatarUrl}${me.user.avatarUrl.includes("?") ? "&" : "?"}v=${avatarVersion}` : null}
               size="large"
@@ -428,41 +431,3 @@ const AVATAR_PRESETS: AvatarPreset[] = [
   { id: "girl", label: "Anak perempuan", emoji: "👧", tone: "bg-purple-50" },
 ];
 
-function ProfileAvatar({
-  name,
-  src,
-  size,
-}: {
-  name: string;
-  src: string | null;
-  size: "large" | "small";
-}) {
-  const className = size === "large" ? "h-14 w-14 text-lg" : "h-10 w-10 text-sm";
-  return src ? (
-    <Image
-      src={src}
-      alt={`Foto profil ${name}`}
-      width={56}
-      height={56}
-      unoptimized
-      className={`${className} shrink-0 rounded-full object-cover ring-2 ring-mint`}
-    />
-  ) : (
-    <span
-      aria-hidden="true"
-      className={`${className} flex shrink-0 items-center justify-center rounded-full bg-blue-tint font-bold text-blue`}
-    >
-      {initials(name)}
-    </span>
-  );
-}
-
-function initials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/u)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
-}

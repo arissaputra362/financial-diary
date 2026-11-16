@@ -7,16 +7,14 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import {
   formatDateLabel,
-  formatTimeLabel,
   jakartaDateKey,
   todayJakarta,
   yesterdayJakarta,
 } from "@/lib/dates";
-import { formatSignedIDR } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
-import { CategoryIcon, categoryLabel, isTransferLeg } from "./categories";
+import { categoryLabel, isTransferLeg } from "./categories";
 import { truncateActivityText } from "./activityDisplay";
+import { TransactionRow } from "./TransactionRow";
 
 export interface TransactionListProps {
   rows: TransactionDTO[];
@@ -249,82 +247,44 @@ function RowItem({
   if (mode === "trash") {
     subtitleParts.push(formatDateLabel(row.occurredAt));
     if (row.deletedAt) subtitleParts.push(`Dihapus ${formatDateLabel(row.deletedAt)}`);
-  } else {
-    const time = formatTimeLabel(row.occurredAt);
-    if (time) subtitleParts.push(time);
   }
   const subtitle = subtitleParts.join(" · ");
-  const signedAmount = formatSignedIDR(isIncome ? row.amountMinor : -row.amountMinor);
-  const longAmount = signedAmount.length > 13;
   const visibleNote = row.merchant && note ? truncateActivityText(note) : null;
-  const amountColor =
-    transfer ? "text-ink" : isIncome ? "text-green" : "text-ink";
+  const signedAmountLabel = isIncome ? "pemasukan" : "pengeluaran";
 
   return (
-    <li>
-      <div className="flex items-center gap-2 py-2">
+    <TransactionRow
+      row={row}
+      title={title}
+      subtitle={visibleNote ? subtitleParts.filter((part) => part !== visibleNote).join(" · ") : subtitle}
+      note={visibleNote}
+      onOpen={() => onOpenDetail(row)}
+      busy={busy}
+      openLabel={`Buka detail transaksi ${signedAmountLabel} ${title}`}
+      action={mode === "active" ? (
         <button
           type="button"
-          onClick={() => onOpenDetail(row)}
+          onClick={() => onDelete(row)}
           disabled={busy}
-          aria-label={`Buka detail transaksi ${signedAmount} ${title}`}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-1 text-left hover:bg-mint"
+          aria-label={`Hapus transaksi ${title}`}
+          className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-danger-bg hover:text-danger disabled:cursor-not-allowed disabled:text-ink-3"
         >
-          <CategoryIcon category={row.category} transfer={transfer} />
-
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-medium text-ink">{title}</span>
-            <span className="mt-0.5 block truncate text-xs text-ink-3">
-              {visibleNote ? subtitleParts.filter((part) => part !== visibleNote).join(" · ") : subtitle}
-            </span>
-            {visibleNote ? (
-              <span className="mt-0.5 block truncate text-[11px] leading-4 text-ink-3">
-                {visibleNote}
-              </span>
-            ) : null}
-            {longAmount ? (
-              <span className={cn("mt-1 block text-sm font-bold tabular-nums sm:hidden", amountColor)}>
-                {signedAmount}
-              </span>
-            ) : null}
-          </span>
-
-          <span
-            className={cn(
-              "shrink-0 whitespace-nowrap font-bold tabular-nums",
-              longAmount ? "hidden text-sm sm:block" : "text-[15px]",
-              amountColor,
-            )}
-          >
-            {signedAmount}
-          </span>
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="hidden sm:inline">Hapus</span>
         </button>
-
-        {mode === "active" ? (
-          <button
-            type="button"
-            onClick={() => onDelete(row)}
-            disabled={busy}
-            aria-label={`Hapus transaksi ${signedAmount} ${title}`}
-            className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-danger-bg hover:text-danger disabled:cursor-not-allowed disabled:text-ink-3"
-          >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline">Hapus</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onRestore(row)}
-            disabled={busy}
-            aria-label={`Pulihkan transaksi ${signedAmount} ${title}`}
-            className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-mint hover:text-green disabled:cursor-not-allowed disabled:text-ink-3"
-          >
-            <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline">Pulihkan</span>
-          </button>
-        )}
-      </div>
-    </li>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onRestore(row)}
+          disabled={busy}
+          aria-label={`Pulihkan transaksi ${title}`}
+          className="flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-ink-2 hover:bg-mint hover:text-green disabled:cursor-not-allowed disabled:text-ink-3"
+        >
+          <Undo2 className="h-3.5 w-3.5" aria-hidden="true" />
+          <span className="hidden sm:inline">Pulihkan</span>
+        </button>
+      )}
+    />
   );
 }
 

@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { formatDateLabel } from "@/lib/dates";
-import { formatIDR, formatSignedIDR } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { TransactionDTO } from "@/types/api";
-import { CategoryIcon, categoryLabel, isTransferLeg } from "@/components/transactions/categories";
+import { categoryLabel, isTransferLeg } from "@/components/transactions/categories";
 import { truncateActivityText } from "@/components/transactions/activityDisplay";
+import { TransactionRow } from "@/components/transactions/TransactionRow";
 
 export interface RecentActivityCardProps {
   initialRows: TransactionDTO[];
@@ -50,34 +49,14 @@ export function RecentActivityCard({ initialRows }: RecentActivityCardProps) {
         ) : (
           <ul className="divide-y divide-row-divider">
             {visibleRows.map((row) => (
-              <li key={row.id} className="flex items-center gap-3 py-3">
-                <CategoryIcon category={row.category} transfer={isTransferLeg(row)} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-medium text-ink">{rowTitle(row)}</p>
-                  <p className="mt-0.5 truncate text-xs text-ink-3">
-                    {row.source === "OCR" ? "Hasil scan" : "Manual"} · {formatDateLabel(row.occurredAt)}
-                  </p>
-                  {row.merchant && row.note?.trim() ? (
-                    <p className="mt-0.5 truncate text-[11px] leading-4 text-ink-3">
-                      {truncateActivityText(row.note.trim())}
-                    </p>
-                  ) : null}
-                </div>
-                <p
-                  className={cn(
-                    "shrink-0 whitespace-nowrap text-sm font-bold tabular-nums",
-                    isTransferLeg(row)
-                      ? "text-ink"
-                      : row.type === "MONEY_IN"
-                        ? "text-green"
-                        : "text-ink",
-                  )}
-                >
-                  {isTransferLeg(row)
-                    ? formatIDR(row.amountMinor)
-                    : formatSignedIDR(row.type === "MONEY_IN" ? row.amountMinor : -row.amountMinor)}
-                </p>
-              </li>
+              <TransactionRow
+                key={row.id}
+                row={row}
+                title={rowTitle(row)}
+                subtitle={`${row.source === "OCR" ? "Hasil scan" : "Manual"} · ${formatDateLabel(row.occurredAt)}`}
+                note={row.merchant && row.note?.trim() ? truncateActivityText(row.note.trim()) : null}
+                transferAmount="raw"
+              />
             ))}
           </ul>
         )}

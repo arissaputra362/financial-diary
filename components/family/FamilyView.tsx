@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowLeft, Check, Clock, Copy, Crown, KeyRound, Link as LinkIcon, Pencil, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -12,11 +11,13 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
 import { apiRequest } from "@/lib/api-client";
 import { formatDateLabel } from "@/lib/dates";
-import { formatIDR, formatSignedIDR } from "@/lib/format";
+import { formatIDR } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { DashboardDTO, TransactionDTO } from "@/types/api";
-import { CategoryIcon, categoryLabel, isTransferLeg } from "@/components/transactions/categories";
+import { categoryLabel } from "@/components/transactions/categories";
 import { truncateActivityText } from "@/components/transactions/activityDisplay";
+import { TransactionRow } from "@/components/transactions/TransactionRow";
+import { AvatarPreview } from "@/components/profile/AvatarPreview";
 
 type Member = {
   id: string;
@@ -596,57 +597,26 @@ function SharedFinanceOverview({
 }
 
 function SharedActivityRow({ row }: { row: TransactionDTO }) {
-  const transfer = isTransferLeg(row);
   const note = row.note?.trim() || null;
   return (
-    <li className="flex items-center gap-3 py-3">
-      <CategoryIcon category={row.category} transfer={transfer} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-ink">
-          {row.merchant ?? (note ? truncateActivityText(note) : categoryLabel(row.category))}
-        </p>
-        <p className="mt-0.5 truncate text-xs text-ink-3">{formatDateLabel(row.occurredAt)}</p>
-        {row.merchant && note ? (
-          <p className="mt-0.5 truncate text-[11px] leading-4 text-ink-3">
-            {truncateActivityText(note)}
-          </p>
-        ) : null}
-      </div>
-      <p className={`shrink-0 text-sm font-bold tabular-nums ${row.type === "MONEY_IN" ? "text-green" : "text-ink"}`}>
-        {transfer ? formatIDR(row.amountMinor) : formatSignedIDR(row.type === "MONEY_IN" ? row.amountMinor : -row.amountMinor)}
-      </p>
-    </li>
+    <TransactionRow
+      row={row}
+      title={row.merchant ?? (note ? truncateActivityText(note) : categoryLabel(row.category))}
+      subtitle={formatDateLabel(row.occurredAt)}
+      note={row.merchant && note ? truncateActivityText(note) : null}
+      transferAmount="raw"
+    />
   );
-}
-
-function initials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/u)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("")
-    .toUpperCase();
 }
 
 function MemberAvatar({ member, compact = false }: { member: Member; compact?: boolean }) {
   const name = member.user?.displayName ?? "Anggota";
-  const size = compact ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm";
-  return member.user?.avatarUrl ? (
-    <Image
-      src={member.user.avatarUrl}
-      alt={`Foto ${name}`}
-      width={compact ? 36 : 40}
-      height={compact ? 36 : 40}
-      unoptimized
-      className={`${size} shrink-0 rounded-full border-2 border-green object-cover`}
+  return (
+    <AvatarPreview
+      name={name}
+      src={member.user?.avatarUrl ?? null}
+      size={compact ? "small" : "small"}
+      className="[&>img]:border-2 [&>img]:border-green [&>span]:border-2 [&>span]:border-green"
     />
-  ) : (
-    <span
-      aria-hidden="true"
-      className={`${size} flex shrink-0 items-center justify-center rounded-full border-2 border-green bg-mint font-bold text-green`}
-    >
-      {initials(name)}
-    </span>
   );
 }

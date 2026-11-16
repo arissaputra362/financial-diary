@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { authenticatedRequest } from "@/lib/server/auth";
 import { badRequest } from "@/lib/server/errors";
@@ -74,7 +75,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
       throw badRequest("AVATAR_SIZE_INVALID", "Ukuran foto maksimal 2 MB.");
     }
 
-    const key = `avatars/${session.userId}`;
+    const key = `avatars/${session.userId}/${randomUUID()}`;
     await createVercelBlobStore().put(new Uint8Array(await value.arrayBuffer()), key, value.type);
     const updated = await session.auth.updateAvatar(session.userId, key, value.type);
     const response = NextResponse.json(updated);

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Coins, House, PiggyBank, Plus, Receipt, SquaresFour, Target, User, Users, Wallet, type IconProps } from "@phosphor-icons/react";
 import type { ComponentType } from "react";
 import { requestTransactionAddIntent } from "@/lib/transaction-add-intent";
 import { cn } from "@/lib/utils";
+import { AvatarPreview } from "@/components/profile/AvatarPreview";
 
 type NavItem = {
   href: string;
@@ -42,8 +43,34 @@ export function BottomNav() {
     pathname,
     open: false,
   });
+  const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
   const moreOpen = moreState.pathname === pathname && moreState.open;
   const moreIsActive = moreItems.some((item) => isNavItemActive(pathname, item));
+
+  useEffect(() => {
+    let active = true;
+    const loadProfile = () => fetch("/api/auth/me")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data: { user?: { displayName?: string; avatarUrl?: string | null } } | null) => {
+        if (!active || !data?.user) return;
+        setProfile({
+          displayName: data.user.displayName ?? "Pengguna",
+          avatarUrl: data.user.avatarUrl ?? null,
+        });
+      })
+      .catch(() => undefined);
+    const onAvatarUpdated = (event: Event) => {
+      const avatarUrl = (event as CustomEvent<{ avatarUrl?: string }>).detail?.avatarUrl;
+      if (avatarUrl) setProfile((current) => current ? { ...current, avatarUrl } : current);
+      else void loadProfile();
+    };
+    void loadProfile();
+    window.addEventListener("profile-avatar-updated", onAvatarUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener("profile-avatar-updated", onAvatarUpdated);
+    };
+  }, []);
 
   /*
     The menu is scoped to the pathname it was opened on. A route change makes
@@ -147,7 +174,16 @@ export function BottomNav() {
                     isActive && "bg-mint text-green",
                   )}
                 >
-                  <Icon weight="fill" size={16} aria-hidden="true" />
+                  {item.href === "/profile" && profile ? (
+                    <AvatarPreview
+                      name={profile.displayName}
+                      src={profile.avatarUrl}
+                      className="rounded-full"
+                      interactive={false}
+                    />
+                  ) : (
+                    <Icon weight="fill" size={16} aria-hidden="true" />
+                  )}
                   {item.label}
                 </Link>
               );

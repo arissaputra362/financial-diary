@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Coins, House, PiggyBank, Plus, Receipt, Target, User, Users, Wallet } from "@phosphor-icons/react";
 import { Sprout } from "lucide-react";
 import { requestTransactionAddIntent } from "@/lib/transaction-add-intent";
 import { cn } from "@/lib/utils";
+import { AvatarPreview } from "@/components/profile/AvatarPreview";
 
 /*
   Final tablet/desktop navigation (T-005, A-27/A-31; visual refresh T-010): the
@@ -33,6 +35,35 @@ function isNavItemActive(pathname: string, href: string, matchPrefix?: string): 
 export function FloatingNavbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string | null } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadProfile = () => fetch("/api/auth/me")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data: { user?: { displayName?: string; avatarUrl?: string | null } } | null) => {
+        if (!active || !data?.user) return;
+        setProfile({
+          displayName: data.user.displayName ?? "Pengguna",
+          avatarUrl: data.user.avatarUrl ?? null,
+        });
+      })
+      .catch(() => undefined);
+    const onAvatarUpdated = (event: Event) => {
+      const avatarUrl = (event as CustomEvent<{ avatarUrl?: string }>).detail?.avatarUrl;
+      if (avatarUrl) {
+        setProfile((current) => current ? { ...current, avatarUrl } : current);
+      } else {
+        void loadProfile();
+      }
+    };
+    void loadProfile();
+    window.addEventListener("profile-avatar-updated", onAvatarUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener("profile-avatar-updated", onAvatarUpdated);
+    };
+  }, []);
 
   /*
     Keep the current month/Trash view when Add is pressed on Activity and hand
@@ -114,15 +145,21 @@ export function FloatingNavbar() {
           <Link
             href="/profile"
             aria-label="Buka profil kamu"
-            aria-current={pathname === "/profile" ? "page" : undefined}
             className={cn(
-              "relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-xs font-bold transition-colors",
-              pathname === "/profile"
-                ? "border-mint bg-mint text-green"
-                : "border-white/10 bg-mint text-green",
+              "relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors",
+              pathname === "/profile" ? "border-mint bg-mint" : "border-white/10 bg-mint",
             )}
           >
-            <User weight="fill" size={18} aria-hidden="true" />
+            {profile ? (
+              <AvatarPreview
+                name={profile.displayName}
+                src={profile.avatarUrl}
+                className="rounded-xl"
+                interactive={false}
+              />
+            ) : (
+              <User weight="fill" size={18} aria-hidden="true" />
+            )}
           </Link>
         </div>
       </nav>
