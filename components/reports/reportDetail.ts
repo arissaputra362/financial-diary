@@ -198,7 +198,7 @@ export function formatReportDetailDate(occurredAt: string): string {
 
 /** Transfer legs use the fixed section label; other rows use the activity title rule. */
 export function reportDetailDescription(row: TransactionDTO, transfer: boolean): string {
-  if (transfer) return "Transfer";
+  if (transfer) return row.type === "MONEY_IN" ? "Transfer masuk" : "Transfer keluar";
   return row.merchant ?? row.note ?? categoryLabel(row.category);
 }
 
@@ -210,15 +210,32 @@ export function buildReportHistoricalLedger(
   wallets: WalletDTO[],
 ): ReportLedgerRow[] {
   const groups = groupReportDetailRows(rows, scope);
-  const transactions = [...groups.income, ...groups.expense].map((row) => ({
+  /*
+    Every visible transaction belongs on paper, including transfer legs. A
+    paired transfer cancels itself out through its two signed legs; a leg whose
+    peer is outside the selection still moves the running balance and must stay
+    so the ledger reaches the report's closing balance.
+  */
+  const transactions = [...groups.income, ...groups.expense, ...groups.transfer].map((row) => ({
     id: row.id,
     occurredAt: row.occurredAt,
     description: reportDetailDescription(row, isReportTransferRow(row)),
     amountMinor: row.type === "MONEY_IN" ? row.amountMinor : -row.amountMinor,
     kind: "transaction" as const,
   }));
+  /*
+    A wallet opening is an event only when the server counted it as a new wallet
+    (created inside the period, or created later with a backdated transaction in
+    the period). Compare Jakarta date keys, not the raw ISO string: the old
+    `createdAt <= periodEnd` check dropped wallets created on the last day.
+  */
   const walletOpenings = wallets
-    .filter((wallet) => wallet.openingBalanceMinor !== 0 && wallet.createdAt >= report.periodStart && wallet.createdAt <= report.periodEnd)
+    .filter((wallet) => {
+      if (wallet.openingBalanceMinor === 0) return false;
+      const createdKey = jakartaDateKey(wallet.createdAt);
+      if (createdKey >= report.periodStart && createdKey <= report.periodEnd) return true;
+      return createdKey > report.periodEnd && rows.some((row) => row.wallet?.id === wallet.id);
+    })
     .map((wallet) => ({
       id: `wallet-opening-${wallet.id}`,
       occurredAt: wallet.createdAt,

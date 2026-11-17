@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAnimatedClose } from "@/hooks/useAnimatedClose";
 import { useDialogFocusTrap } from "@/hooks/useDialogFocusTrap";
@@ -11,6 +11,9 @@ type ConfirmActionDialogProps = {
   title: string;
   description: string;
   confirmLabel: string;
+  /** `danger` for destructive actions, `info` for a neutral confirmation. */
+  tone?: "danger" | "info";
+  cancelLabel?: string;
   error?: string | null;
   busy?: boolean;
   onCancel: () => void;
@@ -22,6 +25,8 @@ export function ConfirmActionDialog({
   title,
   description,
   confirmLabel,
+  tone = "danger",
+  cancelLabel = "Batal",
   error = null,
   busy = false,
   onCancel,
@@ -52,8 +57,16 @@ export function ConfirmActionDialog({
         className={`w-full rounded-t-3xl border border-card-border bg-card p-5 shadow-2xl sm:max-w-md sm:rounded-3xl sm:p-6${closing ? " modal-closing-panel" : ""}`}
       >
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-danger-bg text-danger">
-            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+          <span
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
+              tone === "danger" ? "bg-danger-bg text-danger" : "bg-mint text-green"
+            }`}
+          >
+            {tone === "danger" ? (
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Info className="h-5 w-5" aria-hidden="true" />
+            )}
           </span>
           <div>
             <h2 id="confirm-action-title" className="text-lg font-semibold text-ink">{title}</h2>
@@ -72,9 +85,14 @@ export function ConfirmActionDialog({
         ) : null}
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="secondary" onClick={requestClose} disabled={busy}>
-            Batal
+            {cancelLabel}
           </Button>
-          <Button variant="danger" onClick={onConfirm} isLoading={busy} loadingLabel="Memproses">
+          <Button
+            variant={tone === "danger" ? "danger" : "primary"}
+            onClick={onConfirm}
+            isLoading={busy}
+            loadingLabel="Memproses"
+          >
             {confirmLabel}
           </Button>
         </div>

@@ -189,6 +189,8 @@ export function ActivityView({
   /* `?add=1` from the nav/dashboard opens the shared sheet (A-27). */
   const [sheetOpen, setSheetOpen] = useState(initialAdd);
   const [detail, setDetail] = useState<TransactionDTO | null>(null);
+  /* A category filter cannot apply to Ringkasan; confirm dropping it first. */
+  const [reportCategoryPromptOpen, setReportCategoryPromptOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [undo, setUndo] = useState<{ id: string; label: string } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -593,7 +595,20 @@ export function ActivityView({
     });
   };
 
+  /*
+    Ringkasan has no category filter, so a category selection cannot travel
+    into the report. Ask before dropping it; an unfiltered list opens the
+    report directly.
+  */
   const openFullReport = () => {
+    if (categories.length > 0) {
+      setReportCategoryPromptOpen(true);
+      return;
+    }
+    openFullReportUnfiltered();
+  };
+
+  const openFullReportUnfiltered = () => {
     setView("ringkasan");
     setReportScope(transactionScope);
     setReportWalletIds(walletIds);
@@ -605,6 +620,14 @@ export function ActivityView({
       reportScope: transactionScope,
       reportWalletIds: walletIds,
     });
+  };
+
+  const confirmOpenFullReport = () => {
+    setReportCategoryPromptOpen(false);
+    setCategories([]);
+    setDraftCategories([]);
+    showNotice("Filter kategori dihapus karena Ringkasan tidak memakainya.");
+    openFullReportUnfiltered();
   };
 
   const returnToTransactions = () => {
@@ -973,9 +996,13 @@ export function ActivityView({
       ) : null}
 
 
-      {view === "active" && period === "month" ? (
+      {view === "active" ? (
         <ActivityMonthSummaryCard
           month={activeMonth}
+          period={period}
+          from={periodRange.from}
+          to={periodRange.to}
+          periodLabel={appliedPeriodLabel}
           scope={transactionScope}
           walletIds={walletIds}
           refreshToken={summaryRefreshToken}
@@ -1447,6 +1474,16 @@ export function ActivityView({
         busy={deletingId !== null}
         onCancel={() => setTransactionToDelete(null)}
         onConfirm={() => void handleDelete()}
+      />
+      <ConfirmActionDialog
+        open={reportCategoryPromptOpen}
+        tone="info"
+        title="Buka Ringkasan tanpa filter kategori?"
+        description="Halaman Ringkasan tidak punya filter kategori. Kalau kamu lanjut, filter kategori di daftar aktivitas akan diubah ke Semua kategori."
+        confirmLabel="Ya, buka Ringkasan"
+        cancelLabel="Tidak"
+        onCancel={() => setReportCategoryPromptOpen(false)}
+        onConfirm={confirmOpenFullReport}
       />
     </div>
   );

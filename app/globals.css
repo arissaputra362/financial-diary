@@ -215,6 +215,26 @@
   --shadow-hover: 0 8px 20px -10px rgba(0, 0, 0, 0.45);
 }
 
+/* Large gold artwork has a theme-specific PNG so the mint backdrop does not
+   reduce contrast against the dark application surface. */
+:root[data-color-scheme="dark"] .gold-asset-icon-light {
+  display: none;
+}
+
+:root[data-color-scheme="dark"] .gold-asset-icon-dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-color-scheme]) .gold-asset-icon-light {
+    display: none;
+  }
+
+  :root:not([data-color-scheme]) .gold-asset-icon-dark {
+    display: block;
+  }
+}
+
 body {
   background: var(--color-canvas);
   color: var(--color-ink);

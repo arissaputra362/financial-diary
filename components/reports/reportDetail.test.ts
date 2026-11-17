@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { TransactionDTO, TransactionListDTO } from "@/types/api";
+import type { MonthlyReportDTO, TransactionDTO, TransactionListDTO, WalletDTO } from "@/types/api";
 import {
   buildReportDetailSections,
+  buildReportHistoricalLedger,
   canOfferPrint,
   collectReportDetailRows,
   formatReportDetailDate,
@@ -34,6 +35,65 @@ const personalWallet = {
   name: "Dompet Pribadi",
   scope: "PERSONAL" as const,
 };
+
+function report(overrides: Partial<MonthlyReportDTO> = {}): MonthlyReportDTO {
+  return {
+    month: "2026-10",
+    periodStart: "2026-10-01",
+    periodEnd: "2026-10-31",
+    isCurrentMonth: false,
+    scope: "SHARED",
+    wallet: null,
+    openingMinor: 1_000,
+    newWalletOpeningMinor: 0,
+    moneyInMinor: 10_000,
+    moneyOutMinor: 4_000,
+    transferInMinor: 5_000,
+    transferOutMinor: 5_000,
+    transferNetMinor: 0,
+    closingMinor: 7_000,
+    transactionCount: 4,
+    hasBackdatedNewWallet: false,
+    delta: { closingMinor: null, moneyInMinor: null, moneyOutMinor: null },
+    income: {
+      totalMinor: 15_000,
+      categories: [],
+      uncategorizedMinor: 15_000,
+      otherCategoryCount: 0,
+      otherAmountMinor: 0,
+    },
+    expense: {
+      totalMinor: 9_000,
+      categories: [],
+      uncategorizedMinor: 9_000,
+      otherCategoryCount: 0,
+      otherAmountMinor: 0,
+    },
+    dailyBalances: [],
+    ...overrides,
+  };
+}
+
+function wallet(overrides: Partial<WalletDTO> = {}): WalletDTO {
+  return {
+    id: "wallet-shared",
+    name: "Dompet Bersama",
+    purpose: null,
+    scope: "SHARING",
+    openingBalanceMinor: 0,
+    balanceMinor: 0,
+    archivedAt: null,
+    createdBy: null,
+    canEdit: true,
+    canArchive: true,
+    canRestore: false,
+    openingBalanceLocked: false,
+    institution: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    ...overrides,
+  };
+}
 
 describe("groupReportDetailRows", () => {
   it("filters the active scope, groups by type, and sorts by date then id descending", () => {
@@ -85,7 +145,8 @@ describe("groupReportDetailRows", () => {
       "transfer-in-redacted",
     ]);
     expect(groups.income.map((entry) => entry.id)).toEqual(["income"]);
-    expect(reportDetailDescription(groups.transfer[0]!, true)).toBe("Transfer");
+    expect(reportDetailDescription(groups.transfer[0]!, true)).toBe("Transfer keluar");
+    expect(reportDetailDescription(groups.transfer[1]!, true)).toBe("Transfer masuk");
   });
 
   it("returns no detail at all for an empty month", () => {
@@ -197,6 +258,194 @@ describe("canOfferPrint", () => {
     expect(canOfferPrint({ loading: false, error: false, transactionCount: 0 })).toBe(false);
     expect(canOfferPrint({ loading: false, error: false, transactionCount: null })).toBe(false);
     expect(canOfferPrint({ loading: false, error: false, transactionCount: 1 })).toBe(true);
+  });
+});
+
+describe("buildReportHistoricalLedger", () => {
+  it("puts income, expense, and transfer legs on the ledger and reaches the closing balance", () => {
+    const reportData = report();
+    const ledger = buildReportHistoricalLedger(
+      [
+        row({ id: "income", type: "MONEY_IN", amountMinor: 10_000, occurredAt: "2026-10-02T03:00:00.000Z" }),
+        row({ id: "expense", type: "MONEY_OUT", amountMinor: 4_000, occurredAt: "2026-10-03T03:00:00.000Z" }),
+        row({
+          id: "transfer-in",
+          type: "MONEY_IN",
+          amountMinor: 5_000,
+          transferGroupId: "group-1",
+          occurredAt: "2026-10-04T03:00:00.000Z",
+        }),
+        row({
+          id: "transfer-out",
+          type: "MONEY_OUT",
+          amountMinor: 5_000,
+          transferGroupId: "group-2",
+          occurredAt: "2026-10-05T03:00:00.000Z",
+        }),
+      ],
+      "shared",
+      reportData,
+      [wallet()],
+    );
+
+    expect(ledger.map((entry) => entry.id)).toEqual([
+      "report-opening",
+      "income",
+      "expense",
+      "transfer-in",
+      "transfer-out",
+      "report-closing",
+    ]);
+    expect(ledger.find((entry) => entry.id === "transfer-in")).toMatchObject({
+      description: "Transfer masuk",
+      amountMinor: 5_000,
+    });
+    expect(ledger.find((entry) => entry.id === "transfer-out")).toMatchObject({
+      description: "Transfer keluar",
+      amountMinor: -5_000,
+    });
+    /* The running balance reaches the server closing figure, not a jump. */
+    expect(ledger[ledger.length - 2]?.balanceMinor).toBe(reportData.closingMinor);
+    expect(ledger[ledger.length - 1]).toMatchObject({
+      kind: "closing",
+      balanceMinor: reportData.closingMinor,
+    });
+  });
+
+  it("keeps a transfer leg whose peer is outside the report scope", () => {
+    const reportData = report({
+      moneyInMinor: 10_000,
+      moneyOutMinor: 0,
+      transferInMinor: 5_000,
+      transferOutMinor: 0,
+      transferNetMinor: 5_000,
+      closingMinor: 16_000,
+    });
+    const ledger = buildReportHistoricalLedger(
+      [
+        row({
+          id: "income",
+          type: "MONEY_IN",
+          amountMinor: 10_000,
+          wallet: personalWallet,
+          occurredAt: "2026-10-02T03:00:00.000Z",
+        }),
+        row({
+          id: "transfer-in",
+          type: "MONEY_IN",
+          amountMinor: 5_000,
+          transferGroupId: "cross-scope",
+          wallet: personalWallet,
+          occurredAt: "2026-10-03T03:00:00.000Z",
+        }),
+      ],
+      "personal",
+      reportData,
+      [wallet()],
+    );
+
+    expect(ledger.find((entry) => entry.id === "transfer-in")).toMatchObject({
+      description: "Transfer masuk",
+      amountMinor: 5_000,
+    });
+    expect(ledger[ledger.length - 2]?.balanceMinor).toBe(reportData.closingMinor);
+  });
+
+  it("adds a wallet opening created on the last day of the period", () => {
+    const reportData = report({
+      openingMinor: 0,
+      moneyInMinor: 0,
+      moneyOutMinor: 0,
+      transferInMinor: 0,
+      transferOutMinor: 0,
+      transferNetMinor: 0,
+      newWalletOpeningMinor: 300_000,
+      closingMinor: 300_000,
+      transactionCount: 0,
+      income: {
+        totalMinor: 0,
+        categories: [],
+        uncategorizedMinor: 0,
+        otherCategoryCount: 0,
+        otherAmountMinor: 0,
+      },
+      expense: {
+        totalMinor: 0,
+        categories: [],
+        uncategorizedMinor: 0,
+        otherCategoryCount: 0,
+        otherAmountMinor: 0,
+      },
+    });
+    const ledger = buildReportHistoricalLedger([], "shared", reportData, [
+      wallet(),
+      wallet({
+        id: "wallet-last-day",
+        name: "Dompet Baru",
+        openingBalanceMinor: 300_000,
+        createdAt: "2026-10-31T05:00:00.000Z",
+      }),
+    ]);
+
+    expect(ledger.find((entry) => entry.id === "wallet-opening-wallet-last-day")).toMatchObject({
+      description: "Saldo awal dompet Dompet Baru",
+      amountMinor: 300_000,
+    });
+    expect(ledger[ledger.length - 2]?.balanceMinor).toBe(reportData.closingMinor);
+  });
+
+  it("adds a later wallet opening only when it has a backdated row in the period", () => {
+    const reportData = report({
+      openingMinor: 0,
+      moneyInMinor: 3_000,
+      moneyOutMinor: 0,
+      transferInMinor: 0,
+      transferOutMinor: 0,
+      transferNetMinor: 0,
+      newWalletOpeningMinor: 200_000,
+      closingMinor: 203_000,
+      transactionCount: 1,
+      income: {
+        totalMinor: 3_000,
+        categories: [],
+        uncategorizedMinor: 3_000,
+        otherCategoryCount: 0,
+        otherAmountMinor: 0,
+      },
+      expense: {
+        totalMinor: 0,
+        categories: [],
+        uncategorizedMinor: 0,
+        otherCategoryCount: 0,
+        otherAmountMinor: 0,
+      },
+    });
+    const laterWallet = wallet({
+      id: "wallet-backdated",
+      name: "Dompet Backdate",
+      openingBalanceMinor: 200_000,
+      createdAt: "2026-11-02T05:00:00.000Z",
+    });
+
+    const withRow = buildReportHistoricalLedger(
+      [
+        row({
+          id: "backdated",
+          type: "MONEY_IN",
+          amountMinor: 3_000,
+          wallet: { id: "wallet-backdated", name: "Dompet Backdate", scope: "SHARING" },
+          occurredAt: "2026-10-20T03:00:00.000Z",
+        }),
+      ],
+      "shared",
+      reportData,
+      [wallet(), laterWallet],
+    );
+    expect(withRow.some((entry) => entry.id === "wallet-opening-wallet-backdated")).toBe(true);
+    expect(withRow[withRow.length - 2]?.balanceMinor).toBe(reportData.closingMinor);
+
+    const withoutRow = buildReportHistoricalLedger([], "shared", reportData, [wallet(), laterWallet]);
+    expect(withoutRow.some((entry) => entry.id === "wallet-opening-wallet-backdated")).toBe(false);
   });
 });
 

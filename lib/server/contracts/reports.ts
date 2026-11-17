@@ -29,11 +29,27 @@ export const monthlyReportQuerySchema = z.object({
   { message: "Rentang tanggal tidak valid.", path: ["to"] },
 );
 
+/*
+  Activity summary accepts the same period as the list: a calendar month or an
+  explicit inclusive range (rolling 7/30 days or a custom range). The range
+  takes precedence when both boundaries are present.
+*/
 export const activityWalletSummaryQuerySchema = z.object({
-  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Bulan tidak valid."),
+  month: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Bulan tidak valid.")
+    .optional(),
+  from: dateOnlySchema.optional(),
+  to: dateOnlySchema.optional(),
   scope: z.enum(["all", "shared", "personal"]).default("all"),
   walletIds: z.array(z.string().uuid("Dompet tidak valid.")).max(50).default([]),
-});
+}).refine(
+  (value) => !value.from || !value.to || value.from <= value.to,
+  { message: "Rentang tanggal tidak valid.", path: ["to"] },
+).refine(
+  (value) => Boolean(value.month) || Boolean(value.from && value.to),
+  { message: "Pilih bulan atau rentang tanggal.", path: ["month"] },
+);
 
 export type MonthlyReportQuery = z.infer<typeof monthlyReportQuerySchema>;
 export type ActivityWalletSummaryQuery = z.infer<typeof activityWalletSummaryQuerySchema>;

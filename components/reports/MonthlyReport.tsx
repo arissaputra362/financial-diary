@@ -326,9 +326,17 @@ export function MonthlyReport({
     try {
       rows = await collectReportDetailRows(async (cursor) => {
         const response = await apiRequest<TransactionListDTO>(
+          /*
+            The ledger must cover the same days as the report. A rolling or
+            custom period is not the calendar month, so pass its resolved
+            range; otherwise income and expenses outside the month disappear
+            from the PDF detail.
+          */
           activityListUrl({
             view: "active",
             month,
+            from: period !== "month" ? from : undefined,
+            to: period !== "month" ? to : undefined,
             walletIds,
             scope,
             cursor,
@@ -380,8 +388,8 @@ export function MonthlyReport({
   };
 
   /*
-    Build a vector PDF in the browser so mobile can open or share the file
-    directly. Page 1 is the A4 summary; the transaction ledger follows on the
+    Build a vector PDF in the browser and hand it straight to the mobile PDF
+    viewer. Page 1 is the A4 summary; the transaction ledger follows on the
     next pages, so nothing is sliced or cut off at the page edge.
   */
   const exportPdf = async (payload?: {
@@ -792,6 +800,9 @@ export function MonthlyReport({
                   actionHref={activityHref({
                     view: "active",
                     month,
+                    period,
+                    from: period !== "month" ? from : undefined,
+                    to: period !== "month" ? to : undefined,
                     filter: "out",
                     scope,
                     walletIds,
@@ -808,6 +819,9 @@ export function MonthlyReport({
                   actionHref={activityHref({
                     view: "active",
                     month,
+                    period,
+                    from: period !== "month" ? from : undefined,
+                    to: period !== "month" ? to : undefined,
                     filter: "in",
                     scope,
                     walletIds,
@@ -857,7 +871,7 @@ function BalanceCard({ report, periodLabel }: { report: MonthlyReportDTO; period
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/90 print:text-[8pt]">{label}</p>
       <p className="mt-2 text-xs font-medium text-white/85 print:mt-0.5 print:text-[7pt]">Pengeluaran</p>
       <p className="financial-value mt-0.5 whitespace-nowrap text-[clamp(1.6rem,7vw,2.5rem)] font-bold tracking-tight print:text-2xl">
-        {formatIDR(report.moneyOutMinor)}
+        {formatIDR(report.expense.totalMinor)}
       </p>
       <DeltaLine amountMinor={report.delta.moneyOutMinor} className="mt-2 text-xs text-white/85 print:mt-0.5 print:text-[8pt]" />
 
@@ -865,7 +879,7 @@ function BalanceCard({ report, periodLabel }: { report: MonthlyReportDTO; period
         <div className="min-w-0 rounded-2xl bg-black/15 p-3 print:bg-white/10 print:p-1.5">
           <p className="text-[11px] font-medium text-white/85 print:text-[7pt]">Pemasukan</p>
           <p className="financial-value mt-1 truncate text-lg font-bold tabular-nums print:mt-0.5 print:text-xs">
-            {formatIDR(report.moneyInMinor)}
+            {formatIDR(report.income.totalMinor)}
           </p>
         </div>
         <div className="min-w-0 rounded-2xl bg-black/15 p-3 print:bg-white/10 print:p-1.5">

@@ -98,7 +98,14 @@ export class ReportService {
       const visibleIds = await this.repo.listVisibleWalletIds(actor, walletIds, scope);
       if (visibleIds.length !== walletIds.length) throw notFound("Dompet tidak ditemukan.");
     }
-    const period = this.periods.month(options.month);
+    /*
+      The card shows one flow summary for whatever period the list uses. An
+      explicit range (7/30-day window or custom) overrides the month so the
+      numbers always match the rows below it.
+    */
+    const period = options.from && options.to
+      ? this.periods.range(options.from, options.to)
+      : this.periods.month(options.month ?? jakartaDateOnly().slice(0, 7));
     return this.repo.activityWalletSummary(actor, { period, walletIds, scope });
   }
 

@@ -3,31 +3,44 @@
 import { useEffect, useState } from "react";
 import { BarChart3 } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
-import { monthKeyLabel } from "@/lib/dates";
 import { formatIDR } from "@/lib/format";
 import type { ActivityWalletSummaryDTO } from "@/types/api";
+import type { ActivityPeriod } from "./activityUrl";
 
 type Scope = "all" | "personal" | "shared";
 
 /**
- * Monthly flow card for the activity list. One surface with dividers replaces
- * the previous four-tile grid (phase 2 mockup): the reader scans opening, in,
- * out, and closing in one line instead of four competing cards.
+ * Flow card for the activity list. One surface with dividers replaces the
+ * previous four-tile grid (phase 2 mockup): the reader scans opening, in,
+ * out, and closing in one line instead of four competing cards. It follows the
+ * applied period, so a rolling window or custom range keeps the same card and
+ * shows that period's summary.
  */
 export function ActivityMonthSummaryCard({
   month,
+  period,
+  from,
+  to,
+  periodLabel,
   scope,
   walletIds,
   refreshToken,
   onOpenReport,
 }: {
   month: string;
+  period: ActivityPeriod;
+  /** Resolved range start/end; used by every period except `month`. */
+  from: string;
+  to: string;
+  /** Human-readable label for the applied period. */
+  periodLabel: string;
   scope: Scope;
   walletIds: string[];
   refreshToken: number;
   onOpenReport?: () => void;
 }) {
-  const requestKey = `${month}:${scope}:${walletIds.join(",")}:${refreshToken}`;
+  const rangeKey = period === "month" ? "" : `${from}:${to}`;
+  const requestKey = `${period}:${month}:${rangeKey}:${scope}:${walletIds.join(",")}:${refreshToken}`;
   const [result, setResult] = useState<{ key: string; totals: {
     opening: number;
     income: number;
@@ -39,7 +52,13 @@ export function ActivityMonthSummaryCard({
 
   useEffect(() => {
     let active = true;
-    const params = new URLSearchParams({ month, scope });
+    const params = new URLSearchParams({ scope });
+    if (period !== "month" && from && to) {
+      params.set("from", from);
+      params.set("to", to);
+    } else {
+      params.set("month", month);
+    }
     walletIds.forEach((id) => params.append("walletId", id));
     apiRequest<ActivityWalletSummaryDTO>(`/api/reports/monthly/summary?${params.toString()}`)
       .then((response) => {
@@ -65,7 +84,7 @@ export function ActivityMonthSummaryCard({
     return () => {
       active = false;
     };
-  }, [month, refreshToken, requestKey, scope, walletIds]);
+  }, [from, month, period, refreshToken, requestKey, scope, to, walletIds]);
 
   const metrics = [
     { label: "Saldo awal", value: totals?.opening },
@@ -77,10 +96,10 @@ export function ActivityMonthSummaryCard({
   return (
     <section
       className="surface-hero overflow-hidden rounded-feature p-3 text-white shadow-bento sm:p-4"
-      aria-label="Ringkasan transaksi bulan ini"
+      aria-label={`Ringkasan transaksi ${periodLabel}`}
     >
       <div className="flex items-center justify-between gap-2 px-1">
-        <p className="text-sm font-semibold text-white">Ringkasan {monthKeyLabel(month)}</p>
+        <p className="min-w-0 text-sm font-semibold text-white">Ringkasan {periodLabel}</p>
         {onOpenReport ? (
           <button
             type="button"

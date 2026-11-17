@@ -39,16 +39,16 @@ export function GoldAssetArtwork({ asset, size = "card" }: GoldAssetArtworkProps
       : getJewelryTypeLabel(asset.jewelryType);
   return (
     <div
-      className={`relative flex items-center justify-center overflow-hidden bg-mint ${isDetail ? "h-44" : "h-32"}`}
+      className={`relative flex items-center justify-center overflow-hidden bg-mint ${isDetail ? "h-52" : "h-40"}`}
     >
-      <div className="flex flex-col items-center justify-center gap-2">
+      <div className={`flex flex-col items-center justify-center ${isDetail ? "gap-3" : "gap-2"}`}>
         <GoldAssetIcon
           type={asset.type}
           jewelryType={asset.jewelryType}
           size="lg"
-          className={isDetail ? "h-24 w-24 rounded-3xl" : undefined}
+          className={isDetail ? "h-32 w-32 rounded-3xl" : "h-28 w-28 rounded-3xl"}
         />
-        <span className="text-[9px] font-extrabold tracking-[0.12em] text-green sm:text-[10px]">
+        <span className="text-[10px] font-extrabold tracking-[0.14em] text-green sm:text-xs">
           {label}
         </span>
       </div>

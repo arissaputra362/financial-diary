@@ -103,7 +103,7 @@ function drawSummaryHeader(pdf: jsPDF, input: ReportPdfInput) {
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(9);
-  pdf.text("RINGKASAN BULANAN", MARGIN, 34);
+  pdf.text("RINGKASAN LAPORAN", MARGIN, 34);
 
   pdf.setFontSize(24);
   pdf.text(input.periodLabel, MARGIN, 64);
@@ -173,7 +173,8 @@ function drawMoneyRows(pdf: jsPDF, rows: MoneyRow[], y: number) {
     pdf.text(row.label, MARGIN, y);
     textColor(pdf, row.color);
     pdf.text(row.value, CONTENT_RIGHT, y, { align: "right" });
-    y += 16;
+    /* Compact rows keep the extra transfer lines on the single summary page. */
+    y += 15;
   }
   return y;
 }
@@ -212,7 +213,7 @@ function drawCategorySection(
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
     pdf.text(formatIDR(row.amountMinor), CONTENT_RIGHT, y, { align: "right" });
-    y += 15;
+    y += 14;
   }
 
   drawColor(pdf, BORDER);
@@ -223,7 +224,7 @@ function drawCategorySection(
   pdf.text("Subtotal", MARGIN, y + 4);
   textColor(pdf, totalColor);
   pdf.text(formatIDR(breakdown.totalMinor), CONTENT_RIGHT, y + 4, { align: "right" });
-  return y + 22;
+  return y + 20;
 }
 
 function drawBalanceTrace(
@@ -235,7 +236,8 @@ function drawBalanceTrace(
 
   y = drawSectionTitle(pdf, "Jejak saldo harian", y);
   const chartTop = y;
-  const chartHeight = 82;
+  /* A shorter plot leaves clearance for the extra transfer rows above it. */
+  const chartHeight = 76;
   const values = dailyBalances.map((point) => point.closingMinor);
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -356,8 +358,13 @@ export function createReportPdf(input: ReportPdfInput): ReportPdfResult {
   const cardWidth = (CONTENT_W - 10) / 2;
   const cardHeight = 58;
 
-  drawMetricCard(pdf, MARGIN, y, cardWidth, cardHeight, "Pengeluaran", formatIDR(report.moneyOutMinor), DANGER);
-  drawMetricCard(pdf, MARGIN + cardWidth + 10, y, cardWidth, cardHeight, "Pemasukan", formatIDR(report.moneyInMinor), GREEN);
+  /*
+    Use the same totals as the report's category sections. `moneyInMinor` and
+    `moneyOutMinor` alone leave out transfer legs that cannot be paired, which
+    made the PDF headline smaller than the activity card and the breakdown.
+  */
+  drawMetricCard(pdf, MARGIN, y, cardWidth, cardHeight, "Pengeluaran", formatIDR(report.expense.totalMinor), DANGER);
+  drawMetricCard(pdf, MARGIN + cardWidth + 10, y, cardWidth, cardHeight, "Pemasukan", formatIDR(report.income.totalMinor), GREEN);
   y += cardHeight + 10;
 
   const spendingDelta = report.delta.moneyOutMinor;
@@ -374,15 +381,39 @@ export function createReportPdf(input: ReportPdfInput): ReportPdfResult {
   y += cardHeight + 26;
 
   y = drawSectionTitle(pdf, "Arus saldo", y);
+  /*
+    Show the transfer legs on their own rows instead of one net figure. A
+    transfer into the selected wallets is still money the reader saw arrive,
+    so hiding it looked like the PDF dropped income. The rows now add up
+    exactly to the closing balance, matching the report's Jejak saldo.
+  */
   const balanceRows: MoneyRow[] = [
     { label: "Saldo awal", value: formatIDR(report.openingMinor), color: INK_2 },
-    { label: "Uang masuk", value: `+${formatIDR(report.moneyInMinor)}`, color: GREEN },
-    { label: "Uang keluar", value: `-${formatIDR(report.moneyOutMinor)}`, color: DANGER },
   ];
-  if (report.transferNetMinor !== 0) {
+  if (report.newWalletOpeningMinor !== 0) {
     balanceRows.push({
-      label: "Transfer bersih",
-      value: formatSigned(report.transferNetMinor),
+      label: "Saldo awal dompet baru",
+      value: `+${formatIDR(report.newWalletOpeningMinor)}`,
+      color: INK_2,
+    });
+  }
+  balanceRows.push(
+    { label: "Uang masuk", value: `+${formatIDR(report.moneyInMinor)}`, color: GREEN },
+  );
+  if (report.transferInMinor !== 0) {
+    balanceRows.push({
+      label: "Transfer masuk",
+      value: `+${formatIDR(report.transferInMinor)}`,
+      color: INK_2,
+    });
+  }
+  balanceRows.push(
+    { label: "Uang keluar", value: `-${formatIDR(report.moneyOutMinor)}`, color: DANGER },
+  );
+  if (report.transferOutMinor !== 0) {
+    balanceRows.push({
+      label: "Transfer keluar",
+      value: `-${formatIDR(report.transferOutMinor)}`,
       color: INK_2,
     });
   }
